@@ -9,7 +9,7 @@
     <!-- FontAwesome for standard icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -35,26 +35,25 @@
             }
         }
     </script>
-
 </head>
 <body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
 
     <!-- Main Container -->
     <main class="w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
-        
+
         <!-- Hero Section -->
         <section class="relative h-[550px] md:h-[650px] w-full hero-bg">
             <!-- Overlay to warm the background slightly (removed blur so the art is crisp) -->
             <div class="absolute inset-0 bg-warm-900/10"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-warm-50 via-warm-50/10 to-transparent"></div>
-            
+
             <!-- Navigation Header -->
             <nav class="absolute top-6 left-6 right-6 md:left-10 md:right-10 flex justify-between items-center z-20">
                 <!-- Logo -->
                 <div class="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-100 hover:bg-white transition-colors cursor-pointer flex items-center gap-2">
                     <span class="text-orange-500">~</span> <span class="text-warm-400">/</span> home
                 </div>
-                
+
                 <!-- Desktop Navigation Links -->
                 <ul class="hidden md:flex gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl font-medium text-sm text-warm-700 shadow-sm border border-warm-100">
                     <li><a href="about.html" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
@@ -86,7 +85,7 @@
             <!-- Tiny Label (Moved to bottom left) -->
             <div class="absolute bottom-6 left-6 md:left-10 z-20">
                 <span class="font-mono text-xs font-bold text-warm-800 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm">
-                    Jakarta &middot; 2025
+                    Jakarta &middot; <span id="current-year">2026</span>
                 </span>
             </div>
         </section>
@@ -94,26 +93,29 @@
         <!-- About Section -->
         <section class="relative bg-warm-50 px-8 py-20 md:px-16 border-b border-warm-200" id="about">
             <span class="text-warm-500 font-mono text-xs uppercase tracking-widest mb-4 block">About this place</span>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
                 <!-- Left Column (Bio) -->
                 <div class="lg:col-span-7 flex flex-col gap-8">
                     <div>
                         <h2 class="font-heavy text-4xl md:text-5xl text-warm-900 mb-4">Vu Trong Duc Anh</h2>
                         <p class="text-xl text-warm-600 font-medium leading-relaxed">
-                            Policy work, fiction writing, folk music, and a perpetual love/hate relationship with my own inner life.
+                            Policy work, fiction writing, kinda good taste in music (mostly it's just Vietnamese Indie music these days), and a perpetual love/hate relationship with my own inner life.
                         </p>
                     </div>
 
                     <div class="text-warm-800 leading-relaxed text-lg space-y-6">
                         <p>
-                            This is my corner of the internet — less a portfolio, more a home. Somewhere to keep the things that matter to me, to write when I feel like writing, and to share a little of who I am with people who are curious.
+                            Welcome to my little corner on the internet, I like to think of it as my little home on the vast world web wide as well 🙂. Somewhere to keep the things that matter to me, to write when I feel like writing, and to share a little of who I am with people who are curious.
                         </p>
                         <p>
-                            I'm Anh. Vietnamese, 27, living in Jakarta. By day I work at the ASEAN Centre for Energy — policy research, data visualization, technical reports, all ten ASEAN countries in the mix. By night I'm writing fiction, listening to quan họ, losing hours to Hearts of Iron, or cooking phở in a city that still doesn't quite feel like home after all this time.
+                            I'm Đức Anh. Vietnamese, <span id="auto-age">25</span> (maybe I should add a function to automatically update the age here lol), living in Jakarta. By day I work at the ASEAN Centre for Energy — policy research, data visualization, technical reports, so just meetings, report things. By night I'm writing fiction (once in a while :))), listening to Vietnamese Indie and doing nothing, wandering randomly on VR.... basically trying to make a "home" in a strange city that still doesn't feel like home after all this time.
                         </p>
                         <p>
-                            I think too deeply about most things. History, language, myth, what it means to carry a culture with you when you live somewhere else. I've mostly made peace with this. Mostly.
+                            Actually if we take a moment to think of it, to be able to get my own place on the Internet, to be able to customise it, literally make it anything I want anyhow, chaotic, playful, …… and accessible to all of humanity just by typing some random address on your phone, is kinda an amazing thing to do.
+                        </p>
+                        <p>
+                            I think too deeply about most things. History, language, myth, traffic jam, sunlight piercing through the leaves, cats. I've mostly made peace with this. Mostly.
                         </p>
                         <p class="font-medium text-warm-900 italic">
                             Come in, look around. Stay as long as you like.
@@ -130,14 +132,14 @@
                                 <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Data Visualization</span>
                                 <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Technical Writing</span>
                                 <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Market Analysis</span>
-                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm font-mono">Python</span>
-                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm font-mono">D3.js</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm"><i class="fa-solid fa-video text-warm-500 mr-1"></i> Joining Meetings</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm"><i class="fa-regular fa-paper-plane text-warm-500 mr-1"></i> Sending Emails</span>
                             </div>
                         </div>
                         <div>
                             <h4 class="font-mono text-xs text-warm-500 uppercase tracking-wider mb-3">Everywhere else</h4>
                             <div class="flex flex-wrap gap-2">
-                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Vietnamese Folk Music</span>
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Vietnamese Indie Music</span>
                                 <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Grand Strategy</span>
                                 <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Fiction Writing</span>
                                 <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Slow Cooking</span>
@@ -149,11 +151,10 @@
 
                 <!-- Right Column (Avatar & Sticky Notes) -->
                 <div class="lg:col-span-5 flex flex-col items-center lg:items-end gap-12 lg:pt-2">
-                    
+
                     <!-- Avatar & Caption -->
                     <div class="flex flex-col items-center max-w-sm w-full mt-4 lg:mt-0">
                         <div class="w-56 h-56 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-white shadow-xl shadow-warm-900/10 relative group bg-warm-200">
-                            <!-- Using object-[75%_center] to ensure the boy on the right side of the image isn't cropped out -->
                             <img src="https://i.imgur.com/0idzxs1.jpeg" alt="Novel Character Avatar" class="w-full h-full object-cover object-[75%_center] group-hover:scale-105 transition-transform duration-700">
                         </div>
                         <div class="mt-5 transform -rotate-2 text-center px-2">
@@ -183,12 +184,12 @@
                                 <span>Programme Manager, YUSEA 2026–2027</span>
                             </li>
                             <li class="flex items-start gap-4">
-                                <i class="fa-solid fa-music text-warm-500 mt-1 w-5 text-center"></i>
-                                <span>Piano learner (slowly, stubbornly)</span>
-                            </li>
-                            <li class="flex items-start gap-4">
                                 <i class="fa-solid fa-mug-hot text-warm-500 mt-1 w-5 text-center"></i>
                                 <span>Matcha every morning, no exceptions</span>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-book-journal-whills text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>I love history, Politics, Philosophy (not all, but some), Sci-fi</span>
                             </li>
                         </ul>
                     </div>
@@ -198,54 +199,36 @@
 
         <!-- Work Section -->
         <section id="work" class="bg-white px-8 py-20 md:px-16 border-b border-warm-200">
-            <div class="mb-12 max-w-2xl">
-                <h2 class="font-heavy text-4xl text-warm-900 inline-block mr-4">Work</h2>
-                <span class="font-handwriting text-3xl text-warm-500 inline-block transform -rotate-1">What I do from 9 to 6, and sometimes after</span>
-                <p class="mt-6 text-warm-700 text-lg leading-relaxed">
-                    I work at the intersection of energy policy and communication — turning complex regional data into something people can actually use and understand.
-                </p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="group bg-warm-50 rounded-[1.5rem] overflow-hidden border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col">
-                    <div class="h-48 overflow-hidden bg-warm-200">
-                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800" alt="Data Visualization" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700">
-                    </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <span class="font-mono text-[10px] text-orange-600 uppercase tracking-widest mb-3">Data Visualization</span>
-                        <h3 class="font-heavy text-xl text-warm-900 mb-3">ASEAN Energy Visualizations</h3>
-                        <p class="text-warm-700 text-sm leading-relaxed flex-1">
-                            Choropleth maps, scatter plots, and interactive charts for APAEC and ALCBT publications. Making ten countries' worth of energy data legible — one chart at a time.
-                        </p>
-                    </div>
+            <div class="mb-16 max-w-4xl mx-auto">
+                <div class="mb-10 text-center">
+                    <h2 class="font-heavy text-4xl text-warm-900 inline-block mr-4">Work</h2>
+                    <span class="font-handwriting text-2xl md:text-3xl text-warm-500 inline-block transform -rotate-1">What drives me to work from 9 to 6, and sometimes after</span>
                 </div>
 
-                <!-- Card 2 -->
-                <div class="group bg-warm-50 rounded-[1.5rem] overflow-hidden border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col">
-                    <div class="h-48 overflow-hidden bg-warm-200">
-                        <img src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=800" alt="Policy Research" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700">
+                <!-- Playful "Meaning" Box -->
+                <div class="relative bg-warm-50 p-8 md:p-10 rounded-[2rem] border border-warm-200 shadow-sm mt-10">
+                    <!-- Highlighted "Meaninggg" -->
+                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 rotate-1 z-10 hover:rotate-3 transition-transform whitespace-nowrap">
+                        <span class="font-handwriting text-5xl md:text-6xl text-orange-600 bg-[#fef08a] px-5 py-2 rounded-xl border-2 border-dashed border-orange-400 shadow-md inline-block">Meaninggg ✨</span>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <span class="font-mono text-[10px] text-rose-600 uppercase tracking-widest mb-3">Policy Research</span>
-                        <h3 class="font-heavy text-xl text-warm-900 mb-3">Building Energy Certification in ASEAN</h3>
-                        <p class="text-warm-700 text-sm leading-relaxed flex-1">
-                            A ten-country deep dive into green building systems — GREENSHIP, Green Mark, LOTUS, LEED, EDGE, and more. The kind of work that takes months and hopefully lands in the right hands.
-                        </p>
-                    </div>
-                </div>
 
-                <!-- Card 3 -->
-                <div class="group bg-warm-50 rounded-[1.5rem] overflow-hidden border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col">
-                    <div class="h-48 overflow-hidden bg-warm-200">
-                        <img src="https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?q=80&w=800" alt="Market Analysis" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700">
-                    </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <span class="font-mono text-[10px] text-teal-600 uppercase tracking-widest mb-3">Market Analysis</span>
-                        <h3 class="font-heavy text-xl text-warm-900 mb-3">AC Market Study</h3>
-                        <p class="text-warm-700 text-sm leading-relaxed flex-1">
-                            Quantitative analysis of air conditioner markets across ASEAN, including custom data visualizations and reconstructed CSPF methodology. Surprisingly interesting once you're in it.
+                    <div class="space-y-6 text-warm-800 text-lg leading-relaxed mt-4 text-left">
+                        <p>
+                            I guess that's the most concise way to describe what drives me? <span class="text-warm-500 text-base italic">(*Trying so hard not to make the AI write this for me :)))) sooo lazy to write, but I guess if this is my "home", then it should be my voice to inhabit the place :))))))</span>
                         </p>
+                        <p>
+                            Nah just kidding, I'm lazy already, so borrow the word of my dear friend Claude AI (which knows me more than my own mother at this point lol): <strong class="text-warm-900 bg-orange-100 px-2 py-0.5 rounded">"I work in energy policy because I care about this region, and I care about making its complexity legible to the people who need to act on it."</strong>
+                        </p>
+                        <p>
+                            Well, it's true actually, I care deeply about this region, since places that I called "home" are there, people I care about lives here, or I just love humans overall?
+                        </p>
+
+                        <!-- Blockquote styling for the AI quote -->
+                        <div class="border-l-4 border-orange-300 pl-6 py-4 my-6 bg-white rounded-r-xl shadow-sm">
+                            <p class="font-medium text-warm-900 italic">
+                                Borrow another quote from my Claude friend: "You're not someone who finds joy in energy policy as a discipline <span class="text-warm-500 not-italic">(Well, I do, but not that much ;)))</span>. But you do care about Southeast Asia, and you care about things being communicated honestly and well. The work is the vehicle for that."
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,10 +243,10 @@
                 <h2 class="font-heavy text-4xl text-warm-900 inline-block mr-4">Writing</h2>
                 <span class="font-handwriting text-3xl text-warm-600 inline-block transform rotate-1">The other home</span>
                 <p class="mt-6 text-warm-800 text-lg leading-relaxed">
-                    I write fiction. Slowly, seriously, and mostly for myself — though I'm learning to share it. It sits at the intersection of myth, geopolitics, and the feelings I can't put anywhere else.
+                    I write fiction sometimes, mostly for myself since they are too cringe lol — though I'm learning to share it by embracing the cringe-ness. It sits at the intersection of myth, geopolitics, and the feelings I can't put anywhere else, or feelings that simply haven't got words to describe, haven't been named.
                 </p>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
                 <!-- Card 1 -->
                 <div class="group bg-white rounded-[1.5rem] p-8 border border-warm-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
@@ -284,7 +267,7 @@
                 <div class="group bg-white rounded-[1.5rem] p-8 border border-warm-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col relative overflow-hidden">
                     <!-- 'In Progress' overlay strip -->
                     <div class="absolute -right-8 top-6 bg-warm-200 text-warm-800 font-mono text-[9px] font-bold uppercase tracking-widest px-10 py-1 transform rotate-45">In Progress</div>
-                    
+
                     <div class="flex justify-between items-start mb-6">
                         <span class="font-mono text-[10px] text-warm-500 uppercase tracking-widest border border-warm-200 px-2 py-1 rounded">Novel</span>
                     </div>
@@ -303,9 +286,9 @@
                         <span class="font-mono text-[10px] text-warm-500 uppercase tracking-widest border border-warm-200 px-2 py-1 rounded">Essay &middot; Personal</span>
                         <i class="fa-solid fa-pen-nib text-warm-300 text-xl"></i>
                     </div>
-                    <h3 class="font-heavy text-2xl text-warm-900 mb-4 leading-tight">Notes on Living Elsewhere</h3>
+                    <h3 class="font-heavy text-2xl text-warm-900 mb-4 leading-tight">Random Notes on Random Things</h3>
                     <p class="text-warm-700 text-sm leading-relaxed flex-1 mb-8">
-                        On being Vietnamese in Jakarta. The folk music that makes distance smaller. The food cooked from memory. The slow, quiet work of staying connected to a place through absence.
+                        Fleeting feelings I have: the city lights falling behind from a taxi window, the realization of airports as a kind of civilizational intersection, feeling homesick, lonely, civilizational grief...
                     </p>
                     <span class="font-mono text-sm text-warm-400">
                         Coming soon
@@ -323,17 +306,17 @@
                     This is the part of the site I like best. The things that aren't on my CV but are probably more me than anything that is.
                 </p>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                 <!-- Item 1 -->
                 <div class="flex gap-5 items-start">
                     <div class="w-12 h-12 bg-white border border-warm-200 text-warm-500 rounded-xl flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
-                        <i class="fa-solid fa-music"></i>
+                        <i class="fa-solid fa-microphone-lines"></i>
                     </div>
                     <div>
-                        <h3 class="font-heavy text-xl text-warm-900 mb-2">Vietnamese Folk Music</h3>
+                        <h3 class="font-heavy text-xl text-warm-900 mb-2">Vietnamese Indie Music & Karaoke</h3>
                         <p class="text-warm-700 text-sm leading-relaxed">
-                            Quan họ, ca trù, chầu văn. The older, stranger, more beautiful forms. I grew up with these sounds and I don't think I'll ever fully leave them behind. I listen most when I'm furthest from home.
+                            A specific corner of it — contemporary, a little melancholic, very of this moment. I listen to it the way some people read poetry. And obviously, aggressively singing it at karaoke whenever I get the chance.
                         </p>
                     </div>
                 </div>
@@ -367,19 +350,6 @@
                 <!-- Item 4 -->
                 <div class="flex gap-5 items-start">
                     <div class="w-12 h-12 bg-white border border-warm-200 text-warm-500 rounded-xl flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
-                        <i class="fa-solid fa-keyboard"></i> <!-- Using keyboard as piano alternative for FA -->
-                    </div>
-                    <div>
-                        <h3 class="font-heavy text-xl text-warm-900 mb-2">Learning Piano</h3>
-                        <p class="text-warm-700 text-sm leading-relaxed">
-                            Started as an adult. Still a beginner. It is humbling in exactly the right way and I recommend it to anyone who needs to be reminded that patience is a skill.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Item 5 -->
-                <div class="flex gap-5 items-start md:col-span-2 lg:col-span-1">
-                    <div class="w-12 h-12 bg-white border border-warm-200 text-warm-500 rounded-xl flex items-center justify-center flex-shrink-0 text-xl shadow-sm">
                         <i class="fa-solid fa-bowl-food"></i>
                     </div>
                     <div>
@@ -402,7 +372,7 @@
                 <p class="text-warm-300 font-medium text-lg mb-10 leading-relaxed">
                     If something here resonated — a piece of writing, a shared interest, a question about energy policy in Southeast Asia — I'd genuinely like to hear from you. This is a home, after all. Guests are welcome.
                 </p>
-                
+
                 <div class="flex justify-center gap-6 mb-12">
                     <a href="#" class="text-warm-400 hover:text-white transition-colors text-2xl"><i class="fa-brands fa-github"></i></a>
                     <a href="#" class="text-warm-400 hover:text-white transition-colors text-2xl"><i class="fa-brands fa-linkedin"></i></a>
@@ -416,12 +386,20 @@
 
                 <div class="mt-20 pt-8 border-t border-warm-800">
                     <p class="font-mono text-xs text-warm-500">
-                        Made with too much matcha and Claude. &middot; Hanoi &rarr; Jakarta &middot; 2025
+                        Made with too much matcha and Claude. &middot; Hanoi &rarr; Jakarta &middot; <span id="footer-year">2026</span>
                     </p>
                 </div>
             </div>
         </section>
     </main>
 
+    <!-- Script to automatically update the age and current year -->
+    <script>
+        const birthYear = 1999; // Adjust this to your actual birth year
+        const currentYear = new Date().getFullYear();
+        document.getElementById('auto-age').innerText = currentYear - birthYear;
+        document.getElementById('current-year').innerText = currentYear;
+        document.getElementById('footer-year').innerText = currentYear;
+    </script>
 </body>
 </html>
