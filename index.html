@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for standard icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
     
     <script>
         tailwind.config = {
@@ -35,57 +36,6 @@
         }
     </script>
 
-    <style>
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #eaddd7;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d1bfae' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        
-        .font-handwriting { font-family: 'Caveat', cursive; }
-        .font-heavy { font-family: 'Poppins', sans-serif; }
-
-        .hero-bg {
-            /* Cozy night city room artwork */
-            background-image: url('https://i.imgur.com/F84s0sb.jpeg');
-            background-size: cover;
-            background-position: center bottom;
-        }
-        
-        /* Gentle Floating Animation */
-        @keyframes gentle-float {
-            0% { transform: translateY(0px) rotate(-2deg); }
-            50% { transform: translateY(-6px) rotate(-1.5deg); }
-            100% { transform: translateY(0px) rotate(-2deg); }
-        }
-        .animate-gentle-float {
-            animation: gentle-float 6s ease-in-out infinite;
-        }
-
-        /* Sticky Note styling */
-        .sticky-note {
-            background-color: #fcf6f0; /* Soft warm parchment */
-            border: 1px solid #f2e3d5;
-            box-shadow: 2px 8px 20px rgba(74, 37, 23, 0.06), 0 1px 3px rgba(74, 37, 23, 0.04);
-            position: relative;
-        }
-        
-        /* Masking/Washi tape effect */
-        .sticky-note::before {
-            content: '';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%) rotate(-2deg);
-            width: 90px;
-            height: 25px;
-            background-color: rgba(245, 211, 179, 0.5); /* translucent warm tape */
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 1px 2px rgba(74, 37, 23, 0.05);
-            backdrop-filter: blur(4px);
-            z-index: 10;
-        }
-    </style>
 </head>
 <body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
 
@@ -107,7 +57,7 @@
                 
                 <!-- Desktop Navigation Links -->
                 <ul class="hidden md:flex gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl font-medium text-sm text-warm-700 shadow-sm border border-warm-100">
-                    <li><a href="#about" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
+                    <li><a href="about.html" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
                     <li><a href="#work" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Work</a></li>
                     <li><a href="#writing" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Writing</a></li>
                     <li><a href="#life" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Life</a></li>
