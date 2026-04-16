@@ -11,7 +11,7 @@ body {
 
 /* ── HOME PAGE: Hero background ── */
 .hero-bg {
-    background-image: url('https://i.imgur.com/F84s0sb.jpeg');
+    background-image: url('Cover Image.png');
     background-size: cover;
     background-position: center bottom;
 }
