@@ -1,0 +1,16 @@
+/* ── HOME PAGE STYLES ── */
+
+.hero-bg {
+    background-image: url('assets/Cover Image.jpg');
+    background-size: cover;
+    background-position: center bottom;
+}
+
+@keyframes gentle-float {
+    0%   { transform: translateY(0px)  rotate(-2deg); }
+    50%  { transform: translateY(-6px) rotate(-1.5deg); }
+    100% { transform: translateY(0px)  rotate(-2deg); }
+}
+.animate-gentle-float {
+    animation: gentle-float 6s ease-in-out infinite;
+}

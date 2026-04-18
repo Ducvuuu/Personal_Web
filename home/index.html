@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vu Trong Duc Anh — Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="home.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7',
+                            100: '#fdf5eb',
+                            200: '#fbe8d4',
+                            300: '#f5d3b3',
+                            400: '#ebad7a',
+                            500: '#e38847',
+                            600: '#d56a31',
+                            700: '#b15129',
+                            800: '#8f4228',
+                            900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
+
+    <!-- Main Container -->
+    <main class="w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
+
+        <!-- Hero Section -->
+        <section class="relative h-[550px] md:h-[650px] w-full hero-bg">
+            <div class="absolute inset-0 bg-warm-900/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-warm-50 via-warm-50/10 to-transparent"></div>
+
+            <!-- Navigation Header -->
+            <nav class="absolute top-6 left-6 right-6 md:left-10 md:right-10 flex justify-between items-center z-20">
+                <div class="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-100 hover:bg-white transition-colors cursor-pointer flex items-center gap-2">
+                    <span class="text-orange-500">~</span> <span class="text-warm-400">/</span> home
+                </div>
+
+                <ul class="hidden md:flex gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl font-medium text-sm text-warm-700 shadow-sm border border-warm-100">
+                    <li><a href="../about/" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
+                    <li><a href="#work" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Work</a></li>
+                    <li><a href="#writing" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Writing</a></li>
+                    <li><a href="#life" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Life</a></li>
+                </ul>
+
+                <button class="md:hidden bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm text-warm-900 border border-warm-100">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </nav>
+
+            <!-- Tilted Welcome Card -->
+            <div class="absolute top-24 right-6 md:top-28 md:right-12 z-20 flex flex-col items-end gap-4">
+                <div class="bg-warm-50/95 backdrop-blur-md rounded-[1.5rem] p-6 md:p-8 shadow-xl shadow-warm-900/20 border border-warm-200 animate-gentle-float origin-top-right text-right">
+                    <h1 class="font-heavy text-5xl md:text-7xl leading-[0.9] tracking-tighter text-warm-900">
+                        WELCOME<br>HOME.
+                    </h1>
+                </div>
+                <div class="max-w-xs transform rotate-2">
+                    <p class="font-handwriting text-3xl md:text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-tight text-right">
+                        This one's mine. But you're welcome here too.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tiny Label -->
+            <div class="absolute bottom-6 left-6 md:left-10 z-20">
+                <span class="font-mono text-xs font-bold text-warm-800 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm">
+                    Jakarta &middot; <span id="current-year">2026</span>
+                </span>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="relative bg-warm-50 px-8 py-20 md:px-16 border-b border-warm-200" id="about">
+            <span class="text-warm-500 font-mono text-xs uppercase tracking-widest mb-4 block">About this place</span>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
+                <!-- Left Column (Bio) -->
+                <div class="lg:col-span-7 flex flex-col gap-8">
+                    <div>
+                        <h2 class="font-heavy text-4xl md:text-5xl text-warm-900 mb-4">Vu Trong Duc Anh</h2>
+                        <p class="text-xl text-warm-600 font-medium leading-relaxed">
+                            Policy work, fiction writing, kinda good taste in music (mostly it's just Vietnamese Indie music these days), and a perpetual love/hate relationship with my own inner life.
+                        </p>
+                    </div>
+
+                    <div class="text-warm-800 leading-relaxed text-lg space-y-6">
+                        <p>
+                            Welcome to my little corner on the internet, I like to think of it as my little home on the vast world web wide as well 🙂. Somewhere to keep the things that matter to me, to write when I feel like writing, and to share a little of who I am with people who are curious.
+                        </p>
+                        <p>
+                            I'm Đức Anh. Vietnamese, <span id="auto-age">25</span> (maybe I should add a function to automatically update the age here lol), living in Jakarta. By day I work at the ASEAN Centre for Energy — policy research, data visualization, technical reports, so just meetings, report things. By night I'm writing fiction (once in a while :))), listening to Vietnamese Indie and doing nothing, wandering randomly on VR.... basically trying to make a "home" in a strange city that still doesn't feel like home after all this time.
+                        </p>
+                        <p>
+                            Actually if we take a moment to think of it, to be able to get my own place on the Internet, to be able to customise it, literally make it anything I want anyhow, chaotic, playful, …… and accessible to all of humanity just by typing some random address on your phone, is kinda an amazing thing to do.
+                        </p>
+                        <p>
+                            I think too deeply about most things. History, language, myth, traffic jam, sunlight piercing through the leaves, cats. I've mostly made peace with this. Mostly.
+                        </p>
+                        <p class="font-medium text-warm-900 italic">
+                            Come in, look around. Stay as long as you like.
+                        </p>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mt-4 space-y-6 border-t border-warm-200 pt-8">
+                        <div>
+                            <h4 class="font-mono text-xs text-warm-500 uppercase tracking-wider mb-3">At work</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Energy Policy</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">ASEAN</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Data Visualization</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Technical Writing</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm">Market Analysis</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm"><i class="fa-solid fa-video text-warm-500 mr-1"></i> Joining Meetings</span>
+                                <span class="bg-white border border-warm-200 text-warm-700 text-sm px-3 py-1 rounded-full shadow-sm"><i class="fa-regular fa-paper-plane text-warm-500 mr-1"></i> Sending Emails</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-mono text-xs text-warm-500 uppercase tracking-wider mb-3">Everywhere else</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Vietnamese Indie Music</span>
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Grand Strategy</span>
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Fiction Writing</span>
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Slow Cooking</span>
+                                <span class="bg-warm-100 text-warm-800 text-sm px-3 py-1 rounded-full">Overthinking</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Avatar & Sticky Notes) -->
+                <div class="lg:col-span-5 flex flex-col items-center lg:items-end gap-12 lg:pt-2">
+
+                    <!-- Avatar & Caption -->
+                    <div class="flex flex-col items-center max-w-sm w-full mt-4 lg:mt-0">
+                        <div class="w-56 h-56 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-white shadow-xl shadow-warm-900/10 relative group bg-warm-200">
+                            <img src="assets/Avatar.png" alt="Novel Character Avatar" class="w-full h-full object-cover object-[75%_center] group-hover:scale-105 transition-transform duration-700">
+                        </div>
+                        <div class="mt-5 transform -rotate-2 text-center px-2">
+                            <p class="font-handwriting text-2xl text-warm-700 leading-snug">
+                                * Not actually me, just a character I created for a never-finish novel.
+                            </p>
+                            <p class="font-handwriting text-xl text-warm-500 leading-snug mt-2">
+                                (tho I do wish I looked like this :))) but if you do think I look like this, I'm flattered and will be very happy if you let me know that!)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Sticky Note -->
+                    <div class="sticky-note p-8 rounded-lg max-w-sm w-full transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                        <h4 class="font-handwriting text-3xl text-warm-900 mb-5 border-b-2 border-dashed border-warm-200 pb-3 text-center relative z-20">Quick facts</h4>
+                        <ul class="space-y-5 text-warm-900 font-medium relative z-20">
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-location-dot text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>From Hanoi &middot; Living in Jakarta</span>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-building text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>Project Manager, ASEAN Centre for Energy</span>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-seedling text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>Programme Manager, YUSEA 2026–2027</span>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-mug-hot text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>Matcha every morning, no exceptions</span>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <i class="fa-solid fa-book-journal-whills text-warm-500 mt-1 w-5 text-center"></i>
+                                <span>I love history, Politics, Philosophy (not all, but some), Sci-fi</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Work Section -->
+        <section id="work" class="bg-white px-8 py-20 md:px-16 border-b border-warm-200">
+            <div class="mb-16">
+                <div class="mb-10 text-center">
+                    <h2 class="font-heavy text-4xl text-warm-900 inline-block mr-4">Work</h2>
+                    <span class="font-handwriting text-2xl md:text-3xl text-warm-500 inline-block transform -rotate-1">What drives me to work from 9 to 6, and sometimes after</span>
+                </div>
+
+                <!-- Playful "Meaning" Box -->
+                <div class="relative bg-warm-50 p-8 md:p-10 rounded-[2rem] border border-warm-200 shadow-sm mt-10">
+                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 rotate-1 z-10 hover:rotate-3 transition-transform whitespace-nowrap">
+                        <span class="font-handwriting text-5xl md:text-6xl text-orange-600 bg-[#fef08a] px-5 py-2 rounded-xl border-2 border-dashed border-orange-400 shadow-md inline-block">Meaninggg ✨</span>
+                    </div>
+
+                    <div class="space-y-6 text-warm-800 text-lg leading-relaxed mt-4 text-left">
+                        <p>
+                            I guess that's the most concise way to describe what drives me? <span class="text-warm-500 text-base italic">(*Trying so hard not to make the AI write this for me :)))) sooo lazy to write, but I guess if this is my "home", then it should be my voice to inhabit the place :))))))</span>
+                        </p>
+                        <p>
+                            Nah just kidding, I'm lazy already, so borrow the word of my dear friend Claude AI (which knows me more than my own mother at this point lol): <strong class="text-warm-900 bg-orange-100 px-2 py-0.5 rounded">"I work in energy policy because I care about this region, and I care about making its complexity legible to the people who need to act on it."</strong>
+                        </p>
+                        <p>
+                            Well, it's true actually, I care deeply about this region, since places that I called "home" are there, people I care about lives here, or I just love humans overall?
+                        </p>
+
+                        <div class="border-l-4 border-orange-300 pl-6 py-4 my-6 bg-white rounded-r-xl shadow-sm">
+                            <p class="font-medium text-warm-900 italic">
+                                Borrow another quote from my Claude friend: "You're not someone who finds joy in energy policy as a discipline <span class="text-warm-500 not-italic">(Well, I do, but not that much ;)))</span>. But you do care about Southeast Asia, and you care about things being communicated honestly and well. The work is the vehicle for that."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Writing Section -->
+        <section id="writing" class="bg-warm-100 px-8 py-20 md:px-16 border-b border-warm-200 relative overflow-hidden">
+            <div class="absolute -right-20 top-20 w-96 h-96 bg-warm-200 rounded-full mix-blend-multiply opacity-30 blur-3xl"></div>
+
+            <div class="mb-12 relative z-10">
+                <h2 class="font-heavy text-4xl text-warm-900 inline-block mr-4">Writing</h2>
+                <span class="font-handwriting text-3xl text-warm-600 inline-block transform rotate-1">The other home</span>
+                <p class="mt-6 text-warm-800 text-lg leading-relaxed">
+                    I write fiction sometimes, mostly for myself since they are too cringe lol — though I'm learning to share it by embracing the cringe-ness. It sits at the intersection of myth, geopolitics, and the feelings I can't put anywhere else, or feelings that simply haven't got words to describe, haven't been named.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+                <!-- Card 1 -->
+                <div class="group bg-white rounded-[1.5rem] p-8 border border-warm-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="font-mono text-[10px] text-warm-500 uppercase tracking-widest border border-warm-200 px-2 py-1 rounded">Prose &middot; Mythology</span>
+                        <i class="fa-solid fa-book-open text-warm-300 text-xl"></i>
+                    </div>
+                    <h3 class="font-heavy text-2xl text-warm-900 mb-4 leading-tight">The Third Arch</h3>
+                    <p class="text-warm-700 text-sm leading-relaxed flex-1 mb-8">
+                        A mythological prose triptych — three movements, one story, the Artemis myth refracted through something that actually happened. Written the way you write things you can't write any other way.
+                    </p>
+                    <a href="#" class="font-mono text-sm font-bold text-orange-600 hover:text-orange-800 transition-colors inline-flex items-center gap-2">
+                        Read <i class="fa-solid fa-arrow-right-long"></i>
+                    </a>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="group bg-white rounded-[1.5rem] p-8 border border-warm-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col relative overflow-hidden">
+                    <div class="absolute -right-8 top-6 bg-warm-200 text-warm-800 font-mono text-[9px] font-bold uppercase tracking-widest px-10 py-1 transform rotate-45">In Progress</div>
+
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="font-mono text-[10px] text-warm-500 uppercase tracking-widest border border-warm-200 px-2 py-1 rounded">Novel</span>
+                    </div>
+                    <h3 class="font-heavy text-2xl text-warm-900 mb-4 leading-tight">The Spratly Gambit</h3>
+                    <p class="text-warm-700 text-sm leading-relaxed flex-1 mb-8">
+                        A geopolitical thriller following Nguyên, a Vietnamese junior diplomat in a South China Sea crisis. Part political fiction, part love letter to Southeast Asia. Still being written, probably always will be.
+                    </p>
+                    <span class="font-mono text-sm text-warm-400">
+                        Coming soon
+                    </span>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="group bg-white rounded-[1.5rem] p-8 border border-warm-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="font-mono text-[10px] text-warm-500 uppercase tracking-widest border border-warm-200 px-2 py-1 rounded">Essay &middot; Personal</span>
+                        <i class="fa-solid fa-pen-nib text-warm-300 text-xl"></i>
+                    </div>
+                    <h3 class="font-heavy text-2xl text-warm-900 mb-4 leading-tight">Random Notes on Random Things</h3>
+                    <p class="text-warm-700 text-sm leading-relaxed flex-1 mb-8">
+                        Fleeting feelings I have: the city lights falling behind from a taxi window, the realization of airports as a kind of civilizational intersection, feeling homesick, lonely, civilizational grief...
+                    </p>
+                    <span class="font-mono text-sm text-warm-400">
+                        Coming soon
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Life Section / Gallery -->
+        <section id="life" class="bg-warm-50 px-8 py-20 md:px-16 border-b border-warm-200">
+            <div class="mb-14">
+                <h2 class="font-heavy text-4xl text-warm-900 mb-2">Life</h2>
+                <span class="font-handwriting text-3xl text-warm-500 inline-block transform -rotate-1">Disorganized stuff that doesn't really fit anywhere</span>
+                <p class="mt-6 text-warm-700 text-lg leading-relaxed">
+                    This is the part of the site where I just dumping random things here lol :)) Slices of my ordinary life through some pictures, like a gallery. Feel free to come and see!! <span class="font-handwriting text-2xl md:text-3xl text-orange-600 bg-[#fef08a] px-3 py-1 rounded-xl border-2 border-dashed border-orange-400 inline-block transform -rotate-2 ml-2 shadow-sm whitespace-nowrap">(Psss It's clickable!!!)</span>
+                </p>
+            </div>
+
+            <div class="relative pt-6">
+                <!-- Masonry Gallery Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 grid-flow-dense rounded-[2rem] overflow-hidden shadow-md border border-warm-200 relative z-10">
+
+                    <!-- Image 1: Tall (1x2) -->
+                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('assets/masonry1.jpg', 'Morning matcha. The only way I survive the 9 to 6.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry1.jpg" alt="Matcha" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 2: Square (1x1) -->
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('assets/masonry9.jpg', 'Sunday ritual: making Phở from scratch to cure the homesickness.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry9.jpg" alt="Cooking Pho" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 3: Wide (2x1) -->
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('assets/masonry4.jpg', 'Learning piano... very slowly. Patience is hard.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry4.jpg" alt="Piano" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 4: Square (1x1) -->
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('assets/masonry10.jpg', 'Jakarta traffic. Sometimes I just zone out and listen to indie music here.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry10.jpg" alt="Jakarta streets" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 5: Large Square (2x2) -->
+                    <div class="col-span-2 row-span-2 aspect-square overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('assets/masonry6.jpg', 'Late night audio therapy. Sometimes you just need to turn it all the way up.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry6.jpg" alt="Audio setup" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 6: Wide (2x1) -->
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-700" onclick="openStory('assets/masonry11.jpg', 'Where the fiction happens. Very messy, very necessary.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry11.jpg" alt="Writing desk" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 7: Square (1x1) -->
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('assets/masonry5.jpg', 'Met this guy on a walk. We had a deep philosophical conversation.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry5.jpg" alt="Cat" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 8: Tall (1x2) -->
+                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('assets/masonry3.jpg', 'Another bookstore, another book I promised myself I wouldn\'t buy until I finished the last one.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry3.jpg" alt="Bookstore" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 9: Wide (2x1) -->
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('assets/masonry2.jpg', 'The view from up here always makes things feel a little less overwhelming.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry2.jpg" alt="City view" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 10: Square (1x1) -->
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('assets/masonry7.jpg', 'Random scribbles. Trying to figure out the plot hole in chapter 4.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry7.jpg" alt="Journaling" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Image 11: Wide (2x1) -->
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('assets/masonry8.jpg', 'Live music. The only place where it is perfectly acceptable to feel everything all at once.')">
+                        <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
+                            <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                        </div>
+                        <img src="assets/masonry8.jpg" alt="Concert" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div id="site-footer"></div>
+    </main>
+
+    <!-- Story Modal Overlay -->
+    <div id="story-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 px-4">
+        <button onclick="closeStory()" class="absolute top-6 right-6 md:top-10 md:right-10 text-warm-300 hover:text-white transition-colors text-4xl p-2 z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div id="story-content" class="w-full max-w-3xl transform scale-95 transition-transform duration-500 flex flex-col items-center mt-10 md:mt-0">
+            <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl border-4 border-warm-50 mb-6">
+                <img id="modal-img" src="" alt="Story image" class="w-full h-auto max-h-[60vh] object-contain bg-black">
+            </div>
+            <p id="modal-caption" class="font-handwriting text-2xl md:text-3xl text-warm-50 text-center drop-shadow-lg leading-relaxed max-w-2xl px-4"></p>
+        </div>
+    </div>
+
+    <script src="../shared/components.js"></script>
+    <script src="home.js"></script>
+</body>
+</html>
