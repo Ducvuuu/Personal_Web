@@ -6,8 +6,9 @@
     <title>Vu Trong Duc Anh — Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for standard icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="home.css">
 
     <script>
         tailwind.config = {
@@ -34,57 +35,6 @@
             }
         }
     </script>
-
-    <style>
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #eaddd7;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d1bfae' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        .font-handwriting { font-family: 'Caveat', cursive; }
-        .font-heavy { font-family: 'Poppins', sans-serif; }
-
-        .hero-bg {
-            background-image: url('Cover Image.jpg');
-            background-size: cover;
-            background-position: center bottom;
-        }
-
-        /* Gentle Floating Animation */
-        @keyframes gentle-float {
-            0% { transform: translateY(0px) rotate(-2deg); }
-            50% { transform: translateY(-6px) rotate(-1.5deg); }
-            100% { transform: translateY(0px) rotate(-2deg); }
-        }
-        .animate-gentle-float {
-            animation: gentle-float 6s ease-in-out infinite;
-        }
-
-        /* Sticky Note styling */
-        .sticky-note {
-            background-color: #fcf6f0;
-            border: 1px solid #f2e3d5;
-            box-shadow: 2px 8px 20px rgba(74, 37, 23, 0.06), 0 1px 3px rgba(74, 37, 23, 0.04);
-            position: relative;
-        }
-
-        /* Masking/Washi tape effect */
-        .sticky-note::before {
-            content: '';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%) rotate(-2deg);
-            width: 90px;
-            height: 25px;
-            background-color: rgba(245, 211, 179, 0.5);
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 1px 2px rgba(74, 37, 23, 0.05);
-            backdrop-filter: blur(4px);
-            z-index: 10;
-        }
-    </style>
 </head>
 <body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
 
@@ -103,7 +53,7 @@
                 </div>
 
                 <ul class="hidden md:flex gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl font-medium text-sm text-warm-700 shadow-sm border border-warm-100">
-                    <li><a href="about.html" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
+                    <li><a href="../about/" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
                     <li><a href="#work" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Work</a></li>
                     <li><a href="#writing" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Writing</a></li>
                     <li><a href="#life" class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Life</a></li>
@@ -201,7 +151,7 @@
                     <!-- Avatar & Caption -->
                     <div class="flex flex-col items-center max-w-sm w-full mt-4 lg:mt-0">
                         <div class="w-56 h-56 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-white shadow-xl shadow-warm-900/10 relative group bg-warm-200">
-                            <img src="Avatar.png" alt="Novel Character Avatar" class="w-full h-full object-cover object-[75%_center] group-hover:scale-105 transition-transform duration-700">
+                            <img src="assets/Avatar.png" alt="Novel Character Avatar" class="w-full h-full object-cover object-[75%_center] group-hover:scale-105 transition-transform duration-700">
                         </div>
                         <div class="mt-5 transform -rotate-2 text-center px-2">
                             <p class="font-handwriting text-2xl text-warm-700 leading-snug">
@@ -354,91 +304,91 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 grid-flow-dense rounded-[2rem] overflow-hidden shadow-md border border-warm-200 relative z-10">
 
                     <!-- Image 1: Tall (1x2) -->
-                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('masonry1.jpg', 'Morning matcha. The only way I survive the 9 to 6.')">
+                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('assets/masonry1.jpg', 'Morning matcha. The only way I survive the 9 to 6.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry1.jpg" alt="Matcha" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry1.jpg" alt="Matcha" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 2: Square (1x1) -->
-                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('masonry9.jpg', 'Sunday ritual: making Phở from scratch to cure the homesickness.')">
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('assets/masonry9.jpg', 'Sunday ritual: making Phở from scratch to cure the homesickness.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry9.jpg" alt="Cooking Pho" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry9.jpg" alt="Cooking Pho" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 3: Wide (2x1) -->
-                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('masonry4.jpg', 'Learning piano... very slowly. Patience is hard.')">
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('assets/masonry4.jpg', 'Learning piano... very slowly. Patience is hard.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry4.jpg" alt="Piano" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry4.jpg" alt="Piano" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 4: Square (1x1) -->
-                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('masonry10.jpg', 'Jakarta traffic. Sometimes I just zone out and listen to indie music here.')">
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('assets/masonry10.jpg', 'Jakarta traffic. Sometimes I just zone out and listen to indie music here.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry10.jpg" alt="Jakarta streets" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry10.jpg" alt="Jakarta streets" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 5: Large Square (2x2) -->
-                    <div class="col-span-2 row-span-2 aspect-square overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('masonry6.jpg', 'Late night audio therapy. Sometimes you just need to turn it all the way up.')">
+                    <div class="col-span-2 row-span-2 aspect-square overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('assets/masonry6.jpg', 'Late night audio therapy. Sometimes you just need to turn it all the way up.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry6.jpg" alt="Audio setup" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry6.jpg" alt="Audio setup" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 6: Wide (2x1) -->
-                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-700" onclick="openStory('masonry11.jpg', 'Where the fiction happens. Very messy, very necessary.')">
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-700" onclick="openStory('assets/masonry11.jpg', 'Where the fiction happens. Very messy, very necessary.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry11.jpg" alt="Writing desk" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry11.jpg" alt="Writing desk" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 7: Square (1x1) -->
-                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('masonry5.jpg', 'Met this guy on a walk. We had a deep philosophical conversation.')">
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-200" onclick="openStory('assets/masonry5.jpg', 'Met this guy on a walk. We had a deep philosophical conversation.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry5.jpg" alt="Cat" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry5.jpg" alt="Cat" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 8: Tall (1x2) -->
-                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('masonry3.jpg', 'Another bookstore, another book I promised myself I wouldn\'t buy until I finished the last one.')">
+                    <div class="col-span-1 row-span-2 aspect-[1/2] overflow-hidden cursor-pointer group relative bg-warm-300" onclick="openStory('assets/masonry3.jpg', 'Another bookstore, another book I promised myself I wouldn\'t buy until I finished the last one.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry3.jpg" alt="Bookstore" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry3.jpg" alt="Bookstore" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 9: Wide (2x1) -->
-                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('masonry2.jpg', 'The view from up here always makes things feel a little less overwhelming.')">
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-400" onclick="openStory('assets/masonry2.jpg', 'The view from up here always makes things feel a little less overwhelming.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry2.jpg" alt="City view" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry2.jpg" alt="City view" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 10: Square (1x1) -->
-                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('masonry7.jpg', 'Random scribbles. Trying to figure out the plot hole in chapter 4.')">
+                    <div class="col-span-1 row-span-1 aspect-square overflow-hidden cursor-pointer group relative bg-warm-500" onclick="openStory('assets/masonry7.jpg', 'Random scribbles. Trying to figure out the plot hole in chapter 4.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry7.jpg" alt="Journaling" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry7.jpg" alt="Journaling" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                     <!-- Image 11: Wide (2x1) -->
-                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('masonry8.jpg', 'Live music. The only place where it is perfectly acceptable to feel everything all at once.')">
+                    <div class="col-span-2 row-span-1 aspect-[2/1] overflow-hidden cursor-pointer group relative bg-warm-600" onclick="openStory('assets/masonry8.jpg', 'Live music. The only place where it is perfectly acceptable to feel everything all at once.')">
                         <div class="absolute inset-0 bg-warm-900/0 group-hover:bg-warm-900/30 transition-colors duration-300 z-10 flex items-center justify-center">
                             <i class="fa-solid fa-expand text-white opacity-0 group-hover:opacity-100 text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
                         </div>
-                        <img src="masonry8.jpg" alt="Concert" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                        <img src="assets/masonry8.jpg" alt="Concert" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
                     </div>
 
                 </div>
@@ -462,7 +412,7 @@
         </div>
     </div>
 
-    <script src="components.js"></script>
-    <script src="main.js"></script>
+    <script src="../shared/components.js"></script>
+    <script src="home.js"></script>
 </body>
 </html>

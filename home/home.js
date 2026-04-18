@@ -1,19 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Auto-age
     const birthYear = 2001;
     const currentYear = new Date().getFullYear();
+
     const ageEl = document.getElementById('auto-age');
     if (ageEl) ageEl.innerText = currentYear - birthYear;
 
-    // Hero year label (index only)
     const heroYearEl = document.getElementById('current-year');
     if (heroYearEl) heroYearEl.innerText = currentYear;
 
-    // Story modal (index only)
     const modal = document.getElementById('story-modal');
     if (!modal) return;
 
-    const modalImg = document.getElementById('modal-img');
+    const modalImg     = document.getElementById('modal-img');
     const modalCaption = document.getElementById('modal-caption');
     const storyContent = document.getElementById('story-content');
 

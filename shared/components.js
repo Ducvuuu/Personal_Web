@@ -1,17 +1,20 @@
 (function () {
     const currentYear = new Date().getFullYear();
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+    // Detect which page we're on by folder name in the path
+    const pathname = window.location.pathname;
+    const currentSection = pathname.includes('/about') ? 'about' : 'home';
 
     const navLinks = [
-        { href: 'about.html',         label: 'About',   key: 'about.html' },
-        { href: 'index.html#work',    label: 'Work',    key: 'work' },
-        { href: 'index.html#writing', label: 'Writing', key: 'writing' },
-        { href: 'index.html#life',    label: 'Life',    key: 'life' },
+        { href: '../about/',         label: 'About',   key: 'about' },
+        { href: '../home/#work',     label: 'Work',    key: 'work' },
+        { href: '../home/#writing',  label: 'Writing', key: 'writing' },
+        { href: '../home/#life',     label: 'Life',    key: 'life' },
     ];
 
     function navHTML() {
         const links = navLinks.map(({ href, label, key }) => {
-            const active = currentPage === key;
+            const active = currentSection === key;
             const cls = active
                 ? 'px-4 py-2 rounded-lg bg-warm-200 text-warm-900 transition-colors'
                 : 'px-4 py-2 rounded-lg hover:bg-warm-100 transition-colors';
@@ -20,7 +23,7 @@
 
         return `
         <nav class="flex justify-between items-center z-20 p-6 md:px-10 md:py-8 border-b border-warm-200 bg-white/50">
-            <a href="index.html" class="bg-white px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-warm-50 transition-colors cursor-pointer flex items-center gap-2">
+            <a href="../home/" class="bg-white px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-warm-50 transition-colors cursor-pointer flex items-center gap-2">
                 <span class="text-orange-500">~</span><span class="text-warm-400">/</span>home
             </a>
             <ul class="hidden md:flex gap-2 font-medium text-sm text-warm-700">${links}</ul>
