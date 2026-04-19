@@ -59,26 +59,13 @@
     <!-- Main Container -->
     <main class="w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
 
-        <!-- Hero with nav overlaid on cover image -->
-        <div class="relative w-full overflow-hidden" style="height: 560px;">
-            <img src="assets/cover-window.jpg" alt="Writer's window at night" class="w-full h-full object-cover object-center">
-            <div class="absolute inset-x-0 bottom-0 h-40" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
+        <!-- Navigation (injected by components.js) -->
+        <div id="site-nav"></div>
 
-            <!-- Navigation Header -->
-            <nav class="absolute top-6 left-6 right-6 md:left-10 md:right-10 flex justify-between items-center z-20">
-                <a href="../home/" class="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-100 hover:bg-white transition-colors cursor-pointer flex items-center gap-2">
-                    <span class="text-orange-500">~</span> <span class="text-warm-400">/</span> home
-                </a>
-                <ul class="hidden md:flex gap-2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-xl font-medium text-sm text-warm-700 shadow-sm border border-warm-100">
-                    <li><a href="../about/"     class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">About</a></li>
-                    <li><a href="../home/#work"  class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Work</a></li>
-                    <li><a href="../writing/"    class="px-4 py-1.5 rounded-lg bg-warm-200 text-warm-900 transition-colors">Writing</a></li>
-                    <li><a href="../home/#life"  class="px-4 py-1.5 rounded-lg hover:bg-warm-100 transition-colors">Life</a></li>
-                </ul>
-                <button class="md:hidden bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-sm text-warm-900 border border-warm-100">
-                    <i class="fa-solid fa-bars text-lg"></i>
-                </button>
-            </nav>
+        <!-- Full Bleed Cover Image -->
+        <div class="relative w-full overflow-hidden" style="height: 480px;">
+            <img src="assets/cover-window.jpg" alt="Writer's window at night" class="w-full h-full object-cover object-center">
+            <div class="absolute inset-x-0 bottom-0 h-32" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
         </div>
 
         <!-- Main Content Area -->
