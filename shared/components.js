@@ -15,6 +15,8 @@
     ];
 
     function navHTML() {
+        const isHome = currentSection === 'home';
+
         const links = navLinks.map(({ href, label, key }) => {
             const active = currentSection === key;
             const cls = active
@@ -23,12 +25,16 @@
             return `<li><a href="${href}" class="${cls}">${label}</a></li>`;
         }).join('');
 
+        const navClass = isHome
+            ? 'absolute top-0 left-0 right-0 z-30 flex justify-between items-center p-6 md:px-10 md:py-8'
+            : 'flex justify-between items-center z-20 p-6 md:px-10 md:py-8 border-b border-warm-200 bg-white/50';
+
         return `
-        <nav class="flex justify-between items-center z-20 p-6 md:px-10 md:py-8 border-b border-warm-200 bg-white/50">
+        <nav class="${navClass}">
             <a href="../home/" class="bg-white px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-warm-50 transition-colors cursor-pointer flex items-center gap-2">
                 <span class="text-orange-500">~</span><span class="text-warm-400">/</span>home
             </a>
-            <ul class="hidden md:flex gap-2 font-medium text-sm text-warm-700">${links}</ul>
+            <ul class="hidden md:flex gap-2 font-medium text-sm text-warm-700 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-warm-200 shadow-sm">${links}</ul>
             <button class="md:hidden bg-white px-4 py-2.5 rounded-xl shadow-sm text-warm-900 border border-warm-200">
                 <i class="fa-solid fa-bars text-lg"></i>
             </button>
