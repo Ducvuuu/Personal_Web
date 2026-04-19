@@ -15,8 +15,6 @@
     ];
 
     function navHTML() {
-        const isHome = currentSection === 'home';
-
         const links = navLinks.map(({ href, label, key }) => {
             const active = currentSection === key;
             const cls = active
@@ -25,9 +23,7 @@
             return `<li><a href="${href}" class="${cls}">${label}</a></li>`;
         }).join('');
 
-        const navClass = isHome
-            ? 'absolute top-0 left-0 right-0 z-30 flex justify-between items-center p-6 md:px-10 md:py-8'
-            : 'flex justify-between items-center z-20 p-6 md:px-10 md:py-8 border-b border-warm-200 bg-white/50';
+        const navClass = 'absolute top-0 left-0 right-0 z-30 flex justify-between items-center p-6 md:px-10 md:py-8';
 
         return `
         <nav class="${navClass}">
