@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing — Vu Trong Duc Anh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="writing.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7',
+                            100: '#fdf5eb',
+                            200: '#fbe8d4',
+                            300: '#f5d3b3',
+                            400: '#ebad7a',
+                            500: '#e38847',
+                            600: '#d56a31',
+                            700: '#b15129',
+                            800: '#8f4228',
+                            900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        handwriting: ['"Caveat"', 'cursive']
+                    },
+                    fontWeight: {
+                        heavy: '900',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #eaddd7;
+            background-image: url('assets/bg-starmap.jpg');
+        }
+
+        @keyframes run-across-screen {
+            0%   { left: -15%; }
+            100% { left: 110%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
+
+    <!-- Main Container -->
+    <main class="w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
+
+        <!-- Navigation (injected by components.js) -->
+        <div id="site-nav"></div>
+
+        <!-- Full Bleed Cover Image -->
+        <div class="relative w-full overflow-hidden" style="height: 480px;">
+            <img src="assets/cover-window.jpg" alt="Writer's window at night" class="w-full h-full object-cover object-center">
+            <div class="absolute inset-x-0 bottom-0 h-32" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="px-6 pb-16 md:px-20 md:pb-20 max-w-6xl mx-auto -mt-24 relative z-10">
+
+            <!-- Header section -->
+            <header class="mb-20">
+                <!-- Corgi Running Track -->
+                <div class="relative w-full h-24 md:h-32 mb-2 overflow-visible">
+                    <img src="assets/corgi_transparent.webp" alt="Running Corgi" class="absolute bottom-0 w-24 md:w-32 object-contain drop-shadow-sm z-10" style="animation: run-across-screen 12s linear infinite;" />
+                </div>
+
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                    <div>
+                        <h1 class="font-heavy text-5xl md:text-7xl text-warm-900 mb-2">Writing</h1>
+                        <span class="font-handwriting text-3xl md:text-4xl text-warm-500 inline-block transform -rotate-1">The other home</span>
+                    </div>
+                </div>
+
+                <p class="text-warm-800 text-lg leading-relaxed max-w-2xl border-l-4 border-warm-300 pl-6 py-2">
+                    I write fiction sometimes, mostly for myself since they are too cringe lol — though I'm learning to share it by embracing the cringe-ness. It sits at the intersection of myth, geopolitics, and the feelings I can't put anywhere else, or feelings that simply haven't got words to describe, haven't been named.
+                </p>
+            </header>
+
+            <!-- SECTION 1: The Desk (Active Files) -->
+            <section class="mb-24 relative">
+                <div class="flex items-center gap-4 mb-12">
+                    <h2 class="font-heavy text-2xl text-warm-900 flex items-center gap-3">
+                        <i class="fa-solid fa-folder-open text-warm-400"></i> The Desk <span class="text-warm-400 font-normal text-lg font-mono">/ active_files</span>
+                    </h2>
+                    <div class="h-px bg-warm-200 flex-1 mt-1"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 px-2">
+
+                    <!-- Folder 1: The Spratly Gambit -->
+                    <a href="#" class="block group mt-8">
+                        <div class="relative transition-all duration-300 transform group-hover:-translate-y-2 group-hover:drop-shadow-xl h-full flex flex-col">
+                            <!-- Manila Tab -->
+                            <div class="absolute -top-7 left-0 bg-warm-200 border border-b-0 border-warm-300 rounded-t-xl px-6 py-1.5 text-xs font-mono text-warm-800 font-bold tracking-widest z-0 shadow-[inset_0_-4px_4px_rgba(0,0,0,0.02)] transition-colors group-hover:bg-warm-300">
+                                FILE_01 // WIP
+                            </div>
+
+                            <!-- Folder Body -->
+                            <div class="bg-warm-100 border border-warm-300 rounded-2xl rounded-tl-none p-3 relative z-10 shadow-md h-full flex flex-col group-hover:bg-[#f8eedf] transition-colors">
+                                <!-- Cover Image -->
+                                <div class="w-full h-48 sm:h-64 rounded-xl overflow-hidden mb-6 relative border border-warm-200 shadow-sm">
+                                    <div class="absolute inset-0 bg-warm-900/10 group-hover:bg-transparent transition-colors z-10"></div>
+                                    <img src="https://images.unsplash.com/photo-1596395819057-cb37832861e6?q=80&w=1000" alt="The Spratly Gambit Cover" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                </div>
+
+                                <div class="px-5 pb-5 flex-1 flex flex-col">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h3 class="font-heavy text-3xl text-warm-900 group-hover:text-orange-600 transition-colors">The Spratly Gambit</h3>
+                                        <i class="fa-solid fa-arrow-right text-warm-300 group-hover:text-orange-500 transition-colors transform group-hover:translate-x-1 mt-2"></i>
+                                    </div>
+                                    <p class="text-warm-700 text-base leading-relaxed mb-6 flex-1">
+                                        A geopolitical thriller set in near-future Southeast Asia. A Vietnamese junior diplomat navigates a crisis over rare earth minerals in disputed waters. Part political fiction, part love letter to the region.
+                                    </p>
+                                    <div class="flex gap-2 border-t border-warm-200 pt-5">
+                                        <span class="font-mono text-xs text-warm-500 uppercase tracking-widest">Geopolitics &middot; Thriller</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Folder 2: The Third Arch -->
+                    <a href="#" class="block group mt-8 md:mt-12">
+                        <div class="relative transition-all duration-300 transform group-hover:-translate-y-2 group-hover:drop-shadow-xl h-full flex flex-col">
+                            <!-- Manila Tab -->
+                            <div class="absolute -top-7 right-6 bg-[#d1e5e0] border border-b-0 border-[#b5cec7] rounded-t-xl px-6 py-1.5 text-xs font-mono text-teal-800 font-bold tracking-widest z-0 shadow-[inset_0_-4px_4px_rgba(0,0,0,0.02)] transition-colors group-hover:bg-[#c1dbd5]">
+                                FILE_02 // DRAFTED
+                            </div>
+
+                            <!-- Folder Body -->
+                            <div class="bg-[#eef5f3] border border-[#b5cec7] rounded-2xl rounded-tr-none p-3 relative z-10 shadow-md h-full flex flex-col group-hover:bg-[#e4efec] transition-colors">
+                                <!-- Cover Image -->
+                                <div class="w-full h-48 sm:h-64 rounded-xl overflow-hidden mb-6 relative border border-[#b5cec7] shadow-sm">
+                                    <div class="absolute inset-0 bg-teal-900/10 group-hover:bg-transparent transition-colors z-10"></div>
+                                    <img src="https://images.unsplash.com/photo-1532767153582-b1a0e5145009?q=80&w=1000" alt="The Third Arch Cover" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
+                                </div>
+
+                                <div class="px-5 pb-5 flex-1 flex flex-col">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h3 class="font-heavy text-3xl text-warm-900 group-hover:text-teal-700 transition-colors">The Third Arch</h3>
+                                        <i class="fa-solid fa-arrow-right text-[#b5cec7] group-hover:text-teal-600 transition-colors transform group-hover:translate-x-1 mt-2"></i>
+                                    </div>
+                                    <p class="text-warm-700 text-base leading-relaxed mb-6 flex-1">
+                                        A prose triptych — three movements, one story. A myth rewritten from the inside, filtering the Artemis archetype through something that actually happened to me.
+                                    </p>
+                                    <div class="flex gap-2 border-t border-[#b5cec7]/40 pt-5">
+                                        <span class="font-mono text-xs text-teal-600/80 uppercase tracking-widest">Mythology &middot; Personal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- SECTION 2: The Drawer (Loose Papers) -->
+            <section class="relative">
+                <div class="flex items-center gap-4 mb-6 relative z-20">
+                    <h2 class="font-heavy text-2xl text-warm-900 flex items-center gap-3">
+                        <i class="fa-solid fa-box-open text-warm-400"></i> The Drawer <span class="text-warm-400 font-normal text-lg font-mono">/ loose_papers</span>
+                    </h2>
+                    <div class="h-px bg-warm-200 flex-1 mt-1"></div>
+                </div>
+
+                <div class="p-6 md:p-10 rounded-[2rem] shadow-[inset_0_10px_20px_rgba(74,37,23,0.15)] border border-warm-300 relative overflow-hidden" style="background-image: url('assets/bg-drawer.jpg'); background-size: cover; background-position: center;">
+
+                    <div class="absolute inset-0 bg-warm-50/50 rounded-[2rem] z-0"></div>
+                    <span class="font-handwriting text-2xl text-warm-600 absolute right-8 top-8 transform rotate-3 z-10 hidden md:block opacity-60">
+                        (the messy part of my brain, neatly boxed)
+                    </span>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 mt-12 md:mt-4">
+
+                        <!-- Card 1 -->
+                        <a href="#" class="bg-white rounded-[1.25rem] border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col overflow-hidden hover:-translate-y-1">
+                            <div class="h-48 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800" alt="Civilizational Grief" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col">
+                                <span class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-3 block">Oct 2025 &middot; Essay</span>
+                                <h3 class="font-heavy text-xl text-warm-900 mb-2 leading-tight group-hover:text-red-600 transition-colors">Civilizational Grief</h3>
+                                <p class="text-warm-700 text-sm leading-relaxed mb-4 flex-1">
+                                    Trying to put words to the specific kind of melancholy you feel when looking at the trajectory of things bigger than yourself.
+                                </p>
+                                <span class="text-warm-400 text-sm group-hover:text-red-600 font-medium font-mono uppercase text-xs tracking-wider">Read essay &rarr;</span>
+                            </div>
+                        </a>
+
+                        <!-- Card 2 -->
+                        <a href="#" class="bg-white rounded-[1.25rem] border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col overflow-hidden hover:-translate-y-1">
+                            <div class="h-48 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800" alt="Airport terminal" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col">
+                                <span class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-3 block">3:00 AM thoughts</span>
+                                <h3 class="font-heavy text-xl text-warm-900 mb-2 leading-tight group-hover:text-orange-600 transition-colors">Airports as Intersections</h3>
+                                <p class="text-warm-700 text-sm leading-relaxed mb-4 flex-1">
+                                    The realization of airports as a kind of civilizational intersection. Everyone is from everywhere, going everywhere, yet we're all just eating overpriced sandwiches in a liminal space.
+                                </p>
+                                <span class="text-warm-400 text-sm group-hover:text-orange-600 font-medium font-mono uppercase text-xs tracking-wider">Read note &rarr;</span>
+                            </div>
+                        </a>
+
+                        <!-- Card 3 -->
+                        <a href="#" class="bg-white rounded-[1.25rem] border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col overflow-hidden hover:-translate-y-1">
+                            <div class="h-48 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1542314831-c6a4d14eff4c?q=80&w=800" alt="Jakarta Night" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col">
+                                <span class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-3 block">Sep 2025 &middot; Note</span>
+                                <h3 class="font-heavy text-xl text-warm-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">City Lights Behind a Taxi Window</h3>
+                                <p class="text-warm-700 text-sm leading-relaxed mb-4 flex-1">
+                                    There is a very specific feeling of loneliness that only exists in the back of a Grab car at 11 PM in Jakarta. The city moves past you, completely indifferent.
+                                </p>
+                                <span class="text-warm-400 text-sm group-hover:text-blue-600 font-medium font-mono uppercase text-xs tracking-wider">Read note &rarr;</span>
+                            </div>
+                        </a>
+
+                        <!-- Card 4 -->
+                        <a href="#" class="bg-[#fdfcf6] rounded-[1.25rem] border border-warm-200 shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col overflow-hidden hover:-translate-y-1 relative">
+                            <div class="h-48 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1501139083538-0139583c060f?q=80&w=800" alt="Homesickness" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col">
+                                <span class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-3 block">Aug 2025 &middot; Note</span>
+                                <h3 class="font-heavy text-xl text-warm-900 mb-2 leading-tight group-hover:text-teal-600 transition-colors">Homesickness, properly defined</h3>
+                                <p class="text-warm-700 text-sm leading-relaxed mb-4 flex-1">
+                                    Sometimes it's not missing a place, but missing the version of yourself that existed in that place.
+                                </p>
+                                <span class="text-warm-400 text-sm group-hover:text-teal-600 font-medium font-mono uppercase text-xs tracking-wider">Read note &rarr;</span>
+                            </div>
+                        </a>
+
+                        <!-- Card 5: More to come -->
+                        <div class="bg-white rounded-[1.25rem] border border-dashed border-warm-300 shadow-sm flex flex-col overflow-hidden items-center justify-center text-center p-8 group hover:bg-warm-50 transition-colors">
+                            <div class="w-16 h-16 bg-warm-100 rounded-full flex items-center justify-center mb-4 text-warm-400 group-hover:text-orange-500 transition-colors group-hover:scale-110 duration-300">
+                                <i class="fa-solid fa-pen-nib text-2xl"></i>
+                            </div>
+                            <h3 class="font-heavy text-xl text-warm-900 mb-2">More notes piled up somewhere...</h3>
+                            <p class="text-warm-600 text-sm">
+                                I have about 40 unfinished drafts in my Notes app. As soon as I figure out how to end them, I'll put them in this drawer.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Footer (injected by components.js) -->
+        <div id="site-footer"></div>
+
+    </main>
+
+    <script src="../shared/components.js"></script>
+</body>
+</html>

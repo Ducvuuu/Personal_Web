@@ -3,13 +3,15 @@
 
     // Detect which page we're on by folder name in the path
     const pathname = window.location.pathname;
-    const currentSection = pathname.includes('/about') ? 'about' : 'home';
+    const currentSection = pathname.includes('/about') ? 'about'
+                        : pathname.includes('/writing') ? 'writing'
+                        : 'home';
 
     const navLinks = [
-        { href: '../about/',         label: 'About',   key: 'about' },
-        { href: '../home/#work',     label: 'Work',    key: 'work' },
-        { href: '../home/#writing',  label: 'Writing', key: 'writing' },
-        { href: '../home/#life',     label: 'Life',    key: 'life' },
+        { href: '../about/',    label: 'About',   key: 'about' },
+        { href: '../home/#work', label: 'Work',   key: 'work' },
+        { href: '../writing/',  label: 'Writing', key: 'writing' },
+        { href: '../home/#life', label: 'Life',   key: 'life' },
     ];
 
     function navHTML() {
