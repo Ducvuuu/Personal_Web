@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', function () {
         modalCaption.innerText = captionText;
         const len = captionText.length;
         if (len > 300) {
-            modalCaption.style.fontSize = '1rem';
+            modalCaption.style.fontSize = '1.25rem';
             modalCaption.style.lineHeight = '1.75';
         } else if (len > 120) {
-            modalCaption.style.fontSize = '1.25rem';
+            modalCaption.style.fontSize = '1.5rem';
             modalCaption.style.lineHeight = '1.65';
         } else {
             modalCaption.style.fontSize = '';
