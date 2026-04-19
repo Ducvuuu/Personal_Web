@@ -2,9 +2,9 @@
 
 body {
     font-family: 'Outfit', sans-serif;
-    background-color: #eaddd7;
-    background-image: url("topo_bg.png");
-    background-size: 600px 600px;
+    background-color: #f0e6df;
+    background-image: url("bg_pattern.jpg");
+    background-size: 480px auto;
     background-repeat: repeat;
 }
 
