@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Entry — Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7', 100: '#fdf5eb', 200: '#fbe8d4', 300: '#f5d3b3',
+                            400: '#ebad7a', 500: '#e38847', 600: '#d56a31', 700: '#b15129',
+                            800: '#8f4228', 900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        handwriting: ['"Caveat"', 'cursive']
+                    },
+                    fontWeight: { heavy: '900' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .polaroid-shadow {
+            box-shadow: 0 15px 35px -5px rgba(74,37,23,0.15), 0 10px 15px -6px rgba(74,37,23,0.1);
+        }
+        .washi-tape {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(1deg);
+            width: 120px; height: 30px; background-color: rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 20; backdrop-filter: blur(2px);
+        }
+        textarea { resize: none; overflow: hidden; }
+        input:focus, textarea:focus { outline: none; box-shadow: none; }
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+
+<!-- Body uses shared.css background (bg_pattern.jpg) -->
+<body class="min-h-screen py-6 px-4 sm:px-8 flex flex-col items-center text-warm-900">
+
+    <!-- ── AUTH GATE OVERLAY ── -->
+    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl shadow-warm-900/20 p-10 w-full max-w-sm relative">
+            <!-- Washi tape -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded" style="transform: translateX(-50%) rotate(-1.5deg);"></div>
+
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <i class="fa-solid fa-lock text-warm-400 text-xl"></i>
+                </div>
+                <h1 class="font-heavy text-2xl text-warm-900 mb-1">Journal Access</h1>
+                <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private desk — authorised only</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
+                        onkeydown="if(event.key==='Enter') login()">
+                </div>
+
+                <p id="login-error" class="font-mono text-xs text-red-500 hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> <span id="login-error-msg"></span>
+                </p>
+
+                <button id="login-btn" onclick="login()"
+                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Enter the desk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── EDITOR (shown after auth) ── -->
+    <main id="editor-container" class="w-full max-w-5xl relative z-10 flex flex-col min-h-[90vh] hidden">
+
+        <!-- Minimal nav -->
+        <nav class="flex justify-between items-center py-6 mb-4">
+            <a href="./" class="bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-white transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left text-warm-400"></i> Back to Desk
+            </a>
+            <div class="font-handwriting text-2xl text-warm-600 opacity-70 transform rotate-1">Drafting…</div>
+            <button onclick="logout()"
+                class="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl font-mono text-warm-500 text-xs shadow-sm border border-warm-200 hover:bg-white hover:text-warm-800 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-right-from-bracket"></i> Lock
+            </button>
+        </nav>
+
+        <!-- The Writing Paper -->
+        <article class="flex-1 bg-[#fffdfa] rounded-[2rem] border border-warm-200 polaroid-shadow relative w-full flex flex-col mb-8">
+            <div class="washi-tape"></div>
+
+            <div class="p-8 md:p-12 lg:p-16 flex flex-col flex-1">
+
+                <!-- Metadata + Cover Photo -->
+                <div class="flex flex-col lg:flex-row gap-8 mb-10 pb-10 border-b border-warm-200">
+
+                    <!-- Left: Metadata Receipt -->
+                    <div class="w-full lg:w-1/3 flex flex-col justify-start">
+                        <div class="bg-warm-50/80 border border-warm-200 p-5 relative shadow-inner h-full flex flex-col justify-center rounded-lg">
+                            <div class="absolute -left-1.5 -top-1.5 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm"></div>
+
+                            <!-- Live Clock -->
+                            <div class="font-mono text-[10px] sm:text-xs text-warm-800 uppercase leading-relaxed mb-4 pb-4 border-b border-warm-200/60">
+                                <p class="text-warm-500 font-bold mb-1">CURRENT TIME</p>
+                                <p id="live-time">--:-- · -- --- ----</p>
+                            </div>
+
+                            <!-- Geo / Weather -->
+                            <div class="font-mono text-[10px] sm:text-xs text-warm-800 uppercase leading-relaxed" id="geo-receipt">
+                                <p class="text-warm-500 font-bold mb-2">ENVIRONMENT DATA</p>
+                                <p class="mb-1 text-warm-400 italic">Location unverified.</p>
+                                <button onclick="stampEnvironment()" id="stamp-btn"
+                                    class="mt-3 bg-white border border-warm-300 shadow-sm px-3 py-1.5 rounded text-[10px] font-bold text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2 w-fit">
+                                    <i class="fa-solid fa-location-crosshairs"></i> Stamp Location & Weather
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Cover Image (filename input) -->
+                    <div class="w-full lg:w-2/3 flex flex-col gap-3">
+                        <div id="image-dropzone" class="w-full h-48 sm:h-56 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-6">
+                            <i class="fa-solid fa-image text-3xl text-warm-300 mb-3 transition-colors" id="dropzone-icon"></i>
+                            <p class="font-mono text-xs font-bold text-warm-600">Attach Cover Photo</p>
+                            <p class="font-outfit text-sm text-warm-400 mt-1">Enter the filename committed to <code class="text-warm-500">journal/assets/</code></p>
+                            <img id="image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Cover Preview">
+                            <button id="remove-img-btn" onclick="removeImage(event)"
+                                class="absolute top-3 right-3 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-file-image text-warm-300 text-sm"></i>
+                            <input type="text" id="image-filename" placeholder="e.g. my-photo.jpg"
+                                class="flex-1 font-mono text-sm text-warm-700 placeholder-warm-300 bg-white border border-warm-200 rounded-xl px-4 py-2 focus:outline-none focus:border-warm-400 shadow-inner"
+                                oninput="previewImage(this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor -->
+                <div class="flex-1 flex flex-col">
+                    <!-- Specific location override -->
+                    <div class="flex items-center gap-2 mb-6">
+                        <i class="fa-solid fa-location-dot text-warm-400"></i>
+                        <input type="text" id="location-detail" placeholder="Specific place? (e.g. Back of a Grab car, Senopati)"
+                            class="w-full font-mono text-sm font-bold text-warm-600 placeholder-warm-300 bg-transparent border-none focus:outline-none">
+                    </div>
+
+                    <!-- Title -->
+                    <input type="text" id="entry-title" placeholder="A title for this moment…"
+                        class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
+
+                    <!-- Code / Preview toggle -->
+                    <div class="flex justify-between items-end mb-4">
+                        <span class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Entry Body (HTML)</span>
+                        <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner">
+                            <button id="btn-edit" onclick="toggleEditor('edit')"
+                                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
+                                <i class="fa-solid fa-code mr-1"></i> Code
+                            </button>
+                            <button id="btn-preview" onclick="toggleEditor('preview')"
+                                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
+                                <i class="fa-solid fa-eye mr-1"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea id="journal-body"
+                        placeholder="<p>Start writing your HTML here…</p>"
+                        class="w-full flex-1 min-h-[300px] font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all"
+                        oninput="this.style.height=''; this.style.height=this.scrollHeight+'px'"></textarea>
+
+                    <div id="journal-preview" class="w-full flex-1 min-h-[300px] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light p-6 hidden"></div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="bg-warm-100/80 backdrop-blur-md px-8 py-5 rounded-b-[2rem] border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Ready to seal.
+                </p>
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <a href="./" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
+                        Discard
+                    </a>
+                    <button id="save-btn" onclick="saveEntry()"
+                        class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm shadow-md text-warm-50 bg-orange-600 hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save
+                    </button>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- Firebase compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // ── FIREBASE INIT ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+            authDomain: "personal-web-journal.firebaseapp.com",
+            projectId: "personal-web-journal",
+            storageBucket: "personal-web-journal.firebasestorage.app",
+            messagingSenderId: "980592936593",
+            appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db   = firebase.firestore();
+
+        // ── AUTH STATE ──
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-gate').classList.add('hidden');
+                document.getElementById('editor-container').classList.remove('hidden');
+            } else {
+                document.getElementById('auth-gate').classList.remove('hidden');
+                document.getElementById('editor-container').classList.add('hidden');
+            }
+        });
+
+        async function login() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn      = document.getElementById('login-btn');
+            const errEl    = document.getElementById('login-error');
+            const errMsg   = document.getElementById('login-error-msg');
+
+            if (!email || !password) return;
+
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Unlocking…';
+            btn.disabled  = true;
+            errEl.classList.add('hidden');
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (err) {
+                errMsg.textContent = 'Wrong email or password.';
+                errEl.classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-lock text-xs text-warm-400"></i> Enter the desk';
+                btn.disabled  = false;
+            }
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        // ── LIVE CLOCK ──
+        function updateClock() {
+            const now     = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const dateStr = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('live-time').innerHTML = `${timeStr} &middot; ${dateStr}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ── CAPTURED STATE (set by stampEnvironment) ──
+        let capturedLocation   = '';
+        let capturedLat        = null;
+        let capturedLng        = null;
+        let capturedWeather    = null;
+        let capturedDate       = new Date().toISOString();
+
+        // ── GEOLOCATION + WEATHER ──
+        async function stampEnvironment() {
+            const receiptDiv = document.getElementById('geo-receipt');
+            const btn        = document.getElementById('stamp-btn');
+
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Connecting to satellites…';
+            btn.disabled  = true;
+
+            if (!navigator.geolocation) {
+                showGeoError('Geolocation not supported by this browser.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+
+                try {
+                    const geoRes  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+                    const geoData = await geoRes.json();
+                    const city    = geoData.address.city || geoData.address.town || geoData.address.state || 'Unknown';
+                    const country = geoData.address.country || '';
+                    const location = `${city}, ${country}`;
+
+                    const wxRes   = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                    const wxData  = await wxRes.json();
+                    const temp    = Math.round(wxData.current_weather.temperature);
+                    const code    = wxData.current_weather.weathercode;
+
+                    let condition = 'Clear';
+                    if (code >= 1  && code <= 3)  condition = 'Cloudy';
+                    if (code >= 45 && code <= 48) condition = 'Hazy';
+                    if (code >= 51 && code <= 67) condition = 'Rainy';
+                    if (code >= 71 && code <= 77) condition = 'Snow';
+                    if (code >= 95)               condition = 'Stormy';
+
+                    // Store for Firestore save
+                    capturedLocation = location;
+                    capturedLat      = lat;
+                    capturedLng      = lon;
+                    capturedWeather  = { temp, condition, wmoCode: code };
+                    capturedDate     = new Date().toISOString();
+
+                    receiptDiv.innerHTML = `
+                        <p class="font-bold text-warm-900 mb-1"><i class="fa-solid fa-location-dot text-orange-500 mr-1.5 w-3"></i> ${location.toUpperCase()}</p>
+                        <p class="text-warm-700 mb-1"><i class="fa-solid fa-map-pin text-warm-400 mr-1.5 w-3"></i> LAT ${lat.toFixed(4)}, LNG ${lon.toFixed(4)}</p>
+                        <p class="text-warm-700"><i class="fa-solid fa-cloud text-warm-400 mr-1.5 w-3"></i> ${temp}&deg;C &middot; ${condition.toUpperCase()}</p>
+                        <div class="mt-3 text-[9px] text-green-600 flex items-center gap-1 opacity-70">
+                            <i class="fa-solid fa-check-circle"></i> Environment locked
+                        </div>`;
+
+                } catch (err) {
+                    showGeoError('Failed to fetch environment data.');
+                }
+            }, () => showGeoError('GPS access denied or unavailable.'));
+        }
+
+        function showGeoError(msg) {
+            const btn = document.getElementById('stamp-btn');
+            btn.innerHTML  = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
+            btn.className  = 'mt-3 bg-red-50 border border-red-200 px-3 py-1.5 rounded text-[10px] font-bold text-red-600 flex items-center gap-2 w-fit';
+            btn.disabled   = false;
+        }
+
+        // ── IMAGE PREVIEW ──
+        function previewImage(filename) {
+            const preview   = document.getElementById('image-preview');
+            const removeBtn = document.getElementById('remove-img-btn');
+            if (filename && filename.trim()) {
+                const src = filename.startsWith('http') || filename.startsWith('data:')
+                    ? filename
+                    : `assets/${filename.trim()}`;
+                preview.src = src;
+                preview.classList.remove('hidden');
+                removeBtn.classList.remove('hidden');
+                removeBtn.style.display = 'flex';
+            } else {
+                preview.src = '';
+                preview.classList.add('hidden');
+                removeBtn.classList.add('hidden');
+            }
+        }
+
+        function removeImage(e) {
+            e.stopPropagation();
+            document.getElementById('image-filename').value = '';
+            previewImage('');
+        }
+
+        // ── EDITOR TOGGLE ──
+        function toggleEditor(mode) {
+            const btnEdit    = document.getElementById('btn-edit');
+            const btnPreview = document.getElementById('btn-preview');
+            const textarea   = document.getElementById('journal-body');
+            const preview    = document.getElementById('journal-preview');
+
+            const activeStyle   = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
+            const inactiveStyle = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
+
+            if (mode === 'preview') {
+                btnPreview.className = activeStyle;
+                btnEdit.className    = inactiveStyle;
+                textarea.classList.add('hidden');
+                preview.classList.remove('hidden');
+                const content = textarea.value.trim();
+                preview.innerHTML = content || '<span class="text-warm-300 italic">Nothing to preview yet…</span>';
+            } else {
+                btnEdit.className    = activeStyle;
+                btnPreview.className = inactiveStyle;
+                preview.classList.add('hidden');
+                textarea.classList.remove('hidden');
+            }
+        }
+
+        // ── SAVE TO FIRESTORE ──
+        async function saveEntry() {
+            const title         = document.getElementById('entry-title').value.trim();
+            const content       = document.getElementById('journal-body').value.trim();
+            const locationDetail = document.getElementById('location-detail').value.trim();
+            const imageFilename = document.getElementById('image-filename').value.trim();
+
+            if (!title && !content) {
+                document.getElementById('save-status').innerHTML =
+                    '<i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Write something first.';
+                return;
+            }
+
+            const saveBtn = document.getElementById('save-btn');
+            const status  = document.getElementById('save-status');
+            saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Sealing…';
+            saveBtn.disabled  = true;
+            status.innerHTML  = '<i class="fa-solid fa-cloud-arrow-up text-warm-400"></i> Saving to cloud…';
+
+            try {
+                await db.collection('entries').add({
+                    createdAt:      firebase.firestore.FieldValue.serverTimestamp(),
+                    date:           capturedDate,
+                    location:       capturedLocation,
+                    locationDetail: locationDetail,
+                    lat:            capturedLat,
+                    lng:            capturedLng,
+                    weather:        capturedWeather,
+                    image:          imageFilename,
+                    title:          title,
+                    content:        content
+                });
+                window.location.href = './';
+            } catch (err) {
+                status.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Save failed: ${err.message}`;
+                saveBtn.innerHTML = '<i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save';
+                saveBtn.disabled  = false;
+            }
+        }
+    </script>
+</body>
+</html>

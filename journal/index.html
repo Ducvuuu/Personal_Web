@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Notes — Vu Trong Duc Anh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="../shared/shared.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7', 100: '#fdf5eb', 200: '#fbe8d4', 300: '#f5d3b3',
+                            400: '#ebad7a', 500: '#e38847', 600: '#d56a31', 700: '#b15129',
+                            800: '#8f4228', 900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        handwriting: ['"Caveat"', 'cursive']
+                    },
+                    fontWeight: { heavy: '900' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ── ZOOM MECHANICS ── */
+        .journal-grid-container { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* LEVEL 1: Contact Sheet */
+        #journal-content-wrapper.zoom-1 .journal-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 4px;
+        }
+        #journal-content-wrapper.zoom-1 .entry-card {
+            padding: 0; background: transparent; box-shadow: none; border: none; aspect-ratio: 1; border-radius: 0; margin-bottom: 0;
+        }
+        #journal-content-wrapper.zoom-1 .card-content,
+        #journal-content-wrapper.zoom-1 .washi-tape { display: none; }
+        #journal-content-wrapper.zoom-1 .img-wrapper { height: 100%; border-radius: 0; border: none; }
+        #journal-content-wrapper.zoom-1 .zoom-1-overlay { display: flex; }
+        @media (min-width: 640px) {
+            #journal-content-wrapper.zoom-1 .journal-grid-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+        }
+
+        /* LEVEL 2: Scatter Grid (Masonry) */
+        #journal-content-wrapper.zoom-2 .journal-grid-container { column-count: 1; column-gap: 1.5rem; }
+        @media (min-width: 640px)  { #journal-content-wrapper.zoom-2 .journal-grid-container { column-count: 2; } }
+        @media (min-width: 1024px) { #journal-content-wrapper.zoom-2 .journal-grid-container { column-count: 3; } }
+        #journal-content-wrapper.zoom-2 .entry-card { break-inside: avoid; margin-bottom: 1.5rem; }
+        #journal-content-wrapper.zoom-2 .entry-text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        #journal-content-wrapper.zoom-2 .zoom-1-overlay { display: none; }
+
+        /* LEVEL 3: Timeline (Detailed Reading) */
+        #journal-content-wrapper.zoom-3 .journal-grid-container {
+            display: flex; flex-direction: column; gap: 4rem; max-width: 48rem; margin: 0 auto; position: relative;
+        }
+        @media (min-width: 768px) {
+            #journal-content-wrapper.zoom-3 .month-section { position: relative; }
+            #journal-content-wrapper.zoom-3 .month-section::before {
+                content: ''; position: absolute; left: -3rem; top: 0; bottom: 0;
+                width: 2px; border-left: 2px dashed #d56a31; opacity: 0.5; z-index: 0;
+            }
+            #journal-content-wrapper.zoom-3 .entry-card::before {
+                content: ''; position: absolute; left: -3.35rem; top: 3rem;
+                width: 14px; height: 14px; background: #e38847; border-radius: 50%;
+                border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;
+            }
+        }
+        #journal-content-wrapper.zoom-3 .entry-card { position: relative; }
+        #journal-content-wrapper.zoom-3 .zoom-1-overlay { display: none; }
+        #journal-content-wrapper.zoom-3 .read-more-footer { display: flex; opacity: 1; }
+
+        .read-more-footer { display: none; opacity: 0; }
+
+        /* ── CARD AESTHETIC ── */
+        .washi-tape {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+            width: 80px; height: 25px; background-color: rgba(255,255,255,0.4);
+            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 20; backdrop-filter: blur(2px);
+        }
+        .polaroid-shadow { box-shadow: 0 10px 25px -5px rgba(74,37,23,0.1), 0 8px 10px -6px rgba(74,37,23,0.1); }
+
+        /* ── ZOOM SLIDER ── */
+        input[type=range] { -webkit-appearance: none; width: 100px; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #e38847; cursor: pointer; margin-top: -6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid #fffbf7;
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #f5d3b3; border-radius: 2px; }
+
+        /* ── TIMELINE SIDEBAR ── */
+        .timeline-dot { position: relative; transition: all 0.3s ease; }
+        .timeline-dot::after {
+            content: ''; position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+            width: 8px; height: 2px; background: transparent; transition: all 0.3s;
+        }
+        .timeline-dot.active { color: #d56a31; font-weight: 700; transform: translateX(-4px); }
+        .timeline-dot.active::after { background: #d56a31; right: -5px; width: 12px; }
+
+        /* ── MAP ── */
+        .custom-popup .leaflet-popup-content-wrapper {
+            background: #fffbf7; border: 1px solid #ebad7a;
+            border-radius: 0.75rem; box-shadow: 4px 4px 0px rgba(74,37,23,0.1);
+        }
+        .custom-popup .leaflet-popup-tip { background: #fffbf7; }
+
+        /* MarkerCluster custom colours */
+        .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+            background-clip: padding-box;
+        }
+        .marker-cluster-small  { background-color: rgba(227,136,71,0.25); }
+        .marker-cluster-small div  { background-color: rgba(227,136,71,0.7); color: #4a2517; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+        .marker-cluster-medium { background-color: rgba(213,106,49,0.25); }
+        .marker-cluster-medium div { background-color: rgba(213,106,49,0.7); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+        .marker-cluster-large  { background-color: rgba(177,81,41,0.25); }
+        .marker-cluster-large div  { background-color: rgba(177,81,41,0.7); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
+
+    <!-- Timeline Sidebar Scrubber (fixed, desktop only) -->
+    <div class="fixed right-0 top-1/4 bottom-1/4 w-6 hover:w-36 z-50 group flex items-center justify-end transition-all duration-300 hidden lg:flex">
+        <div class="absolute right-1.5 top-1/2 -translate-y-1/2 w-1 h-12 bg-warm-400/50 rounded-full group-hover:opacity-0 transition-opacity duration-300"></div>
+        <div class="flex flex-col justify-center items-end gap-2 pr-6 py-8 border-r-2 border-warm-400/50 transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-0 h-full w-full pointer-events-none group-hover:pointer-events-auto bg-gradient-to-l from-warm-100/95 to-transparent rounded-l-2xl backdrop-blur-sm" id="timeline-list">
+        </div>
+    </div>
+
+    <!-- Main Container (matches all other pages exactly) -->
+    <main class="w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200 mb-8">
+
+        <!-- Navigation injected by components.js (absolute, overlays cover) -->
+        <div id="site-nav"></div>
+
+        <!-- Full Bleed Cover Image (same pattern as writing page) -->
+        <div class="relative w-full overflow-hidden" style="height: 480px;">
+            <img src="assets/cover.jpg" alt="Journal cover" class="w-full h-full object-cover object-center"
+                 onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%)';">
+            <div class="absolute inset-x-0 bottom-0 h-40" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="px-6 py-12 md:px-16 lg:px-20 lg:pr-36 max-w-7xl mx-auto relative z-10 min-h-[500px]">
+
+            <!-- Title + Toolbar -->
+            <header class="mb-16 w-full flex flex-col items-start">
+                <h1 class="font-heavy text-4xl md:text-6xl text-warm-900 mb-2">Field Notes</h1>
+                <span class="font-handwriting text-2xl md:text-3xl text-warm-500 inline-block transform -rotate-2 mb-6 origin-left">Time capsules, scattered and collected.</span>
+                <p class="text-warm-800 text-lg leading-relaxed max-w-3xl mb-12 border-l-4 border-warm-300 pl-6 py-1">
+                    A digital junk drawer of memories. Unpolished thoughts, midnight observations, and half-finished essays — time-stamped and weather-stamped from wherever I actually was.
+                </p>
+
+                <!-- Toolbar -->
+                <div class="w-full flex flex-col md:flex-row justify-between items-center gap-4 bg-white/60 backdrop-blur-md p-3 md:px-4 rounded-2xl border border-warm-200 shadow-sm">
+                    <!-- Zoom Slider -->
+                    <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-warm-200 shadow-inner shrink-0 w-full md:w-auto justify-center">
+                        <i class="fa-solid fa-border-all text-warm-400 text-sm" title="Contact Sheet"></i>
+                        <input type="range" min="1" max="3" value="2" id="zoomSlider" title="Adjust view density">
+                        <i class="fa-solid fa-list-ul text-warm-400 text-sm" title="Timeline"></i>
+                    </div>
+
+                    <div class="flex-1 flex flex-col md:flex-row items-center justify-end gap-3 w-full">
+                        <!-- Search -->
+                        <div class="relative w-full max-w-sm">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm"></i>
+                            <input type="text" id="searchInput" placeholder="Search memories…"
+                                class="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-warm-200 text-sm focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 transition-shadow text-warm-800 placeholder-warm-400 shadow-inner">
+                        </div>
+
+                        <!-- Chronicle / Atlas toggle -->
+                        <div class="flex items-center bg-warm-100 p-1 rounded-xl border border-warm-300 shadow-inner shrink-0 w-full md:w-auto justify-center">
+                            <button id="btn-chronicle" onclick="switchView('chronicle')"
+                                class="px-5 py-1.5 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-warm-900 w-1/2 md:w-auto">
+                                Chronicle
+                            </button>
+                            <button id="btn-atlas" onclick="switchView('atlas')"
+                                class="px-5 py-1.5 rounded-lg text-sm font-bold transition-all text-warm-600 hover:text-warm-900 bg-transparent w-1/2 md:w-auto">
+                                Atlas
+                            </button>
+                        </div>
+
+                        <!-- New Entry (links to write page) -->
+                        <a href="write.html" class="flex items-center justify-center gap-2 bg-orange-600 text-warm-50 px-5 py-2 rounded-xl font-mono text-sm font-bold shadow-sm hover:bg-orange-700 transition-colors shrink-0 w-full md:w-auto">
+                            <i class="fa-solid fa-pen-nib text-xs opacity-80"></i> New Entry
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Loading state -->
+            <div id="loading-state" class="text-center py-20 text-warm-500 font-mono">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-warm-300"></i>
+                <p class="text-sm">Fetching field notes…</p>
+            </div>
+
+            <!-- Map Container (Atlas view, hidden by default) -->
+            <div id="map-container" class="hidden w-full rounded-2xl border-4 border-white overflow-hidden relative z-10 mb-12" style="height: 600px; box-shadow: inset 0 10px 20px rgba(74,37,23,0.15);">
+                <div id="journal-map" class="w-full h-full z-0"></div>
+            </div>
+
+            <!-- Journal Grid (Chronicle view) -->
+            <div id="journal-content-wrapper" class="zoom-2 hidden">
+            </div>
+
+        </div>
+
+        <!-- Footer injected by components.js -->
+        <div id="site-footer"></div>
+    </main>
+
+    <!-- Leaflet + MarkerCluster -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <!-- Firebase compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ── FIREBASE INIT ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+            authDomain: "personal-web-journal.firebaseapp.com",
+            projectId: "personal-web-journal",
+            storageBucket: "personal-web-journal.firebasestorage.app",
+            messagingSenderId: "980592936593",
+            appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ── STATE ──
+        let allEntries = [];
+        let searchQuery = '';
+        let currentZoom = 2;
+        let map = null;
+        let markerCluster = null;
+        let scrollObserver = null;
+
+        const contentWrapper  = document.getElementById('journal-content-wrapper');
+        const mapContainer    = document.getElementById('map-container');
+        const loadingState    = document.getElementById('loading-state');
+        const zoomSlider      = document.getElementById('zoomSlider');
+        const searchInput     = document.getElementById('searchInput');
+        const timelineList    = document.getElementById('timeline-list');
+
+        // ── HELPERS ──
+        function getImagePath(filename) {
+            if (!filename) return '';
+            if (filename.startsWith('http') || filename.startsWith('data:')) return filename;
+            return `assets/${filename}`;
+        }
+
+        function formatWeather(w) {
+            if (!w) return '';
+            if (typeof w === 'string') return w;
+            return `${w.temp}°C · ${w.condition}`;
+        }
+
+        function formatDisplayDate(dateStr) {
+            const d = new Date(dateStr);
+            const day   = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' });
+            const year  = d.getFullYear();
+            const hh    = String(d.getHours()).padStart(2, '0');
+            const mm    = String(d.getMinutes()).padStart(2, '0');
+            return `${day} ${month} ${year} · ${hh}:${mm}`;
+        }
+
+        function groupByMonth(entries) {
+            const groups = {};
+            entries.forEach(entry => {
+                const d = new Date(entry.date);
+                const key = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(entry);
+            });
+            return groups;
+        }
+
+        // ── RENDER ──
+        function renderEntries() {
+            const filtered = allEntries.filter(e =>
+                (e.content || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (e.location || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (e.locationDetail || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (e.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                contentWrapper.innerHTML = `
+                    <div class="text-center py-20 text-warm-500 font-mono">
+                        <i class="fa-solid fa-ghost text-4xl mb-4 opacity-40 block"></i>
+                        <p>${searchQuery ? 'No entries match that search.' : 'No field notes yet. Write one!'}</p>
+                    </div>`;
+                timelineList.innerHTML = '';
+                return;
+            }
+
+            const groups = groupByMonth(filtered);
+            let html = '';
+            let timelineHtml = '';
+
+            for (const [monthYear, group] of Object.entries(groups)) {
+                const groupId  = monthYear.replace(/\s+/g, '-').toLowerCase();
+                const shortDate = monthYear.substring(0, 3) + " '" + monthYear.slice(-2);
+                timelineHtml += `<div data-target="group-${groupId}" class="timeline-dot text-xs font-mono text-warm-500 hover:text-orange-500 cursor-pointer text-right py-1.5 pr-2 w-full">${shortDate}</div>`;
+
+                html += `
+                    <div class="month-section mb-20" id="group-${groupId}">
+                        <div class="sticky top-4 z-20 inline-block mb-8 pointer-events-none">
+                            <h2 class="font-heavy text-xl md:text-2xl text-warm-900 bg-warm-50/95 backdrop-blur-md py-2 px-5 rounded-r-xl border-l-4 border-orange-500 shadow-sm border border-warm-200 pointer-events-auto">
+                                ${monthYear}
+                            </h2>
+                        </div>
+                        <div class="journal-grid-container">
+                            ${group.map(entry => buildCard(entry)).join('')}
+                        </div>
+                    </div>`;
+            }
+
+            contentWrapper.innerHTML = html;
+            timelineList.innerHTML = timelineHtml;
+            setupScrollSpy();
+        }
+
+        function buildCard(entry) {
+            const displayDate  = formatDisplayDate(entry.date);
+            const weather      = formatWeather(entry.weather);
+            const displayLoc   = entry.locationDetail || entry.location || '';
+            const imagePath    = getImagePath(entry.image);
+            const hasImage     = !!imagePath;
+
+            return `
+                <article class="entry-card relative bg-[#fffdfa] rounded-xl border border-warm-200 polaroid-shadow group transition-all duration-300 hover:border-warm-300">
+                    <div class="washi-tape"></div>
+
+                    ${hasImage ? `
+                    <div class="img-wrapper relative p-3 pb-0 rounded-t-xl overflow-hidden">
+                        <img src="${imagePath}" alt="Entry cover" class="w-full aspect-[4/3] object-cover rounded-lg border border-warm-100 shadow-inner group-hover:brightness-105 transition-all"
+                             onerror="this.parentElement.style.display='none'">
+                        <div class="zoom-1-overlay absolute inset-0 m-3 bg-warm-900/80 rounded-lg hidden flex-col justify-center items-center text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                            <span class="text-orange-400 font-bold text-xs mb-1">${displayLoc}</span>
+                            <span class="text-warm-100 font-mono text-[9px] uppercase">${displayDate.split('·')[0]}</span>
+                        </div>
+                    </div>` : ''}
+
+                    <div class="card-content p-5 md:p-6">
+                        <div class="font-mono text-[10px] sm:text-xs text-warm-800 uppercase leading-relaxed pb-3 mb-4 border-b border-warm-200/60">
+                            <p class="font-bold text-warm-900"><i class="fa-solid fa-location-dot text-orange-500 mr-1.5 w-3"></i> ${displayLoc}</p>
+                            <p class="text-warm-600"><i class="fa-regular fa-clock text-warm-400 mr-1.5 w-3"></i> ${displayDate}</p>
+                            ${weather ? `<p class="text-warm-600"><i class="fa-solid fa-cloud text-warm-400 mr-1.5 w-3"></i> ${weather}</p>` : ''}
+                        </div>
+
+                        ${entry.title ? `<h3 class="font-heavy text-lg text-warm-900 mb-3 leading-tight">${entry.title}</h3>` : ''}
+
+                        <div class="entry-text font-outfit text-base md:text-lg text-warm-900 leading-relaxed font-light">
+                            ${entry.content || ''}
+                        </div>
+
+                        <div class="read-more-footer mt-6 pt-4 border-t border-dashed border-warm-200 justify-end items-center">
+                            <button class="text-xs font-mono font-bold text-orange-500 hover:text-orange-700 transition-colors uppercase tracking-wider">Read More &rarr;</button>
+                        </div>
+                    </div>
+                </article>`;
+        }
+
+        // ── MAP (Stamen Watercolor via Stadia + MarkerCluster) ──
+        function initMap() {
+            if (map) return;
+            map = L.map('journal-map', { zoomControl: false }).setView([0, 115], 5);
+
+            L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg?api_key=2377f563-16e5-4129-adb1-3ad70dd64be8', {
+                maxZoom: 16,
+                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            rebuildMapMarkers();
+        }
+
+        function rebuildMapMarkers() {
+            if (!map) return;
+            if (markerCluster) { map.removeLayer(markerCluster); }
+
+            markerCluster = L.markerClusterGroup({
+                maxClusterRadius: 60,
+                iconCreateFunction: function(cluster) {
+                    const count = cluster.getChildCount();
+                    const size = count < 10 ? 'small' : count < 100 ? 'medium' : 'large';
+                    return L.divIcon({ html: `<div><span>${count}</span></div>`, className: `marker-cluster marker-cluster-${size}`, iconSize: L.point(40, 40) });
+                }
+            });
+
+            const inkDotIcon = L.divIcon({
+                className: '',
+                html: '<div style="width:14px;height:14px;background:#e38847;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);transform:translate(-7px,-7px);"></div>',
+                iconSize: [0, 0]
+            });
+
+            allEntries.forEach(entry => {
+                if (!entry.lat || !entry.lng) return;
+                const displayLoc = entry.locationDetail || entry.location || '';
+                const weather    = formatWeather(entry.weather);
+                const displayDate = formatDisplayDate(entry.date);
+                const snippet = (entry.content || '').replace(/<[^>]+>/g, '').substring(0, 120);
+
+                const popupHtml = `
+                    <div style="min-width:180px; max-width:240px; font-family:'Outfit',sans-serif;">
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#e38847; text-transform:uppercase; margin:0 0 2px;">${displayLoc}</p>
+                        <p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#8f4228; margin:0 0 6px;">${displayDate}</p>
+                        ${weather ? `<p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#b15129; margin:0 0 8px;">☁ ${weather}</p>` : ''}
+                        ${entry.title ? `<p style="font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:#4a2517; margin:0 0 4px;">${entry.title}</p>` : ''}
+                        <p style="font-size:12px; color:#8f4228; line-height:1.5; margin:0;">${snippet}${snippet.length >= 120 ? '…' : ''}</p>
+                    </div>`;
+
+                L.marker([entry.lat, entry.lng], { icon: inkDotIcon })
+                    .addTo(markerCluster)
+                    .bindPopup(popupHtml, { className: 'custom-popup', maxWidth: 260 });
+            });
+
+            map.addLayer(markerCluster);
+        }
+
+        // ── VIEW SWITCHING ──
+        function switchView(view) {
+            const btnC = document.getElementById('btn-chronicle');
+            const btnA = document.getElementById('btn-atlas');
+            const activeBtn   = 'px-5 py-1.5 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-warm-900 w-1/2 md:w-auto';
+            const inactiveBtn = 'px-5 py-1.5 rounded-lg text-sm font-bold transition-all text-warm-600 hover:text-warm-900 bg-transparent w-1/2 md:w-auto';
+
+            if (view === 'atlas') {
+                contentWrapper.classList.add('hidden');
+                timelineList.parentElement.classList.add('hidden');
+                mapContainer.classList.remove('hidden');
+                btnA.className = activeBtn;
+                btnC.className = inactiveBtn;
+                initMap();
+                setTimeout(() => map && map.invalidateSize(), 100);
+            } else {
+                contentWrapper.classList.remove('hidden');
+                timelineList.parentElement.classList.remove('hidden');
+                mapContainer.classList.add('hidden');
+                btnC.className = activeBtn;
+                btnA.className = inactiveBtn;
+            }
+        }
+
+        // ── SCROLL SPY ──
+        function setupScrollSpy() {
+            const sections = document.querySelectorAll('.month-section');
+            const dots     = document.querySelectorAll('.timeline-dot');
+            if (scrollObserver) scrollObserver.disconnect();
+
+            scrollObserver = new IntersectionObserver(entries => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        dots.forEach(d => d.classList.remove('active'));
+                        const active = document.querySelector(`.timeline-dot[data-target="${e.target.id}"]`);
+                        if (active) active.classList.add('active');
+                    }
+                });
+            }, { rootMargin: '-40% 0px -40% 0px' });
+
+            sections.forEach(s => scrollObserver.observe(s));
+
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const target = document.getElementById(dot.dataset.target);
+                    if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+                });
+            });
+        }
+
+        // ── FIRESTORE FETCH ──
+        async function loadEntries() {
+            try {
+                const snapshot = await db.collection('entries').orderBy('createdAt', 'desc').get();
+                allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (err) {
+                console.error('Firestore error:', err);
+                allEntries = [];
+            }
+            loadingState.classList.add('hidden');
+            contentWrapper.classList.remove('hidden');
+            renderEntries();
+        }
+
+        // ── EVENT LISTENERS ──
+        zoomSlider.addEventListener('input', e => {
+            currentZoom = e.target.value;
+            contentWrapper.className = `zoom-${currentZoom}`;
+        });
+
+        searchInput.addEventListener('input', e => {
+            searchQuery = e.target.value;
+            renderEntries();
+        });
+
+        // ── BOOT ──
+        loadEntries();
+    </script>
+
+    <script src="../shared/components.js"></script>
+</body>
+</html>
