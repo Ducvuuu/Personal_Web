@@ -5,13 +5,15 @@
     const pathname = window.location.pathname;
     const currentSection = pathname.includes('/about') ? 'about'
                         : pathname.includes('/writing') ? 'writing'
+                        : pathname.includes('/journal') ? 'journal'
                         : 'home';
 
     const navLinks = [
-        { href: '../about/',    label: 'About',   key: 'about' },
-        { href: '../home/#work', label: 'Work',   key: 'work' },
-        { href: '../writing/',  label: 'Writing', key: 'writing' },
-        { href: '../home/#life', label: 'Life',   key: 'life' },
+        { href: '../about/',     label: 'About',   key: 'about' },
+        { href: '../home/#work', label: 'Work',    key: 'work' },
+        { href: '../writing/',   label: 'Writing', key: 'writing' },
+        { href: '../journal/',   label: 'Journal', key: 'journal' },
+        { href: '../home/#life', label: 'Life',    key: 'life' },
     ];
 
     function navHTML() {
