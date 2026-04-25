@@ -137,12 +137,12 @@
                         </div>
                     </div>
 
-                    <!-- Right: Cover Image (filename input) -->
+                    <!-- Right: Cover Image (URL input) -->
                     <div class="w-full lg:w-2/3 flex flex-col gap-3">
                         <div id="image-dropzone" class="w-full h-48 sm:h-56 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-6">
-                            <i class="fa-solid fa-image text-3xl text-warm-300 mb-3 transition-colors" id="dropzone-icon"></i>
+                            <i class="fa-solid fa-image text-3xl text-warm-300 mb-3 transition-colors"></i>
                             <p class="font-mono text-xs font-bold text-warm-600">Attach Cover Photo</p>
-                            <p class="font-outfit text-sm text-warm-400 mt-1">Enter the filename committed to <code class="text-warm-500">journal/assets/</code></p>
+                            <p class="font-outfit text-sm text-warm-400 mt-1">Paste a URL — Google Photos, Unsplash, or local filename</p>
                             <img id="image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Cover Preview">
                             <button id="remove-img-btn" onclick="removeImage(event)"
                                 class="absolute top-3 right-3 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
@@ -150,11 +150,14 @@
                             </button>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-file-image text-warm-300 text-sm"></i>
-                            <input type="text" id="image-filename" placeholder="e.g. my-photo.jpg"
+                            <i class="fa-solid fa-link text-warm-300 text-sm"></i>
+                            <input type="text" id="image-filename" placeholder="https://lh3.googleusercontent.com/… or my-photo.jpg"
                                 class="flex-1 font-mono text-sm text-warm-700 placeholder-warm-300 bg-white border border-warm-200 rounded-xl px-4 py-2 focus:outline-none focus:border-warm-400 shadow-inner"
                                 oninput="previewImage(this.value)">
                         </div>
+                        <p class="font-mono text-[10px] text-warm-400 pl-7">
+                            Google Photos: open photo → right-click image → <span class="text-warm-600 font-bold">Copy image address</span>
+                        </p>
                     </div>
                 </div>
 
@@ -352,14 +355,14 @@
         }
 
         // ── IMAGE PREVIEW ──
-        function previewImage(filename) {
+        function previewImage(value) {
             const preview   = document.getElementById('image-preview');
             const removeBtn = document.getElementById('remove-img-btn');
-            if (filename && filename.trim()) {
-                const src = filename.startsWith('http') || filename.startsWith('data:')
-                    ? filename
-                    : `assets/${filename.trim()}`;
-                preview.src = src;
+            const v = (value || '').trim();
+            if (v) {
+                // Full URL (Google Photos lh3, http, data URI) — use as-is
+                // Plain filename — resolve relative to assets/
+                preview.src = (v.startsWith('http') || v.startsWith('data:')) ? v : `assets/${v}`;
                 preview.classList.remove('hidden');
                 removeBtn.classList.remove('hidden');
                 removeBtn.style.display = 'flex';
