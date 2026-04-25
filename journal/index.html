@@ -342,6 +342,12 @@
         const timelineList    = document.getElementById('timeline-list');
 
         // ── HELPERS ──
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+        }
+
         function getImagePath(filename) {
             if (!filename) return '';
             if (filename.startsWith('http') || filename.startsWith('data:')) return filename;
@@ -456,7 +462,7 @@
                         ${entry.title ? `<h3 class="font-heavy text-lg text-warm-900 mb-3 leading-tight">${entry.title}</h3>` : ''}
 
                         <div class="entry-text font-outfit text-base md:text-lg text-warm-900 leading-relaxed font-light">
-                            ${entry.content || ''}
+                            ${stripHtml(entry.content || '')}
                         </div>
 
                         <div class="read-more-footer mt-6 pt-4 border-t border-dashed border-warm-200 justify-end items-center">
