@@ -109,20 +109,10 @@
             <div class="w-full max-w-4xl relative">
 
                 <!-- Action bar -->
-                <div class="mb-8 px-2 flex justify-between items-center">
+                <div class="mb-8 px-2">
                     <a href="./" class="inline-flex items-center gap-2 font-mono text-sm font-bold text-warm-500 hover:text-orange-600 transition-colors group">
                         <i class="fa-solid fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Back to Field Notes
                     </a>
-                    <div class="flex items-center gap-3">
-                        <button id="edit-btn"
-                            class="flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-xl font-mono font-bold text-warm-600 text-xs shadow-sm border border-warm-200 hover:bg-white hover:text-warm-900 transition-colors">
-                            <i class="fa-solid fa-pen-nib text-warm-400"></i> Edit
-                        </button>
-                        <button id="delete-btn"
-                            class="flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-xl font-mono font-bold text-red-400 text-xs shadow-sm border border-red-100 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors">
-                            <i class="fa-solid fa-trash-can opacity-70"></i> Delete
-                        </button>
-                    </div>
                 </div>
 
                 <!-- The paper -->
@@ -154,11 +144,23 @@
                         <!-- Rendered HTML content -->
                         <div id="entry-body" class="rendered-content font-outfit text-lg md:text-xl text-warm-900 leading-relaxed font-light"></div>
 
-                        <!-- End marker -->
-                        <div class="mt-16 pt-8 border-t border-dashed border-warm-200 flex justify-center opacity-40">
-                            <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
-                            <i class="fa-solid fa-asterisk text-warm-400 text-sm mx-4"></i>
-                            <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                        <!-- End marker + actions -->
+                        <div class="mt-16 pt-8 border-t border-dashed border-warm-200 flex justify-between items-center">
+                            <div class="flex items-center gap-3 opacity-40">
+                                <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                                <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                                <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="edit-btn"
+                                    class="flex items-center gap-2 bg-warm-50 px-4 py-1.5 rounded-xl font-mono font-bold text-warm-600 text-xs shadow-sm border border-warm-200 hover:bg-white hover:text-warm-900 transition-colors">
+                                    <i class="fa-solid fa-pen-nib text-warm-400"></i> Edit
+                                </button>
+                                <button id="delete-btn"
+                                    class="flex items-center gap-2 bg-warm-50 px-4 py-1.5 rounded-xl font-mono font-bold text-red-400 text-xs shadow-sm border border-red-100 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors">
+                                    <i class="fa-solid fa-trash-can opacity-70"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </article>
