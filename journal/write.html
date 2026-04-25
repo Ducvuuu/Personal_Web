@@ -218,6 +218,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
     <script>
         // ── FIREBASE INIT ──
@@ -230,23 +231,18 @@
             appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db   = firebase.firestore();
+        const auth    = firebase.auth();
+        const db      = firebase.firestore();
+        const storage = firebase.storage();
 
         // ── STATE ──
-        let githubPAT          = '';
-        let currentImageValue  = ''; // filename after upload
+        let currentImageValue = ''; // download URL after upload
 
         // ── AUTH STATE ──
-        auth.onAuthStateChanged(async user => {
+        auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
-                // Fetch PAT from Firestore (never touches the repo)
-                try {
-                    const cfg = await db.collection('_config').doc('github').get();
-                    if (cfg.exists) githubPAT = cfg.data().pat || '';
-                } catch (e) { console.warn('Could not load GitHub PAT', e); }
             } else {
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
@@ -361,70 +357,39 @@
             btn.disabled   = false;
         }
 
-        // ── IMAGE UPLOAD ──
-        async function handleImageFile(file) {
+        // ── IMAGE UPLOAD (Firebase Storage) ──
+        function handleImageFile(file) {
             if (!file || !file.type.startsWith('image/')) return;
 
-            // Immediate local preview while uploading
+            // Immediate local preview
             const localUrl = URL.createObjectURL(file);
             showImagePreview(localUrl);
-            setUploadStatus('uploading', 'Uploading to GitHub…');
+            setUploadStatus('uploading', 'Uploading… 0%');
 
-            if (!githubPAT) {
-                setUploadStatus('error', 'GitHub PAT not loaded — try refreshing.');
-                return;
-            }
-
-            // Unique filename: 20260424_143022_original-name.jpg
             const ext      = file.name.split('.').pop().toLowerCase();
             const ts       = new Date().toISOString().replace(/\D/g, '').substring(0, 15);
             const safeName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
-            const filename = `${ts}_${safeName}.${ext}`;
+            const filename = `journal/${ts}_${safeName}.${ext}`;
 
-            try {
-                const base64  = await fileToBase64(file);
-                const content = base64.split(',')[1]; // strip data:image/...;base64,
+            const uploadTask = storage.ref(filename).put(file);
 
-                const res = await fetch(
-                    `https://api.github.com/repos/Ducvuuu/Personal_Web/contents/journal/assets/${filename}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${githubPAT}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/vnd.github+json'
-                        },
-                        body: JSON.stringify({
-                            message: `Add journal image: ${filename}`,
-                            content,
-                            branch: 'main'
-                        })
-                    }
-                );
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.message);
+            uploadTask.on('state_changed',
+                snapshot => {
+                    const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
+                    setUploadStatus('uploading', `Uploading… ${pct}%`);
+                },
+                err => {
+                    setUploadStatus('error', `Upload failed: ${err.message}`);
+                    currentImageValue = '';
+                },
+                async () => {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                    currentImageValue = downloadURL;
+                    URL.revokeObjectURL(localUrl);
+                    showImagePreview(downloadURL);
+                    setUploadStatus('done', '✓ Uploaded');
                 }
-
-                currentImageValue = filename;
-                URL.revokeObjectURL(localUrl);
-                showImagePreview(`assets/${filename}`);
-                setUploadStatus('done', `✓ ${filename}`);
-
-            } catch (err) {
-                setUploadStatus('error', `Upload failed: ${err.message}`);
-                currentImageValue = '';
-            }
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload  = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+            );
         }
 
         function showImagePreview(src) {
