@@ -272,14 +272,8 @@
                 ${weather ? `<p class="text-warm-600"><i class="fa-solid fa-cloud text-warm-400 mr-2 w-3"></i> ${weather}</p>` : ''}
             `;
 
-            // Body — plain text stored from textarea, convert to paragraphs
-            const rawContent = e.content || '';
-            const bodyHtml = rawContent
-                .split(/\n{2,}/)
-                .map(para => `<p>${para.trim().replace(/\n/g, '<br>')}</p>`)
-                .filter(p => p !== '<p></p>')
-                .join('');
-            document.getElementById('entry-body').innerHTML = bodyHtml || '<p class="text-warm-400 italic">No content.</p>';
+            // Body
+            document.getElementById('entry-body').innerHTML = e.content || '';
 
             // Edit / Delete
             document.getElementById('edit-btn').onclick = () => {
