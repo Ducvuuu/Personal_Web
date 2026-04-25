@@ -576,7 +576,7 @@
                 const displayLoc  = entry.locationDetail || entry.location || '';
                 const weather     = formatWeather(entry.weather);
                 const displayDate = formatDisplayDate(entry.date);
-                const snippet     = (entry.content || '').replace(/<[^>]+>/g, '').substring(0, 100);
+                const snippet     = stripHtml(entry.content || '').substring(0, 100);
                 const imageSrc    = getImagePath(entry.image);
 
                 const popupHtml = `
