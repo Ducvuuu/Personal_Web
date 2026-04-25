@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Notes — Entry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7', 100: '#fdf5eb', 200: '#fbe8d4', 300: '#f5d3b3',
+                            400: '#ebad7a', 500: '#e38847', 600: '#d56a31', 700: '#b15129',
+                            800: '#8f4228', 900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        handwriting: ['"Caveat"', 'cursive']
+                    },
+                    fontWeight: { heavy: '900' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .polaroid-shadow {
+            box-shadow: 0 20px 40px -5px rgba(74,37,23,0.15), 0 10px 20px -6px rgba(74,37,23,0.1);
+        }
+        .washi-tape {
+            position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(1deg);
+            width: 140px; height: 32px; background-color: rgba(255,255,255,0.45);
+            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 20; backdrop-filter: blur(3px);
+        }
+        .rendered-content p { margin-bottom: 1.5rem; }
+        .rendered-content p:last-child { margin-bottom: 0; }
+        .rendered-content blockquote {
+            border-left: 4px solid #e38847;
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+            color: #b15129;
+            border-radius: 0 0.5rem 0.5rem 0;
+            background: linear-gradient(to right, rgba(235,173,122,0.1), transparent);
+        }
+        .rendered-content b, .rendered-content strong { font-weight: 800; color: #4a2517; }
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
+
+    <!-- ── AUTH GATE ── -->
+    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm relative">
+            <div class="absolute top-0 left-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded" style="transform: translateX(-50%) rotate(-1.5deg);"></div>
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <i class="fa-solid fa-book text-warm-400 text-xl"></i>
+                </div>
+                <h1 class="font-heavy text-2xl text-warm-900 mb-1">Field Notes</h1>
+                <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private journal — authorised only</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
+                        onkeydown="if(event.key==='Enter') login()">
+                </div>
+                <p id="login-error" class="font-mono text-xs text-red-500 hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> <span id="login-error-msg"></span>
+                </p>
+                <button id="login-btn" onclick="login()"
+                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Enter the desk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MAIN (hidden until auth) ── -->
+    <main id="main-entry" class="hidden w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200 mb-8">
+
+        <div id="site-nav"></div>
+
+        <!-- Loading -->
+        <div id="loading-state" class="text-center py-32 text-warm-500 font-mono">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-warm-300 block"></i>
+            <p class="text-sm">Loading entry…</p>
+        </div>
+
+        <!-- Entry (populated by JS) -->
+        <div id="entry-content" class="hidden px-4 sm:px-6 py-12 md:py-20 relative z-10 w-full flex justify-center">
+            <div class="w-full max-w-4xl relative">
+
+                <!-- Action bar -->
+                <div class="mb-8 px-2 flex justify-between items-center">
+                    <a href="./" class="inline-flex items-center gap-2 font-mono text-sm font-bold text-warm-500 hover:text-orange-600 transition-colors group">
+                        <i class="fa-solid fa-arrow-left transform group-hover:-translate-x-1 transition-transform"></i> Back to Field Notes
+                    </a>
+                    <div class="flex items-center gap-3">
+                        <button id="edit-btn"
+                            class="flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-xl font-mono font-bold text-warm-600 text-xs shadow-sm border border-warm-200 hover:bg-white hover:text-warm-900 transition-colors">
+                            <i class="fa-solid fa-pen-nib text-warm-400"></i> Edit
+                        </button>
+                        <button id="delete-btn"
+                            class="flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-xl font-mono font-bold text-red-400 text-xs shadow-sm border border-red-100 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors">
+                            <i class="fa-solid fa-trash-can opacity-70"></i> Delete
+                        </button>
+                    </div>
+                </div>
+
+                <!-- The paper -->
+                <article class="bg-[#fffdfa] rounded-2xl md:rounded-[2rem] border border-warm-200 polaroid-shadow relative w-full flex flex-col mt-4">
+                    <div class="washi-tape"></div>
+
+                    <!-- Cover image -->
+                    <div id="cover-wrapper" class="hidden p-3 md:p-4 pb-0">
+                        <div class="w-full h-64 md:h-[400px] rounded-xl md:rounded-2xl overflow-hidden relative border border-warm-100 shadow-inner">
+                            <img id="cover-img" src="" alt="Entry cover" class="w-full h-full object-cover">
+                            <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-warm-900/30 to-transparent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="px-6 py-10 md:px-16 md:py-16">
+
+                        <!-- Title + Receipt -->
+                        <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 pb-10 border-b border-warm-200">
+                            <div class="flex-1">
+                                <h1 id="entry-title" class="font-heavy text-4xl md:text-5xl lg:text-6xl text-warm-900 tracking-tight leading-tight mb-4"></h1>
+                            </div>
+                            <div class="bg-warm-50 border border-warm-200 p-5 shadow-sm rounded-xl shrink-0 w-full md:w-auto relative">
+                                <div class="absolute -left-1.5 -top-1.5 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm"></div>
+                                <div id="entry-receipt" class="font-mono text-[11px] text-warm-800 uppercase leading-relaxed whitespace-nowrap"></div>
+                            </div>
+                        </div>
+
+                        <!-- Rendered HTML content -->
+                        <div id="entry-body" class="rendered-content font-outfit text-lg md:text-xl text-warm-900 leading-relaxed font-light"></div>
+
+                        <!-- End marker -->
+                        <div class="mt-16 pt-8 border-t border-dashed border-warm-200 flex justify-center opacity-40">
+                            <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                            <i class="fa-solid fa-asterisk text-warm-400 text-sm mx-4"></i>
+                            <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
+                        </div>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div id="error-state" class="hidden text-center py-32 font-mono text-warm-500">
+            <i class="fa-solid fa-ghost text-4xl mb-4 opacity-40 block"></i>
+            <p>Entry not found.</p>
+            <a href="./" class="mt-4 inline-block text-orange-500 hover:text-orange-700 text-sm font-bold">← Back to Field Notes</a>
+        </div>
+
+        <div id="site-footer"></div>
+    </main>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+            authDomain: "personal-web-journal.firebaseapp.com",
+            projectId: "personal-web-journal",
+            storageBucket: "personal-web-journal.firebasestorage.app",
+            messagingSenderId: "980592936593",
+            appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db   = firebase.firestore();
+
+        const entryId = new URLSearchParams(window.location.search).get('id');
+
+        // ── AUTH ──
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-gate').classList.add('hidden');
+                document.getElementById('main-entry').classList.remove('hidden');
+                loadEntry();
+            } else {
+                document.getElementById('auth-gate').classList.remove('hidden');
+                document.getElementById('main-entry').classList.add('hidden');
+            }
+        });
+
+        async function login() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn      = document.getElementById('login-btn');
+            const errEl    = document.getElementById('login-error');
+            const errMsg   = document.getElementById('login-error-msg');
+            if (!email || !password) return;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Unlocking…';
+            btn.disabled  = true;
+            errEl.classList.add('hidden');
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (err) {
+                errMsg.textContent = 'Wrong email or password.';
+                errEl.classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-lock text-xs text-warm-400"></i> Enter the desk';
+                btn.disabled  = false;
+            }
+        }
+
+        // ── LOAD ENTRY ──
+        async function loadEntry() {
+            if (!entryId) { showError(); return; }
+
+            try {
+                const doc = await db.collection('entries').doc(entryId).get();
+                if (!doc.exists) { showError(); return; }
+
+                const e = doc.data();
+                renderEntry(e);
+            } catch (err) {
+                showError();
+            }
+        }
+
+        function renderEntry(e) {
+            // Page title
+            if (e.title) document.title = `${e.title} — Field Notes`;
+
+            // Cover image
+            const imageSrc = e.image
+                ? (e.image.startsWith('http') ? e.image : `assets/${e.image}`)
+                : null;
+            if (imageSrc) {
+                document.getElementById('cover-img').src = imageSrc;
+                document.getElementById('cover-wrapper').classList.remove('hidden');
+            }
+
+            // Title
+            document.getElementById('entry-title').textContent = e.title || '(Untitled)';
+
+            // Receipt
+            const displayLoc  = e.locationDetail || e.location || '—';
+            const displayDate = formatDate(e.date);
+            const weather     = formatWeather(e.weather);
+            document.getElementById('entry-receipt').innerHTML = `
+                <p class="font-bold text-warm-900 mb-1.5"><i class="fa-solid fa-location-dot text-orange-500 mr-2 w-3"></i> ${displayLoc.toUpperCase()}</p>
+                <p class="text-warm-600 mb-1"><i class="fa-regular fa-clock text-warm-400 mr-2 w-3"></i> ${displayDate}</p>
+                ${weather ? `<p class="text-warm-600"><i class="fa-solid fa-cloud text-warm-400 mr-2 w-3"></i> ${weather}</p>` : ''}
+            `;
+
+            // Body
+            document.getElementById('entry-body').innerHTML = e.content || '';
+
+            // Edit / Delete
+            document.getElementById('edit-btn').onclick = () => {
+                window.location.href = `write.html?id=${entryId}`;
+            };
+            document.getElementById('delete-btn').onclick = () => deleteEntry();
+
+            // Show content, hide loading
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('entry-content').classList.remove('hidden');
+        }
+
+        // ── DELETE ──
+        async function deleteEntry() {
+            const btn = document.getElementById('delete-btn');
+            if (!confirm('Delete this memory permanently?')) return;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i>';
+            btn.disabled  = true;
+            try {
+                await db.collection('entries').doc(entryId).delete();
+                window.location.href = './';
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+                btn.innerHTML = '<i class="fa-solid fa-trash-can opacity-70"></i> Delete';
+                btn.disabled  = false;
+            }
+        }
+
+        // ── HELPERS ──
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const d   = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const yr  = d.getFullYear();
+            const hh  = String(d.getHours()).padStart(2, '0');
+            const mm  = String(d.getMinutes()).padStart(2, '0');
+            return `${day} ${mon} ${yr} · ${hh}:${mm}`;
+        }
+
+        function formatWeather(w) {
+            if (!w) return '';
+            if (typeof w === 'string') return w;
+            return `${w.temp}°C · ${w.condition}`;
+        }
+
+        function showError() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+    </script>
+
+    <script src="../shared/components.js"></script>
+</body>
+</html>

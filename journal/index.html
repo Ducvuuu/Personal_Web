@@ -429,7 +429,11 @@
             const hasImage     = !!imagePath;
 
             return `
-                <article class="entry-card relative bg-[#fffdfa] rounded-xl border border-warm-200 polaroid-shadow group transition-all duration-300 hover:border-warm-300">
+                <article class="entry-card relative bg-[#fffdfa] rounded-xl border border-warm-200 polaroid-shadow group transition-all duration-300 hover:border-warm-300 cursor-pointer"
+                         onclick="window.location.href='entry.html?id=${entry.id}'"
+                         role="button" tabindex="0"
+                         onkeydown="if(event.key==='Enter') window.location.href='entry.html?id=${entry.id}'"
+                         title="Read entry">
                     <div class="washi-tape"></div>
 
                     ${hasImage ? `
@@ -509,7 +513,8 @@
                         <p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#8f4228; margin:0 0 6px;">${displayDate}</p>
                         ${weather ? `<p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#b15129; margin:0 0 8px;">☁ ${weather}</p>` : ''}
                         ${entry.title ? `<p style="font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:#4a2517; margin:0 0 4px;">${entry.title}</p>` : ''}
-                        <p style="font-size:12px; color:#8f4228; line-height:1.5; margin:0;">${snippet}${snippet.length >= 120 ? '…' : ''}</p>
+                        <p style="font-size:12px; color:#8f4228; line-height:1.5; margin:0 0 8px;">${snippet}${snippet.length >= 120 ? '…' : ''}</p>
+                        <a href="entry.html?id=${entry.id}" style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#e38847; text-decoration:none; text-transform:uppercase; letter-spacing:0.05em;">Read entry &rarr;</a>
                     </div>`;
 
                 L.marker([entry.lat, entry.lng], { icon: inkDotIcon })

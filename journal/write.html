@@ -236,18 +236,48 @@
         const storage = firebase.storage();
 
         // ── STATE ──
-        let currentImageValue = ''; // download URL after upload
+        let currentImageValue = '';
+        const editId = new URLSearchParams(window.location.search).get('id');
 
         // ── AUTH STATE ──
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
+                if (editId) loadEntryForEdit(editId);
             } else {
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
             }
         });
+
+        async function loadEntryForEdit(id) {
+            try {
+                const doc = await db.collection('entries').doc(id).get();
+                if (!doc.exists) return;
+                const e = doc.data();
+                document.getElementById('entry-title').value    = e.title        || '';
+                document.getElementById('journal-body').value   = e.content      || '';
+                document.getElementById('location-detail').value = e.locationDetail || '';
+                capturedDate     = e.date     || '';
+                capturedLocation = e.location || '';
+                capturedLat      = e.lat      || null;
+                capturedLng      = e.lng      || null;
+                capturedWeather  = e.weather  || '';
+                if (e.image) {
+                    currentImageValue = e.image;
+                    showImagePreview(e.image);
+                    setUploadStatus('done', '✓ Existing image');
+                }
+                // Update UI labels for edit mode
+                document.querySelector('h1.font-heavy') && (document.querySelector('h1.font-heavy').textContent = 'Edit Entry');
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.innerHTML = '<i class="fa-solid fa-pen-nib text-xs opacity-70"></i> Update Entry';
+                autoResize(document.getElementById('journal-body'));
+            } catch (err) {
+                console.error('Failed to load entry for edit:', err);
+            }
+        }
 
         async function login() {
             const email    = document.getElementById('login-email').value.trim();
@@ -466,8 +496,7 @@
             status.innerHTML  = '<i class="fa-solid fa-cloud-arrow-up text-warm-400"></i> Saving to cloud…';
 
             try {
-                await db.collection('entries').add({
-                    createdAt:      firebase.firestore.FieldValue.serverTimestamp(),
+                const data = {
                     date:           capturedDate,
                     location:       capturedLocation,
                     locationDetail: locationDetail,
@@ -477,8 +506,15 @@
                     image:          imageFilename,
                     title:          title,
                     content:        content
-                });
-                window.location.href = './';
+                };
+                if (editId) {
+                    await db.collection('entries').doc(editId).update(data);
+                    window.location.href = `entry.html?id=${editId}`;
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('entries').add(data);
+                    window.location.href = './';
+                }
             } catch (err) {
                 status.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Save failed: ${err.message}`;
                 saveBtn.innerHTML = '<i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save';
