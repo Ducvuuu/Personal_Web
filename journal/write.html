@@ -137,27 +137,25 @@
                         </div>
                     </div>
 
-                    <!-- Right: Cover Image (URL input) -->
-                    <div class="w-full lg:w-2/3 flex flex-col gap-3">
-                        <div id="image-dropzone" class="w-full h-48 sm:h-56 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-6">
-                            <i class="fa-solid fa-image text-3xl text-warm-300 mb-3 transition-colors"></i>
-                            <p class="font-mono text-xs font-bold text-warm-600">Attach Cover Photo</p>
-                            <p class="font-outfit text-sm text-warm-400 mt-1">Paste a URL — Google Photos, Unsplash, or local filename</p>
+                    <!-- Right: Cover Image (drag-and-drop → GitHub upload) -->
+                    <div class="w-full lg:w-2/3">
+                        <input type="file" id="image-file-input" accept="image/*" class="hidden"
+                            onchange="handleImageFile(this.files[0])">
+                        <div id="image-dropzone"
+                            class="w-full h-48 sm:h-56 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-6 cursor-pointer select-none"
+                            onclick="document.getElementById('image-file-input').click()"
+                            ondragover="event.preventDefault(); this.classList.add('border-orange-400','bg-orange-50/30')"
+                            ondragleave="this.classList.remove('border-orange-400','bg-orange-50/30')"
+                            ondrop="event.preventDefault(); this.classList.remove('border-orange-400','bg-orange-50/30'); handleImageFile(event.dataTransfer.files[0])">
+                            <i id="upload-icon" class="fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2"></i>
+                            <p class="font-mono text-xs font-bold text-warm-600">Drop image here or click to browse</p>
+                            <p id="upload-status" class="font-outfit text-sm text-warm-400 mt-1">Uploads straight to <code>journal/assets/</code> on GitHub</p>
                             <img id="image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Cover Preview">
                             <button id="remove-img-btn" onclick="removeImage(event)"
                                 class="absolute top-3 right-3 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-link text-warm-300 text-sm"></i>
-                            <input type="text" id="image-filename" placeholder="https://lh3.googleusercontent.com/… or my-photo.jpg"
-                                class="flex-1 font-mono text-sm text-warm-700 placeholder-warm-300 bg-white border border-warm-200 rounded-xl px-4 py-2 focus:outline-none focus:border-warm-400 shadow-inner"
-                                oninput="previewImage(this.value)">
-                        </div>
-                        <p class="font-mono text-[10px] text-warm-400 pl-7">
-                            Google Photos: open photo → right-click image → <span class="text-warm-600 font-bold">Copy image address</span>
-                        </p>
                     </div>
                 </div>
 
@@ -235,11 +233,20 @@
         const auth = firebase.auth();
         const db   = firebase.firestore();
 
+        // ── STATE ──
+        let githubPAT          = '';
+        let currentImageValue  = ''; // filename after upload
+
         // ── AUTH STATE ──
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async user => {
             if (user) {
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
+                // Fetch PAT from Firestore (never touches the repo)
+                try {
+                    const cfg = await db.collection('_config').doc('github').get();
+                    if (cfg.exists) githubPAT = cfg.data().pat || '';
+                } catch (e) { console.warn('Could not load GitHub PAT', e); }
             } else {
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
@@ -354,29 +361,99 @@
             btn.disabled   = false;
         }
 
-        // ── IMAGE PREVIEW ──
-        function previewImage(value) {
+        // ── IMAGE UPLOAD ──
+        async function handleImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            // Immediate local preview while uploading
+            const localUrl = URL.createObjectURL(file);
+            showImagePreview(localUrl);
+            setUploadStatus('uploading', 'Uploading to GitHub…');
+
+            if (!githubPAT) {
+                setUploadStatus('error', 'GitHub PAT not loaded — try refreshing.');
+                return;
+            }
+
+            // Unique filename: 20260424_143022_original-name.jpg
+            const ext      = file.name.split('.').pop().toLowerCase();
+            const ts       = new Date().toISOString().replace(/\D/g, '').substring(0, 15);
+            const safeName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+            const filename = `${ts}_${safeName}.${ext}`;
+
+            try {
+                const base64  = await fileToBase64(file);
+                const content = base64.split(',')[1]; // strip data:image/...;base64,
+
+                const res = await fetch(
+                    `https://api.github.com/repos/Ducvuuu/Personal_Web/contents/journal/assets/${filename}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${githubPAT}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github+json'
+                        },
+                        body: JSON.stringify({
+                            message: `Add journal image: ${filename}`,
+                            content,
+                            branch: 'main'
+                        })
+                    }
+                );
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message);
+                }
+
+                currentImageValue = filename;
+                URL.revokeObjectURL(localUrl);
+                showImagePreview(`assets/${filename}`);
+                setUploadStatus('done', `✓ ${filename}`);
+
+            } catch (err) {
+                setUploadStatus('error', `Upload failed: ${err.message}`);
+                currentImageValue = '';
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showImagePreview(src) {
             const preview   = document.getElementById('image-preview');
             const removeBtn = document.getElementById('remove-img-btn');
-            const v = (value || '').trim();
-            if (v) {
-                // Full URL (Google Photos lh3, http, data URI) — use as-is
-                // Plain filename — resolve relative to assets/
-                preview.src = (v.startsWith('http') || v.startsWith('data:')) ? v : `assets/${v}`;
-                preview.classList.remove('hidden');
-                removeBtn.classList.remove('hidden');
-                removeBtn.style.display = 'flex';
-            } else {
-                preview.src = '';
-                preview.classList.add('hidden');
-                removeBtn.classList.add('hidden');
-            }
+            preview.src = src;
+            preview.classList.remove('hidden');
+            removeBtn.classList.remove('hidden');
+            removeBtn.style.display = 'flex';
+        }
+
+        function setUploadStatus(state, message) {
+            const icon   = document.getElementById('upload-icon');
+            const status = document.getElementById('upload-status');
+            status.textContent = message;
+            if (state === 'uploading') icon.className = 'fa-solid fa-circle-notch spin-slow text-2xl text-warm-400 mb-2';
+            if (state === 'done')      icon.className = 'fa-solid fa-check-circle text-2xl text-green-500 mb-2';
+            if (state === 'error')     icon.className = 'fa-solid fa-triangle-exclamation text-2xl text-red-400 mb-2';
         }
 
         function removeImage(e) {
             e.stopPropagation();
-            document.getElementById('image-filename').value = '';
-            previewImage('');
+            currentImageValue = '';
+            document.getElementById('image-preview').src = '';
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('remove-img-btn').classList.add('hidden');
+            document.getElementById('upload-icon').className = 'fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2';
+            document.getElementById('upload-status').textContent = 'Uploads straight to journal/assets/ on GitHub';
+            document.getElementById('image-file-input').value = '';
         }
 
         // ── EDITOR TOGGLE ──
@@ -409,7 +486,7 @@
             const title         = document.getElementById('entry-title').value.trim();
             const content       = document.getElementById('journal-body').value.trim();
             const locationDetail = document.getElementById('location-detail').value.trim();
-            const imageFilename = document.getElementById('image-filename').value.trim();
+            const imageFilename  = currentImageValue;
 
             if (!title && !content) {
                 document.getElementById('save-status').innerHTML =
