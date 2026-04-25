@@ -345,6 +345,7 @@
         function stripHtml(html) {
             const tmp = document.createElement('div');
             tmp.innerHTML = html;
+            tmp.querySelectorAll('style, script').forEach(el => el.remove());
             return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
         }
 
