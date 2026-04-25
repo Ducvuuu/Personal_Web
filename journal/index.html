@@ -116,8 +116,13 @@
         .custom-popup .leaflet-popup-content-wrapper {
             background: #fffbf7; border: 1px solid #ebad7a;
             border-radius: 0.75rem; box-shadow: 4px 4px 0px rgba(74,37,23,0.1);
+            padding: 0; overflow: hidden;
         }
+        .custom-popup .leaflet-popup-content { margin: 0; }
         .custom-popup .leaflet-popup-tip { background: #fffbf7; }
+
+        /* ── ATLAS MODE ── */
+        .mode-fade { transition: opacity 0.4s ease; }
 
         /* MarkerCluster custom colours */
         .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
@@ -174,6 +179,59 @@
         class="hidden fixed bottom-6 right-6 z-40 bg-warm-900/80 backdrop-blur text-warm-400 hover:text-warm-50 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-colors">
         <i class="fa-solid fa-lock text-sm"></i>
     </button>
+
+    <!-- ATLAS MODE: Fullscreen Map Overlay -->
+    <div id="atlas-mode" class="fixed inset-0 z-[200] hidden opacity-0 mode-fade">
+
+        <!-- Full-Screen Map -->
+        <div id="journal-map" class="absolute inset-0 z-0"></div>
+
+        <!-- Floating Glass Control Panel -->
+        <div class="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 z-[1000] w-[95%] max-w-4xl pointer-events-none">
+            <div class="pointer-events-auto bg-white/70 backdrop-blur-xl p-2 rounded-2xl shadow-2xl border border-white/50 flex flex-wrap sm:flex-nowrap items-center gap-2">
+                <div class="relative w-full sm:flex-1">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-warm-400 text-sm"></i>
+                    <input type="text" id="atlasSearchInput" placeholder="Search locations, memories…"
+                        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/50 border border-warm-200 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-warm-300 transition-all text-warm-800 placeholder-warm-400">
+                </div>
+                <div class="flex items-center bg-warm-100/80 p-1 rounded-xl border border-warm-300 shadow-inner shrink-0 w-full sm:w-auto justify-center">
+                    <button onclick="switchView('chronicle')"
+                        class="px-5 py-2 rounded-lg text-sm font-bold transition-all text-warm-600 hover:text-warm-900 bg-transparent w-1/2 sm:w-auto">
+                        Chronicle
+                    </button>
+                    <button class="px-5 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-warm-900 w-1/2 sm:w-auto pointer-events-none">
+                        Atlas
+                    </button>
+                </div>
+                <a href="write.html" class="hidden sm:flex items-center justify-center bg-orange-600 text-warm-50 w-10 h-10 rounded-xl shadow-md hover:bg-orange-700 transition-colors shrink-0">
+                    <i class="fa-solid fa-pen-nib text-sm"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Atlas Stats Widget -->
+        <div class="absolute bottom-6 left-4 sm:left-6 z-[1000]">
+            <div class="bg-white/80 backdrop-blur-xl p-5 rounded-2xl shadow-2xl border border-white/60 flex flex-col gap-3 min-w-[200px]">
+                <h3 class="font-mono text-[10px] font-bold text-warm-500 uppercase tracking-widest border-b border-warm-200/60 pb-2">
+                    <i class="fa-solid fa-chart-pie mr-1.5 opacity-80"></i> Atlas Stats
+                </h3>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <p class="font-heavy text-4xl text-warm-900 leading-none mb-1" id="stat-entries">0</p>
+                        <p class="font-mono text-[9px] uppercase tracking-widest text-warm-500">Entries</p>
+                    </div>
+                    <div>
+                        <p class="font-heavy text-4xl text-orange-600 leading-none mb-1" id="stat-cities">0</p>
+                        <p class="font-mono text-[9px] uppercase tracking-widest text-warm-500">Places</p>
+                    </div>
+                </div>
+                <div class="mt-1 pt-3 border-t border-warm-200/60">
+                    <p class="font-mono text-[9px] text-warm-500 uppercase tracking-widest">Latest Note:</p>
+                    <span id="stat-latest" class="font-bold text-warm-800 text-xs mt-1 inline-block">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Timeline Sidebar Scrubber (fixed, desktop only) -->
     <div class="fixed right-0 top-1/4 bottom-1/4 w-6 hover:w-36 z-50 group flex items-center justify-end transition-all duration-300 hidden lg:flex">
@@ -247,11 +305,6 @@
             <div id="loading-state" class="text-center py-20 text-warm-500 font-mono">
                 <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-warm-300"></i>
                 <p class="text-sm">Fetching field notes…</p>
-            </div>
-
-            <!-- Map Container (Atlas view, hidden by default) -->
-            <div id="map-container" class="hidden w-full rounded-2xl border-4 border-white overflow-hidden relative z-10 mb-12" style="height: 600px; box-shadow: inset 0 10px 20px rgba(74,37,23,0.15);">
-                <div id="journal-map" class="w-full h-full z-0"></div>
             </div>
 
             <!-- Journal Grid (Chronicle view) -->
@@ -334,12 +387,12 @@
         let markerCluster = null;
         let scrollObserver = null;
 
-        const contentWrapper  = document.getElementById('journal-content-wrapper');
-        const mapContainer    = document.getElementById('map-container');
-        const loadingState    = document.getElementById('loading-state');
-        const zoomSlider      = document.getElementById('zoomSlider');
-        const searchInput     = document.getElementById('searchInput');
-        const timelineList    = document.getElementById('timeline-list');
+        const contentWrapper    = document.getElementById('journal-content-wrapper');
+        const loadingState      = document.getElementById('loading-state');
+        const zoomSlider        = document.getElementById('zoomSlider');
+        const searchInput       = document.getElementById('searchInput');
+        const atlasSearchInput  = document.getElementById('atlasSearchInput');
+        const timelineList      = document.getElementById('timeline-list');
 
         // ── HELPERS ──
         function stripHtml(html) {
@@ -507,21 +560,36 @@
                 iconSize: [0, 0]
             });
 
-            allEntries.forEach(entry => {
-                if (!entry.lat || !entry.lng) return;
-                const displayLoc = entry.locationDetail || entry.location || '';
-                const weather    = formatWeather(entry.weather);
+            // ── Stats update ──
+            const geoEntries = allEntries.filter(e => e.lat && e.lng);
+            const statEntries = document.getElementById('stat-entries');
+            const statCities  = document.getElementById('stat-cities');
+            const statLatest  = document.getElementById('stat-latest');
+            if (statEntries) statEntries.textContent = allEntries.length;
+            if (statCities)  statCities.textContent  = new Set(allEntries.filter(e => e.location).map(e => e.location)).size;
+            if (statLatest && allEntries.length > 0) {
+                const latest = allEntries.reduce((a, b) => new Date(a.date) > new Date(b.date) ? a : b);
+                statLatest.textContent = formatDisplayDate(latest.date).split('·')[0].trim();
+            }
+
+            geoEntries.forEach(entry => {
+                const displayLoc  = entry.locationDetail || entry.location || '';
+                const weather     = formatWeather(entry.weather);
                 const displayDate = formatDisplayDate(entry.date);
-                const snippet = (entry.content || '').replace(/<[^>]+>/g, '').substring(0, 120);
+                const snippet     = (entry.content || '').replace(/<[^>]+>/g, '').substring(0, 100);
+                const imageSrc    = getImagePath(entry.image);
 
                 const popupHtml = `
-                    <div style="min-width:180px; max-width:240px; font-family:'Outfit',sans-serif;">
-                        <p style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#e38847; text-transform:uppercase; margin:0 0 2px;">${displayLoc}</p>
-                        <p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#8f4228; margin:0 0 6px;">${displayDate}</p>
-                        ${weather ? `<p style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#b15129; margin:0 0 8px;">☁ ${weather}</p>` : ''}
-                        ${entry.title ? `<p style="font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:#4a2517; margin:0 0 4px;">${entry.title}</p>` : ''}
-                        <p style="font-size:12px; color:#8f4228; line-height:1.5; margin:0 0 8px;">${snippet}${snippet.length >= 120 ? '…' : ''}</p>
-                        <a href="entry.html?id=${entry.id}" style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#e38847; text-decoration:none; text-transform:uppercase; letter-spacing:0.05em;">Read entry &rarr;</a>
+                    <div style="width:230px; font-family:'Outfit',sans-serif; overflow:hidden;">
+                        ${imageSrc ? `<img src="${imageSrc}" style="width:100%;height:100px;object-fit:cover;display:block;border-bottom:1px solid #fbe8d4;" onerror="this.style.display='none'">` : ''}
+                        <div style="padding:12px 14px;">
+                            <p style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#e38847;text-transform:uppercase;margin:0 0 2px;">${displayLoc}</p>
+                            <p style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#8f4228;margin:0 0 4px;">${displayDate}</p>
+                            ${weather ? `<p style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#b15129;margin:0 0 8px;">&#9729; ${weather}</p>` : ''}
+                            ${entry.title ? `<p style="font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;color:#4a2517;margin:0 0 6px;line-height:1.3;">${entry.title}</p>` : ''}
+                            <p style="font-size:12px;color:#8f4228;line-height:1.55;margin:0 0 12px;">${snippet}${snippet.length >= 100 ? '…' : ''}</p>
+                            <a href="entry.html?id=${entry.id}" style="display:block;text-align:center;background:#fff7f0;color:#e38847;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:7px;border-radius:6px;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;border:1px solid #fbe8d4;">Read entry &rarr;</a>
+                        </div>
                     </div>`;
 
                 L.marker([entry.lat, entry.lng], { icon: inkDotIcon })
@@ -534,23 +602,28 @@
 
         // ── VIEW SWITCHING ──
         function switchView(view) {
+            const atlasMode = document.getElementById('atlas-mode');
             const btnC = document.getElementById('btn-chronicle');
             const btnA = document.getElementById('btn-atlas');
             const activeBtn   = 'px-5 py-1.5 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-warm-900 w-1/2 md:w-auto';
             const inactiveBtn = 'px-5 py-1.5 rounded-lg text-sm font-bold transition-all text-warm-600 hover:text-warm-900 bg-transparent w-1/2 md:w-auto';
 
             if (view === 'atlas') {
-                contentWrapper.classList.add('hidden');
-                timelineList.parentElement.classList.add('hidden');
-                mapContainer.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+                atlasMode.classList.remove('hidden');
+                setTimeout(() => {
+                    atlasMode.classList.remove('opacity-0');
+                    atlasMode.classList.add('opacity-100');
+                    if (!map) initMap();
+                    else { map.invalidateSize(); rebuildMapMarkers(); }
+                }, 50);
                 btnA.className = activeBtn;
                 btnC.className = inactiveBtn;
-                initMap();
-                setTimeout(() => map && map.invalidateSize(), 100);
             } else {
-                contentWrapper.classList.remove('hidden');
-                timelineList.parentElement.classList.remove('hidden');
-                mapContainer.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+                atlasMode.classList.remove('opacity-100');
+                atlasMode.classList.add('opacity-0');
+                setTimeout(() => atlasMode.classList.add('hidden'), 400);
                 btnC.className = activeBtn;
                 btnA.className = inactiveBtn;
             }
@@ -602,9 +675,20 @@
             contentWrapper.className = `zoom-${currentZoom}`;
         });
 
-        searchInput.addEventListener('input', e => {
-            searchQuery = e.target.value;
+        function handleSearch(query) {
+            searchQuery = query;
             renderEntries();
+            if (map) rebuildMapMarkers();
+        }
+
+        searchInput.addEventListener('input', e => {
+            atlasSearchInput.value = e.target.value;
+            handleSearch(e.target.value);
+        });
+
+        atlasSearchInput.addEventListener('input', e => {
+            searchInput.value = e.target.value;
+            handleSearch(e.target.value);
         });
 
     </script>
