@@ -25,17 +25,28 @@
             return `<li><a href="${href}" class="${cls}">${label}</a></li>`;
         }).join('');
 
-        const navClass = 'absolute top-0 left-0 right-0 z-30 flex justify-between items-center p-6 md:px-10 md:py-8';
+        const mobileLinks = navLinks.map(({ href, label, key }) => {
+            const active = currentSection === key;
+            const cls = active
+                ? 'block px-4 py-3 rounded-xl bg-warm-200 text-warm-900 font-medium'
+                : 'block px-4 py-3 rounded-xl hover:bg-warm-100 text-warm-700 font-medium transition-colors';
+            return `<li><a href="${href}" class="${cls}">${label}</a></li>`;
+        }).join('');
 
         return `
-        <nav class="${navClass}">
-            <a href="../home/" class="bg-white px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-warm-50 transition-colors cursor-pointer flex items-center gap-2">
-                <span class="text-orange-500">~</span><span class="text-warm-400">/</span>home
-            </a>
-            <ul class="hidden md:flex gap-2 font-medium text-sm text-warm-700 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-warm-200 shadow-sm">${links}</ul>
-            <button class="md:hidden bg-white px-4 py-2.5 rounded-xl shadow-sm text-warm-900 border border-warm-200">
-                <i class="fa-solid fa-bars text-lg"></i>
-            </button>
+        <nav class="absolute top-0 left-0 right-0 z-30">
+            <div class="flex justify-between items-center p-6 md:px-10 md:py-8">
+                <a href="../home/" class="bg-white px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-warm-50 transition-colors cursor-pointer flex items-center gap-2">
+                    <span class="text-orange-500">~</span><span class="text-warm-400">/</span>home
+                </a>
+                <ul class="hidden md:flex gap-2 font-medium text-sm text-warm-700 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-xl border border-warm-200 shadow-sm">${links}</ul>
+                <button id="mobile-menu-btn" class="md:hidden bg-white px-4 py-2.5 rounded-xl shadow-sm text-warm-900 border border-warm-200 transition-colors hover:bg-warm-50">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden mx-4 mb-4 bg-white/95 backdrop-blur-md rounded-2xl border border-warm-200 shadow-lg overflow-hidden">
+                <ul class="flex flex-col p-2 font-medium text-sm">${mobileLinks}</ul>
+            </div>
         </nav>`;
     }
 
@@ -92,5 +103,25 @@
 
         const footerEl = document.getElementById('site-footer');
         if (footerEl) footerEl.outerHTML = footerHTML();
+
+        // Mobile menu toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileBtn && mobileMenu) {
+            mobileBtn.addEventListener('click', () => {
+                const isOpen = !mobileMenu.classList.contains('hidden');
+                mobileMenu.classList.toggle('hidden');
+                const icon = mobileBtn.querySelector('i');
+                icon.className = isOpen ? 'fa-solid fa-bars text-lg' : 'fa-solid fa-xmark text-lg';
+            });
+            // Close menu when a link is tapped
+            mobileMenu.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    const icon = mobileBtn.querySelector('i');
+                    if (icon) icon.className = 'fa-solid fa-bars text-lg';
+                });
+            });
+        }
     });
 })();
