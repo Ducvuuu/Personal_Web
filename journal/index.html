@@ -303,6 +303,9 @@
                 </div>
             </header>
 
+            <!-- Drafts Shelf (hidden until drafts exist) -->
+            <div id="drafts-shelf" class="hidden mb-12"></div>
+
             <!-- Loading state -->
             <div id="loading-state" class="text-center py-20 text-warm-500 font-mono">
                 <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-warm-300"></i>
@@ -383,6 +386,7 @@
 
         // ── STATE ──
         let allEntries = [];
+        let allDrafts  = [];
         let searchQuery = '';
         let currentZoom = 2;
         let map = null;
@@ -661,14 +665,81 @@
         async function loadEntries() {
             try {
                 const snapshot = await db.collection('entries').orderBy('createdAt', 'desc').get();
-                allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allDrafts  = all.filter(e => e.status === 'draft');
+                allEntries = all.filter(e => e.status !== 'draft');
             } catch (err) {
                 console.error('Firestore error:', err);
+                allDrafts  = [];
                 allEntries = [];
             }
             loadingState.classList.add('hidden');
             contentWrapper.classList.remove('hidden');
+            renderDrafts();
             renderEntries();
+        }
+
+        // ── DRAFTS SHELF ──
+        function formatTimeAgo(date) {
+            if (!date) return '';
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60)  return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60)  return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24)    return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function buildDraftChip(draft) {
+            const title   = draft.title || 'Untitled draft';
+            const savedAt = draft.createdAt?.toDate ? draft.createdAt.toDate() : (draft.date ? new Date(draft.date) : null);
+            const timeAgo = formatTimeAgo(savedAt);
+            return `
+                <a href="write.html?draft=${draft.id}"
+                   class="flex-shrink-0 flex items-center gap-3 bg-white border border-warm-200 rounded-xl px-4 py-3 shadow-sm hover:border-warm-400 hover:shadow-md transition-all group max-w-xs">
+                    <i class="fa-solid fa-pen-nib text-warm-400 text-sm group-hover:text-orange-500 transition-colors"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-mono text-sm font-bold text-warm-800 truncate">${title}</p>
+                        <p class="font-mono text-[10px] text-warm-400 uppercase tracking-wider">${timeAgo}</p>
+                    </div>
+                    <button onclick="event.preventDefault(); deleteDraft('${draft.id}')"
+                        class="w-6 h-6 flex items-center justify-center rounded-full text-warm-300 hover:bg-red-50 hover:text-red-500 transition-colors text-xs shrink-0">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </a>`;
+        }
+
+        function renderDrafts() {
+            const shelf = document.getElementById('drafts-shelf');
+            if (allDrafts.length === 0) {
+                shelf.classList.add('hidden');
+                shelf.innerHTML = '';
+                return;
+            }
+            shelf.classList.remove('hidden');
+            shelf.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <h3 class="font-mono text-xs font-bold text-warm-500 uppercase tracking-widest flex items-center gap-2 shrink-0">
+                        <i class="fa-regular fa-floppy-disk text-warm-400"></i> Drafts (${allDrafts.length})
+                    </h3>
+                    <div class="flex-1 border-t border-dashed border-warm-200"></div>
+                </div>
+                <div class="flex gap-3 overflow-x-auto pb-2">
+                    ${allDrafts.map(d => buildDraftChip(d)).join('')}
+                </div>`;
+        }
+
+        async function deleteDraft(id) {
+            if (!confirm('Delete this draft? This cannot be undone.')) return;
+            try {
+                await db.collection('entries').doc(id).delete();
+                allDrafts = allDrafts.filter(d => d.id !== id);
+                renderDrafts();
+            } catch (err) {
+                console.error('Failed to delete draft:', err);
+            }
         }
 
         // ── EVENT LISTENERS ──

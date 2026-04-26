@@ -202,9 +202,13 @@
                     <i class="fa-solid fa-cloud-arrow-up"></i> Ready to seal.
                 </p>
                 <div class="flex gap-3 w-full sm:w-auto">
-                    <a href="./" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
+                    <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
                         Discard
-                    </a>
+                    </button>
+                    <button id="draft-btn" onclick="saveDraft()"
+                        class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-400 text-warm-700 hover:bg-warm-100 transition-colors bg-white flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft
+                    </button>
                     <button id="save-btn" onclick="saveEntry()"
                         class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm shadow-md text-warm-50 bg-orange-600 hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
                         <i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save
@@ -238,13 +242,15 @@
         // ── STATE ──
         let currentImageValue = '';
         const editId = new URLSearchParams(window.location.search).get('id');
+        let draftId  = new URLSearchParams(window.location.search).get('draft');
 
         // ── AUTH STATE ──
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
-                if (editId) loadEntryForEdit(editId);
+                if (editId)       loadEntryForEdit(editId);
+                else if (draftId) loadDraftForEdit(draftId);
             } else {
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
@@ -276,6 +282,31 @@
                 autoResize(document.getElementById('journal-body'));
             } catch (err) {
                 console.error('Failed to load entry for edit:', err);
+            }
+        }
+
+        async function loadDraftForEdit(id) {
+            try {
+                const doc = await db.collection('entries').doc(id).get();
+                if (!doc.exists) return;
+                const e = doc.data();
+                document.getElementById('entry-title').value     = e.title          || '';
+                document.getElementById('journal-body').value    = e.content        || '';
+                document.getElementById('location-detail').value = e.locationDetail || '';
+                capturedDate     = e.date     || capturedDate;
+                capturedLocation = e.location || '';
+                capturedLat      = e.lat      || null;
+                capturedLng      = e.lng      || null;
+                capturedWeather  = e.weather  || null;
+                if (e.image) {
+                    currentImageValue = e.image;
+                    showImagePreview(e.image);
+                    setUploadStatus('done', '✓ Existing image');
+                }
+                document.getElementById('save-status').innerHTML =
+                    '<i class="fa-regular fa-floppy-disk text-warm-400"></i> Draft loaded — keep writing.';
+            } catch (err) {
+                console.error('Failed to load draft:', err);
             }
         }
 
@@ -476,10 +507,66 @@
             }
         }
 
-        // ── SAVE TO FIRESTORE ──
+        // ── SAVE DRAFT TO FIRESTORE ──
+        async function saveDraft() {
+            const title          = document.getElementById('entry-title').value.trim();
+            const content        = document.getElementById('journal-body').value.trim();
+            const locationDetail = document.getElementById('location-detail').value.trim();
+
+            const draftBtn = document.getElementById('draft-btn');
+            const status   = document.getElementById('save-status');
+            draftBtn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Saving…';
+            draftBtn.disabled  = true;
+            status.innerHTML   = '<i class="fa-solid fa-circle-notch spin-slow text-warm-400"></i> Saving draft…';
+
+            try {
+                const data = {
+                    date:           capturedDate,
+                    location:       capturedLocation,
+                    locationDetail: locationDetail,
+                    lat:            capturedLat,
+                    lng:            capturedLng,
+                    weather:        capturedWeather,
+                    image:          currentImageValue,
+                    title:          title,
+                    content:        content,
+                    status:         'draft'
+                };
+
+                if (draftId) {
+                    await db.collection('entries').doc(draftId).update(data);
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await db.collection('entries').add(data);
+                    draftId = docRef.id;
+                    history.replaceState(null, '', `?draft=${draftId}`);
+                }
+
+                const now     = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                status.innerHTML   = `<i class="fa-solid fa-check text-green-500"></i> Draft saved at ${timeStr}`;
+                draftBtn.innerHTML = '<i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft';
+                draftBtn.disabled  = false;
+            } catch (err) {
+                status.innerHTML   = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Draft save failed: ${err.message}`;
+                draftBtn.innerHTML = '<i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft';
+                draftBtn.disabled  = false;
+            }
+        }
+
+        // ── DISCARD ──
+        async function discardEntry() {
+            if (draftId) {
+                if (!confirm('Delete this draft? This cannot be undone.')) return;
+                try { await db.collection('entries').doc(draftId).delete(); } catch (e) {}
+            }
+            window.location.href = './';
+        }
+
+        // ── SEAL & SAVE TO FIRESTORE ──
         async function saveEntry() {
-            const title         = document.getElementById('entry-title').value.trim();
-            const content       = document.getElementById('journal-body').value.trim();
+            const title          = document.getElementById('entry-title').value.trim();
+            const content        = document.getElementById('journal-body').value.trim();
             const locationDetail = document.getElementById('location-detail').value.trim();
             const imageFilename  = currentImageValue;
 
@@ -505,18 +592,22 @@
                     weather:        capturedWeather,
                     image:          imageFilename,
                     title:          title,
-                    content:        content
+                    content:        content,
+                    status:         'published'
                 };
                 if (editId) {
                     await db.collection('entries').doc(editId).update(data);
                     window.location.href = `entry.html?id=${editId}`;
+                } else if (draftId) {
+                    await db.collection('entries').doc(draftId).update(data);
+                    window.location.href = './';
                 } else {
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await db.collection('entries').add(data);
                     window.location.href = './';
                 }
             } catch (err) {
-                status.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Save failed: ${err.message}`;
+                status.innerHTML  = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Save failed: ${err.message}`;
                 saveBtn.innerHTML = '<i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save';
                 saveBtn.disabled  = false;
             }
