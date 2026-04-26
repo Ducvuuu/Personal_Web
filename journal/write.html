@@ -49,7 +49,7 @@
 </head>
 
 <!-- Body uses shared.css background (bg_pattern.jpg) -->
-<body class="min-h-screen py-6 px-4 sm:px-8 flex flex-col items-center text-warm-900">
+<body class="min-h-screen flex flex-col text-warm-900">
 
     <!-- ── AUTH GATE OVERLAY ── -->
     <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
@@ -91,10 +91,8 @@
     </div>
 
     <!-- ── EDITOR (shown after auth) ── -->
-    <main id="editor-container" class="w-full max-w-5xl relative z-10 flex flex-col min-h-[90vh] hidden">
-
-        <!-- Minimal nav -->
-        <nav class="flex justify-between items-center py-6 mb-4">
+    <!-- Minimal nav — fixed top -->
+    <nav class="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-warm-200 shadow-sm flex justify-between items-center px-6 py-3 hidden" id="editor-nav">
             <a href="./" class="bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-xl font-mono font-bold text-warm-800 text-sm shadow-sm border border-warm-200 hover:bg-white transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-warm-400"></i> Back to Desk
             </a>
@@ -103,13 +101,15 @@
                 class="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl font-mono text-warm-500 text-xs shadow-sm border border-warm-200 hover:bg-white hover:text-warm-800 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-right-from-bracket"></i> Lock
             </button>
-        </nav>
+    </nav>
 
-        <!-- The Writing Paper -->
-        <article class="flex-1 bg-[#fffdfa] rounded-[2rem] border border-warm-200 polaroid-shadow relative w-full flex flex-col mb-8">
-            <div class="washi-tape"></div>
+    <!-- ── EDITOR (shown after auth) ── -->
+    <main id="editor-container" class="hidden w-full flex-1 flex flex-col pt-14 pb-20">
 
-            <div class="p-8 md:p-12 lg:p-16 flex flex-col flex-1">
+        <div class="px-8 md:px-16 py-8 flex flex-col flex-1">
+
+            <!-- Fields — constrained width for comfortable writing -->
+            <div class="max-w-5xl mx-auto w-full">
 
                 <!-- Metadata + Cover Photo -->
                 <div class="flex flex-col lg:flex-row gap-8 mb-10 pb-10 border-b border-warm-200">
@@ -137,7 +137,7 @@
                         </div>
                     </div>
 
-                    <!-- Right: Cover Image (drag-and-drop → GitHub upload) -->
+                    <!-- Right: Cover Image -->
                     <div class="w-full lg:w-2/3">
                         <input type="file" id="image-file-input" accept="image/*" class="hidden"
                             onchange="handleImageFile(this.files[0])">
@@ -159,64 +159,62 @@
                     </div>
                 </div>
 
-                <!-- Editor -->
-                <div class="flex-1 flex flex-col">
-                    <!-- Specific location override -->
-                    <div class="flex items-center gap-2 mb-6">
-                        <i class="fa-solid fa-location-dot text-warm-400"></i>
-                        <input type="text" id="location-detail" placeholder="Specific place? (e.g. Back of a Grab car, Senopati)"
-                            class="w-full font-mono text-sm font-bold text-warm-600 placeholder-warm-300 bg-transparent border-none focus:outline-none">
-                    </div>
-
-                    <!-- Title -->
-                    <input type="text" id="entry-title" placeholder="A title for this moment…"
-                        class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
-
-                    <!-- Code / Preview toggle -->
-                    <div class="flex justify-between items-end mb-4">
-                        <span class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Entry Body (HTML)</span>
-                        <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner">
-                            <button id="btn-edit" onclick="toggleEditor('edit')"
-                                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
-                                <i class="fa-solid fa-code mr-1"></i> Code
-                            </button>
-                            <button id="btn-preview" onclick="toggleEditor('preview')"
-                                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
-                                <i class="fa-solid fa-eye mr-1"></i> Preview
-                            </button>
-                        </div>
-                    </div>
-
-                    <textarea id="journal-body"
-                        placeholder="<p>Start writing your HTML here…</p>"
-                        class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all"
-                        style="height: 65vh; min-height: 300px;"></textarea>
-
-                    <div id="journal-preview" class="w-full flex-1 min-h-[300px] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light p-6 hidden"></div>
+                <!-- Location + Title + Toggle -->
+                <div class="flex items-center gap-2 mb-6">
+                    <i class="fa-solid fa-location-dot text-warm-400"></i>
+                    <input type="text" id="location-detail" placeholder="Specific place? (e.g. Back of a Grab car, Senopati)"
+                        class="w-full font-mono text-sm font-bold text-warm-600 placeholder-warm-300 bg-transparent border-none focus:outline-none">
                 </div>
-            </div>
 
-            <!-- Action Bar -->
-            <div class="bg-warm-100/80 backdrop-blur-md px-8 py-5 rounded-b-[2rem] border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Ready to seal.
-                </p>
-                <div class="flex gap-3 w-full sm:w-auto">
-                    <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
-                        Discard
-                    </button>
-                    <button id="draft-btn" onclick="saveDraft()"
-                        class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-400 text-warm-700 hover:bg-warm-100 transition-colors bg-white flex items-center justify-center gap-2">
-                        <i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft
-                    </button>
-                    <button id="save-btn" onclick="saveEntry()"
-                        class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm shadow-md text-warm-50 bg-orange-600 hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save
-                    </button>
+                <input type="text" id="entry-title" placeholder="A title for this moment…"
+                    class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
+
+                <div class="flex justify-between items-end mb-4">
+                    <span class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Entry Body (HTML)</span>
+                    <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner">
+                        <button id="btn-edit" onclick="toggleEditor('edit')"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
+                            <i class="fa-solid fa-code mr-1"></i> Code
+                        </button>
+                        <button id="btn-preview" onclick="toggleEditor('preview')"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
+                            <i class="fa-solid fa-eye mr-1"></i> Preview
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </article>
+
+            </div><!-- end constrained fields -->
+
+            <!-- Textarea + Preview — full viewport width -->
+            <textarea id="journal-body"
+                placeholder="<p>Start writing your HTML here…</p>"
+                class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all mt-4"
+                style="min-height: 65vh;"></textarea>
+
+            <div id="journal-preview" class="w-full flex-1 min-h-[65vh] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light hidden mt-4"></div>
+
+        </div>
     </main>
+
+    <!-- Action Bar — fixed bottom -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-warm-100/80 backdrop-blur-md px-8 py-5 border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4 hidden" id="editor-actions">
+        <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Ready to seal.
+        </p>
+        <div class="flex gap-3 w-full sm:w-auto">
+            <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
+                Discard
+            </button>
+            <button id="draft-btn" onclick="saveDraft()"
+                class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-400 text-warm-700 hover:bg-warm-100 transition-colors bg-white flex items-center justify-center gap-2">
+                <i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft
+            </button>
+            <button id="save-btn" onclick="saveEntry()"
+                class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm shadow-md text-warm-50 bg-orange-600 hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock text-xs opacity-70"></i> Seal & Save
+            </button>
+        </div>
+    </div>
 
     <!-- Firebase compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -249,11 +247,19 @@
             if (user) {
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
+                const nav = document.getElementById('editor-nav');
+                nav.classList.remove('hidden');
+                nav.style.display = 'flex';
+                const actions = document.getElementById('editor-actions');
+                actions.classList.remove('hidden');
+                actions.style.display = 'flex';
                 if (editId)       loadEntryForEdit(editId);
                 else if (draftId) loadDraftForEdit(draftId);
             } else {
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
+                document.getElementById('editor-nav').classList.add('hidden');
+                document.getElementById('editor-actions').classList.add('hidden');
             }
         });
 
