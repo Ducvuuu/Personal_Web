@@ -296,8 +296,24 @@
                 ${weather ? `<p class="text-white/80"><i class="fa-solid fa-cloud text-white/50 mr-2 w-3"></i> ${weather}</p>` : ''}
             `;
 
-            // Body
-            document.getElementById('entry-body').innerHTML = e.content || '';
+            // Body — set innerHTML then re-execute any <script> tags, since browsers
+            // block scripts injected via innerHTML. Also patch DOMContentLoaded so
+            // scripts that wrap init in that listener still run correctly.
+            const bodyEl = document.getElementById('entry-body');
+            bodyEl.innerHTML = e.content || '';
+
+            const origAddEventListener = document.addEventListener.bind(document);
+            document.addEventListener = function(type, listener, options) {
+                if (type === 'DOMContentLoaded') { listener(); return; }
+                return origAddEventListener(type, listener, options);
+            };
+            bodyEl.querySelectorAll('script').forEach(old => {
+                const s = document.createElement('script');
+                Array.from(old.attributes).forEach(a => s.setAttribute(a.name, a.value));
+                s.textContent = old.textContent;
+                old.parentNode.replaceChild(s, old);
+            });
+            document.addEventListener = origAddEventListener;
 
             // Wire chrome bar buttons
             document.getElementById('edit-btn').onclick   = () => goToEdit();
