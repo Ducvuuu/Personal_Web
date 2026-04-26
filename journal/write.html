@@ -41,7 +41,7 @@
             border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             z-index: 20; backdrop-filter: blur(2px);
         }
-        textarea { resize: none; overflow: hidden; }
+        textarea { resize: none; overflow-y: auto; }
         input:focus, textarea:focus { outline: none; box-shadow: none; }
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -189,8 +189,8 @@
 
                     <textarea id="journal-body"
                         placeholder="<p>Start writing your HTML here…</p>"
-                        class="w-full flex-1 min-h-[300px] font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all"
-                        oninput="this.style.height=''; this.style.height=this.scrollHeight+'px'"></textarea>
+                        class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all"
+                        style="height: 65vh; min-height: 300px;"></textarea>
 
                     <div id="journal-preview" class="w-full flex-1 min-h-[300px] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light p-6 hidden"></div>
                 </div>
