@@ -32,19 +32,66 @@
     </script>
 
     <style>
-        .polaroid-shadow {
-            box-shadow: 0 15px 35px -5px rgba(74,37,23,0.15), 0 10px 15px -6px rgba(74,37,23,0.1);
-        }
-        .washi-tape {
-            position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(1deg);
-            width: 120px; height: 30px; background-color: rgba(255,255,255,0.5);
-            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            z-index: 20; backdrop-filter: blur(2px);
-        }
         textarea { resize: none; overflow-y: auto; }
         input:focus, textarea:focus { outline: none; box-shadow: none; }
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ── rendered-content styles (mirrors entry.html exactly) ── */
+        .rendered-content p { margin-bottom: 1.5rem; line-height: 1.7; }
+        .rendered-content p:last-child { margin-bottom: 0; }
+        .rendered-content h2, .rendered-content h3 {
+            font-family: 'Outfit', sans-serif; font-weight: 900; color: #b15129;
+            margin-top: 3.5rem; margin-bottom: 1.5rem; line-height: 1.2;
+            display: inline-block; position: relative;
+        }
+        .rendered-content h2 { font-size: 2rem; }
+        .rendered-content h3 { font-size: 1.5rem; }
+        .rendered-content h3::after {
+            content: ''; position: absolute; bottom: 2px; left: -5%;
+            width: 110%; height: 14px; background-color: #f5d3b3;
+            z-index: -1; border-radius: 10px; transform: rotate(-1deg);
+        }
+        .rendered-content blockquote {
+            font-family: 'Caveat', cursive; font-size: 1.75rem; line-height: 1.3;
+            color: #8f4228; background: #fdf5eb; padding: 1.5rem 2rem;
+            margin: 2.5rem 1.5rem; border-radius: 1rem 2rem 2rem 1rem;
+            border-left: 6px solid #e38847;
+            box-shadow: 4px 6px 0px rgba(227,136,71,0.15); transform: rotate(-1.5deg);
+        }
+        .rendered-content b, .rendered-content strong { font-weight: 900; color: #d56a31; }
+        .rendered-content mark {
+            background-color: #fbe8d4; color: #8f4228; padding: 0.1rem 0.5rem;
+            border-radius: 0.5rem; font-family: 'Caveat', cursive; font-size: 1.1em;
+        }
+        .rendered-content ul { list-style: none; padding-left: 0; margin: 1.5rem 0 2.5rem; }
+        .rendered-content ul li {
+            position: relative; padding: 0.75rem 1rem 0.75rem 2.5rem;
+            margin-bottom: 0.75rem; background: #fffbf7; border-radius: 1rem;
+            border: 2px dashed #f5d3b3; color: #4a2517; transition: transform 0.2s;
+        }
+        .rendered-content ul li:hover { transform: translateX(5px); }
+        .rendered-content ul li::before {
+            content: '📌'; position: absolute; left: 0.6rem; top: 0.7rem; font-size: 1rem;
+        }
+        .rendered-content hr {
+            border: none; text-align: center; margin: 4rem 0; overflow: visible;
+        }
+        .rendered-content hr::after {
+            content: '✧ ✦ ✧ ✦ ✧'; color: #ebad7a;
+            font-size: 1.25rem; letter-spacing: 0.5rem; display: inline-block;
+        }
+
+        /* ── Simple editor (contenteditable) ── */
+        #simple-body { outline: none; }
+        #simple-body:focus { box-shadow: 0 0 0 2px #f5d3b3; }
+        #simple-body:empty::before {
+            content: attr(data-placeholder);
+            color: #f5d3b3;
+            pointer-events: none;
+            display: block;
+            font-weight: 300;
+        }
     </style>
 </head>
 
@@ -170,14 +217,18 @@
                     class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
 
                 <div class="flex justify-between items-end mb-4">
-                    <span class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Entry Body (HTML)</span>
+                    <span id="mode-label" class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Simple</span>
                     <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner">
-                        <button id="btn-edit" onclick="toggleEditor('edit')"
+                        <button id="btn-simple" onclick="toggleEditor('simple')"
                             class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
+                            <i class="fa-solid fa-feather mr-1"></i> Simple
+                        </button>
+                        <button id="btn-code" onclick="toggleEditor('code')"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
                             <i class="fa-solid fa-code mr-1"></i> Code
                         </button>
                         <button id="btn-preview" onclick="toggleEditor('preview')"
-                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent hidden">
                             <i class="fa-solid fa-eye mr-1"></i> Preview
                         </button>
                     </div>
@@ -185,13 +236,21 @@
 
             </div><!-- end constrained fields -->
 
-            <!-- Textarea + Preview — full viewport width -->
+            <!-- Simple mode — styled contenteditable, WYSIWYG -->
+            <div id="simple-body"
+                contenteditable="true"
+                data-placeholder="Just write… press Enter for a new paragraph."
+                class="rendered-content w-full bg-[#fdfcf6] border border-warm-200 rounded-2xl px-8 md:px-16 py-10 shadow-inner transition-all mt-4 font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light"
+                style="min-height: 65vh;"></div>
+
+            <!-- Code mode — raw HTML textarea -->
             <textarea id="journal-body"
                 placeholder="<p>Start writing your HTML here…</p>"
-                class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all mt-4"
+                class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all mt-4 hidden"
                 style="min-height: 65vh;"></textarea>
 
-            <div id="journal-preview" class="w-full flex-1 min-h-[65vh] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light hidden mt-4"></div>
+            <!-- Preview mode — renders Code textarea -->
+            <div id="journal-preview" class="rendered-content w-full min-h-[65vh] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light hidden mt-4 px-8 md:px-16 py-8"></div>
 
         </div>
     </main>
@@ -239,8 +298,12 @@
 
         // ── STATE ──
         let currentImageValue = '';
+        let currentMode = 'simple';
         const editId = new URLSearchParams(window.location.search).get('id');
         let draftId  = new URLSearchParams(window.location.search).get('draft');
+
+        // Ensure Enter in contenteditable produces <p> not <div>
+        try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch(e) {}
 
         // ── AUTH STATE ──
         auth.onAuthStateChanged(user => {
@@ -285,7 +348,7 @@
                 document.querySelector('h1.font-heavy') && (document.querySelector('h1.font-heavy').textContent = 'Edit Entry');
                 const saveBtn = document.getElementById('save-btn');
                 saveBtn.innerHTML = '<i class="fa-solid fa-pen-nib text-xs opacity-70"></i> Update Entry';
-                autoResize(document.getElementById('journal-body'));
+                toggleEditor('code'); // existing HTML always opens in Code mode
             } catch (err) {
                 console.error('Failed to load entry for edit:', err);
             }
@@ -309,6 +372,7 @@
                     showImagePreview(e.image);
                     setUploadStatus('done', '✓ Existing image');
                 }
+                toggleEditor('code'); // drafts are stored as HTML, open in Code mode
                 document.getElementById('save-status').innerHTML =
                     '<i class="fa-regular fa-floppy-disk text-warm-400"></i> Draft loaded — keep writing.';
             } catch (err) {
@@ -490,33 +554,58 @@
 
         // ── EDITOR TOGGLE ──
         function toggleEditor(mode) {
-            const btnEdit    = document.getElementById('btn-edit');
+            currentMode = mode;
+
+            const simpleEl  = document.getElementById('simple-body');
+            const codeEl    = document.getElementById('journal-body');
+            const previewEl = document.getElementById('journal-preview');
+            const btnSimple  = document.getElementById('btn-simple');
+            const btnCode    = document.getElementById('btn-code');
             const btnPreview = document.getElementById('btn-preview');
-            const textarea   = document.getElementById('journal-body');
-            const preview    = document.getElementById('journal-preview');
+            const label      = document.getElementById('mode-label');
 
-            const activeStyle   = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
-            const inactiveStyle = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
+            const on  = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
+            const off = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
 
-            if (mode === 'preview') {
-                btnPreview.className = activeStyle;
-                btnEdit.className    = inactiveStyle;
-                textarea.classList.add('hidden');
-                preview.classList.remove('hidden');
-                const content = textarea.value.trim();
-                preview.innerHTML = content || '<span class="text-warm-300 italic">Nothing to preview yet…</span>';
-            } else {
-                btnEdit.className    = activeStyle;
-                btnPreview.className = inactiveStyle;
-                preview.classList.add('hidden');
-                textarea.classList.remove('hidden');
+            // Hide all panels, reset all buttons
+            simpleEl.classList.add('hidden');
+            codeEl.classList.add('hidden');
+            previewEl.classList.add('hidden');
+            btnSimple.className  = off;
+            btnCode.className    = off;
+            btnPreview.className = off;
+
+            if (mode === 'simple') {
+                simpleEl.classList.remove('hidden');
+                btnSimple.className = on;
+                btnPreview.classList.add('hidden');    // Preview not relevant in simple
+                label.textContent = 'Simple';
+                simpleEl.focus();
+            } else if (mode === 'code') {
+                codeEl.classList.remove('hidden');
+                btnCode.className = on;
+                btnPreview.classList.remove('hidden'); // Preview appears in code mode
+                label.textContent = 'HTML';
+            } else { // preview
+                previewEl.classList.remove('hidden');
+                btnPreview.className = on;
+                btnPreview.classList.remove('hidden');
+                label.textContent = 'Preview';
+                const html = codeEl.value.trim();
+                previewEl.innerHTML = html || '<span style="color:#f5d3b3;font-style:italic;">Nothing to preview yet…</span>';
             }
+        }
+
+        // ── GET CONTENT (mode-aware) ──
+        function getContent() {
+            if (currentMode === 'simple') return document.getElementById('simple-body').innerHTML;
+            return document.getElementById('journal-body').value.trim();
         }
 
         // ── SAVE DRAFT TO FIRESTORE ──
         async function saveDraft() {
             const title          = document.getElementById('entry-title').value.trim();
-            const content        = document.getElementById('journal-body').value.trim();
+            const content        = getContent();
             const locationDetail = document.getElementById('location-detail').value.trim();
 
             const draftBtn = document.getElementById('draft-btn');
@@ -572,7 +661,7 @@
         // ── SEAL & SAVE TO FIRESTORE ──
         async function saveEntry() {
             const title          = document.getElementById('entry-title').value.trim();
-            const content        = document.getElementById('journal-body').value.trim();
+            const content        = getContent();
             const locationDetail = document.getElementById('location-detail').value.trim();
             const imageFilename  = currentImageValue;
 
