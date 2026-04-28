@@ -407,20 +407,22 @@
             let author = 'Unknown Author';
             let coverBlob = null;
 
+            const timeout = ms => new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms));
             try {
                 const ab   = await file.arrayBuffer();
                 const book = ePub(ab, { openAs: 'epub' });
-                await book.ready;
-                const meta = await book.loaded.metadata;
+                const meta = await Promise.race([book.loaded.metadata, timeout(8000)]);
                 if (meta.title)   title  = meta.title;
                 if (meta.creator) author = meta.creator;
-                const blobUrl = await book.coverUrl();
-                if (blobUrl) {
-                    const res = await fetch(blobUrl);
-                    coverBlob = await res.blob();
-                }
+                try {
+                    const blobUrl = await Promise.race([book.coverUrl(), timeout(5000)]);
+                    if (blobUrl) {
+                        const res = await fetch(blobUrl);
+                        coverBlob = await res.blob();
+                    }
+                } catch { /* cover extraction timed out — continue without */ }
                 book.destroy();
-            } catch { /* metadata extraction failed — continue with filename */ }
+            } catch { /* metadata extraction timed out or failed — continue with filename */ }
 
             setUploadState('Uploading…', `"${title}"`, 20);
 
