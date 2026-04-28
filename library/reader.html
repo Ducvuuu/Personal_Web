@@ -348,6 +348,9 @@
 
             showLoading('Rendering…');
 
+            // Must be visible before renderTo — epub.js needs real dimensions
+            document.getElementById('reader-area').classList.remove('hidden');
+
             epubBook  = ePub(arrayBuffer, { openAs: 'epub' });
             rendition = epubBook.renderTo(document.getElementById('viewer'), {
                 width:  '100%',
@@ -373,7 +376,6 @@
             }
 
             showLoading(null);
-            document.getElementById('reader-area').classList.remove('hidden');
 
             // Generate locations (enables accurate percentage)
             epubBook.locations.generate(1600).then(() => {
