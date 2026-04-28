@@ -460,25 +460,36 @@
             const category = await showCategoryPicker(title, author);
 
             modal.classList.remove('hidden');
-            setUploadState('Done!', 'Your book is ready', 100);
-            document.getElementById('upload-icon').className = 'fa-solid fa-check text-green-500 text-xl';
+            setUploadState('Saving to library…', 'Almost there', 95);
 
-            await db.collection('library').doc(bookId).set({
-                title, author, category,
-                fileUrl, coverUrl,
-                status: 'unread',
-                percentage: 0,
-                currentChapter: '',
-                currentCfi: '',
-                highlights: [],
-                lastRead: null,
-                uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            try {
+                await db.collection('library').doc(bookId).set({
+                    title, author, category,
+                    fileUrl, coverUrl,
+                    status: 'unread',
+                    percentage: 0,
+                    currentChapter: '',
+                    currentCfi: '',
+                    highlights: [],
+                    lastRead: null,
+                    uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
-            await new Promise(r => setTimeout(r, 700));
-            modal.classList.add('hidden');
-            document.getElementById('upload-icon').className = 'fa-solid fa-circle-notch spin-slow text-warm-400 text-xl';
-            loadBooks();
+                setUploadState('Done!', 'Your book is ready', 100);
+                document.getElementById('upload-icon').className = 'fa-solid fa-check text-green-500 text-xl';
+                await new Promise(r => setTimeout(r, 900));
+                loadBooks();
+            } catch (err) {
+                setUploadState('Save failed', err.code === 'permission-denied'
+                    ? 'Check your Firestore rules — library collection not permitted'
+                    : err.message, 95);
+                document.getElementById('upload-icon').className = 'fa-solid fa-triangle-exclamation text-red-400 text-xl';
+                await new Promise(r => setTimeout(r, 4000));
+            } finally {
+                modal.classList.add('hidden');
+                document.getElementById('upload-icon').className = 'fa-solid fa-circle-notch spin-slow text-warm-400 text-xl';
+                setUploadState('Adding to library…', 'Reading book metadata', 5);
+            }
         }
 
         function setUploadState(title, text, pct) {
