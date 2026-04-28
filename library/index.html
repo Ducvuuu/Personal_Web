@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Library — Vu Trong Duc Anh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/shared.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7', 100: '#fdf5eb', 200: '#fbe8d4', 300: '#f5d3b3',
+                            400: '#ebad7a', 500: '#e38847', 600: '#d56a31', 700: '#b15129',
+                            800: '#8f4228', 900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        handwriting: ['"Caveat"', 'cursive']
+                    },
+                    fontWeight: { heavy: '900' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #eaddd7;
+            background-image: linear-gradient(rgba(234,221,215,0.85), rgba(234,221,215,0.85)), url('https://i.imgur.com/87WD9ee.jpeg');
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        .book-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .book-card:hover { transform: translateY(-5px); }
+        .book-cover {
+            border-radius: 2px 8px 8px 2px;
+            border-left: 4px solid rgba(255,255,255,0.25);
+            box-shadow:
+                inset 4px 0 10px rgba(0,0,0,0.1),
+                inset -1px 0 2px rgba(255,255,255,0.3),
+                5px 10px 20px -5px rgba(74,37,23,0.3),
+                -2px 0 5px rgba(74,37,23,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .book-cover::after {
+            content: '';
+            position: absolute; top: 2%; bottom: 2%; right: 0;
+            width: 3px;
+            background: linear-gradient(to right, #fdf5eb, #eaddd7);
+            border-radius: 0 2px 2px 0;
+            opacity: 0.8;
+        }
+        .book-cover-image { width: 100%; height: 100%; object-fit: cover; border-radius: 0 6px 6px 0; }
+        .progress-bar-container { background-color: #fbe8d4; border-radius: 999px; height: 6px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+        .progress-bar-fill { background-color: #d56a31; height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        #drag-overlay { transition: opacity 0.2s; }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
+
+    <!-- ── AUTH GATE ── -->
+    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl shadow-warm-900/20 p-10 w-full max-w-sm relative">
+            <div class="absolute top-0 left-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded" style="transform: translateX(-50%) rotate(-1.5deg);"></div>
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <i class="fa-solid fa-book-open text-warm-400 text-xl"></i>
+                </div>
+                <h1 class="font-heavy text-2xl text-warm-900 mb-1">The Library</h1>
+                <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private collection — authorised only</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
+                        onkeydown="if(event.key==='Enter') login()">
+                </div>
+                <p id="login-error" class="font-mono text-xs text-red-500 hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> <span id="login-error-msg"></span>
+                </p>
+                <button id="login-btn" onclick="login()"
+                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── LOGOUT BUTTON ── -->
+    <button id="logout-btn" onclick="logout()" title="Lock library"
+        class="hidden fixed bottom-6 right-6 z-40 bg-warm-900/80 backdrop-blur text-warm-400 hover:text-warm-50 w-10 h-10 rounded-full shadow-lg items-center justify-center transition-colors">
+        <i class="fa-solid fa-lock text-sm"></i>
+    </button>
+
+    <!-- ── UPLOAD PROGRESS MODAL ── -->
+    <div id="upload-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm text-center">
+            <div class="w-14 h-14 bg-warm-100 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-warm-200">
+                <i id="upload-icon" class="fa-solid fa-circle-notch spin-slow text-warm-400 text-xl"></i>
+            </div>
+            <h3 class="font-heavy text-xl text-warm-900 mb-2" id="upload-status-title">Adding to library…</h3>
+            <p class="font-mono text-xs text-warm-400 mb-6" id="upload-status-text">Reading book metadata</p>
+            <div class="progress-bar-container h-2 mb-2">
+                <div class="progress-bar-fill" id="upload-progress-bar" style="width:0%"></div>
+            </div>
+            <p class="font-mono text-[10px] text-warm-400" id="upload-progress-label">0%</p>
+        </div>
+    </div>
+
+    <!-- ── CATEGORY PICKER (injected dynamically) ── -->
+
+    <!-- ── MAIN CONTENT ── -->
+    <main id="main-library" class="hidden w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
+
+        <div id="site-nav"></div>
+
+        <!-- Full-page drag overlay -->
+        <div id="drag-overlay" class="hidden pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-warm-50/95 backdrop-blur-sm">
+            <div class="w-24 h-24 rounded-[2rem] bg-warm-100 border-2 border-dashed border-warm-400 flex items-center justify-center mb-4">
+                <i class="fa-solid fa-file-arrow-up text-4xl text-warm-400"></i>
+            </div>
+            <p class="font-heavy text-2xl text-warm-700">Drop your .epub here</p>
+            <p class="font-mono text-xs text-warm-400 mt-2">Release to add to the library</p>
+        </div>
+
+        <div class="px-6 py-12 md:px-16 lg:px-20 pt-28 md:pt-32 relative z-10 min-h-[600px]">
+
+            <!-- Header -->
+            <header class="mb-12">
+                <h1 class="font-heavy text-4xl md:text-6xl text-warm-900 mb-2">The Library</h1>
+                <span class="font-handwriting text-2xl md:text-3xl text-warm-500 inline-block -rotate-2">Everything in one place, perfectly synced.</span>
+            </header>
+
+            <!-- Currently Reading Hero -->
+            <section id="currently-reading-section" class="mb-16 hidden"></section>
+
+            <!-- Bookshelf -->
+            <div>
+                <div class="flex flex-wrap justify-between items-end mb-6 border-b border-warm-200 pb-4 gap-3">
+                    <h3 class="font-heavy text-2xl text-warm-900">The Bookshelf</h3>
+                    <div class="flex flex-wrap gap-2" id="filter-tabs">
+                        <button onclick="setFilter('all')" data-filter="all" class="filter-tab px-3 py-1 bg-warm-200 text-warm-900 rounded-lg text-xs font-bold font-mono">All</button>
+                        <button onclick="setFilter('fiction')" data-filter="fiction" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Fiction</button>
+                        <button onclick="setFilter('non-fiction')" data-filter="non-fiction" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Non-Fiction</button>
+                        <button onclick="setFilter('essays')" data-filter="essays" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Essays</button>
+                        <button onclick="setFilter('manuscripts')" data-filter="manuscripts" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Manuscripts</button>
+                    </div>
+                </div>
+
+                <div id="empty-state" class="hidden text-center py-20">
+                    <p class="font-mono text-sm text-warm-400 mb-2">Your shelves are empty.</p>
+                    <p class="font-mono text-xs text-warm-300">Drop an .epub anywhere on this page to begin.</p>
+                </div>
+
+                <div id="book-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10 pb-12"></div>
+            </div>
+        </div>
+
+        <div id="site-footer"></div>
+    </main>
+
+    <!-- Hidden file input -->
+    <input type="file" id="file-input" accept=".epub" class="hidden">
+
+    <!-- Firebase compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+    <!-- epub.js for metadata + cover extraction during upload -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+
+    <script src="../shared/components.js"></script>
+
+    <script>
+        // ── FIREBASE ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+            authDomain: "personal-web-journal.firebaseapp.com",
+            projectId: "personal-web-journal",
+            storageBucket: "personal-web-journal.firebasestorage.app",
+            messagingSenderId: "980592936593",
+            appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth    = firebase.auth();
+        const db      = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ── STATE ──
+        let allBooks     = [];
+        let activeFilter = 'all';
+
+        // ── AUTH ──
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-gate').classList.add('hidden');
+                document.getElementById('main-library').classList.remove('hidden');
+                const lb = document.getElementById('logout-btn');
+                lb.classList.remove('hidden');
+                lb.style.display = 'flex';
+                loadBooks();
+            } else {
+                document.getElementById('auth-gate').classList.remove('hidden');
+                document.getElementById('main-library').classList.add('hidden');
+                document.getElementById('logout-btn').classList.add('hidden');
+            }
+        });
+
+        async function login() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn      = document.getElementById('login-btn');
+            const errEl    = document.getElementById('login-error');
+            const errMsg   = document.getElementById('login-error-msg');
+            if (!email || !password) return;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Unlocking…';
+            btn.disabled  = true;
+            errEl.classList.add('hidden');
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch {
+                errMsg.textContent = 'Wrong email or password.';
+                errEl.classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library';
+                btn.disabled  = false;
+            }
+        }
+
+        function logout() { auth.signOut(); }
+
+        // ── LOAD BOOKS ──
+        async function loadBooks() {
+            const snap = await db.collection('library').orderBy('uploadedAt', 'desc').get();
+            allBooks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderCurrentlyReading();
+            renderBookshelf();
+        }
+
+        // ── CURRENTLY READING ──
+        function renderCurrentlyReading() {
+            const section = document.getElementById('currently-reading-section');
+            const reading = allBooks
+                .filter(b => b.status === 'reading')
+                .sort((a, b) => (b.lastRead?.seconds || 0) - (a.lastRead?.seconds || 0))[0];
+
+            if (!reading) { section.classList.add('hidden'); return; }
+            section.classList.remove('hidden');
+
+            const pct = reading.percentage || 0;
+            const coverHtml = reading.coverUrl
+                ? `<img src="${reading.coverUrl}" alt="Cover" class="book-cover-image">`
+                : `<div class="absolute inset-0 p-4 flex flex-col justify-center items-center bg-warm-700 rounded-r-lg"><span class="font-heavy text-white text-sm text-center leading-tight">${escHtml(reading.title)}</span></div>`;
+
+            section.innerHTML = `
+                <div class="bg-[#fffdfa] rounded-[2rem] border border-warm-200 p-6 md:p-10 shadow-[0_15px_35px_-5px_rgba(74,37,23,0.1)] relative overflow-hidden">
+                    <div class="absolute -right-20 -top-20 w-96 h-96 bg-orange-50 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+                    <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center relative z-10">
+                        <div class="w-40 sm:w-48 shrink-0 book-card cursor-pointer" onclick="openBook('${reading.id}')">
+                            <div class="book-cover aspect-[2/3] bg-warm-800 relative">${coverHtml}</div>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <div class="inline-flex items-center gap-2 font-mono text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-4">
+                                <i class="fa-solid fa-bookmark"></i> Currently Reading
+                            </div>
+                            <h2 class="font-heavy text-3xl md:text-4xl text-warm-900 mb-2 leading-tight">${escHtml(reading.title)}</h2>
+                            <p class="text-lg text-warm-500 mb-6 font-light">${escHtml(reading.author || 'Unknown Author')}</p>
+                            <div class="bg-warm-50 border border-warm-200 p-4 rounded-xl shadow-inner mb-6">
+                                <div class="flex justify-between font-mono text-xs text-warm-800 font-bold mb-2">
+                                    <span>${escHtml(reading.currentChapter || 'Reading…')}</span>
+                                    <span class="text-orange-600">${pct}%</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width:${pct}%"></div>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="openBook('${reading.id}')"
+                                    class="bg-warm-900 text-warm-50 px-8 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-warm-800 transition-colors flex items-center gap-2">
+                                    <i class="fa-solid fa-book-open text-xs text-warm-300"></i> Continue Reading
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // ── BOOKSHELF ──
+        function renderBookshelf() {
+            const grid       = document.getElementById('book-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            const filtered = activeFilter === 'all'
+                ? allBooks
+                : allBooks.filter(b => b.category === activeFilter);
+
+            emptyState.classList.toggle('hidden', allBooks.length > 0);
+            grid.innerHTML = filtered.map(bookCardHTML).join('') + uploadCardHTML();
+        }
+
+        function bookCardHTML(book) {
+            const pct = book.percentage || 0;
+            const coverHtml = book.coverUrl
+                ? `<img src="${book.coverUrl}" alt="Cover" class="book-cover-image">`
+                : `<div class="absolute inset-0 p-3 flex flex-col justify-center items-center bg-warm-700 rounded-r-lg"><span class="font-heavy text-white text-xs text-center leading-tight">${escHtml(book.title)}</span></div>`;
+
+            let statusHtml = '';
+            if (book.status === 'finished') {
+                statusHtml = `<div class="flex items-center gap-1 font-mono text-[9px] text-green-600 font-bold bg-green-50 w-fit px-2 py-0.5 rounded border border-green-200 mt-2"><i class="fa-solid fa-check"></i> Finished</div>`;
+            } else if (pct > 0) {
+                statusHtml = `<div class="progress-bar-container h-1 mt-2"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
+            } else {
+                statusHtml = `<div class="font-mono text-[9px] text-warm-400 mt-2">Unread</div>`;
+            }
+
+            return `
+                <div class="group cursor-pointer" onclick="openBook('${book.id}')">
+                    <div class="w-full book-card mb-3">
+                        <div class="book-cover aspect-[2/3] bg-warm-800 relative">${coverHtml}</div>
+                    </div>
+                    <h4 class="font-bold text-warm-900 text-sm leading-tight mb-0.5 group-hover:text-orange-600 transition-colors line-clamp-2">${escHtml(book.title)}</h4>
+                    <p class="text-xs text-warm-500 mb-1">${escHtml(book.author || 'Unknown')}</p>
+                    ${statusHtml}
+                </div>`;
+        }
+
+        function uploadCardHTML() {
+            return `
+                <div class="group cursor-pointer" onclick="document.getElementById('file-input').click()">
+                    <div class="w-full aspect-[2/3] rounded-lg border-2 border-dashed border-warm-300 bg-warm-50/50 hover:bg-warm-100 flex flex-col items-center justify-center transition-colors mb-3">
+                        <i class="fa-solid fa-plus text-2xl text-warm-300 group-hover:text-orange-500 transition-colors mb-2"></i>
+                        <span class="font-mono text-[10px] font-bold text-warm-400 uppercase tracking-widest">Drop .epub</span>
+                    </div>
+                </div>`;
+        }
+
+        // ── FILTER ──
+        function setFilter(filter) {
+            activeFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(btn => {
+                const active = btn.dataset.filter === filter;
+                btn.className = `filter-tab px-3 py-1 rounded-lg text-xs font-bold font-mono transition-colors ${
+                    active ? 'bg-warm-200 text-warm-900' : 'hover:bg-warm-100 text-warm-600'}`;
+            });
+            renderBookshelf();
+        }
+
+        function openBook(id) {
+            window.location.href = `reader.html?id=${id}`;
+        }
+
+        // ── DRAG & DROP ──
+        let dragCounter = 0;
+        document.addEventListener('dragenter', e => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            dragCounter++;
+            document.getElementById('drag-overlay').classList.remove('hidden');
+        });
+        document.addEventListener('dragleave', () => {
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                document.getElementById('drag-overlay').classList.add('hidden');
+            }
+        });
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => {
+            e.preventDefault();
+            dragCounter = 0;
+            document.getElementById('drag-overlay').classList.add('hidden');
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.toLowerCase().endsWith('.epub')) handleFileUpload(file);
+        });
+
+        document.getElementById('file-input').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) handleFileUpload(file);
+            e.target.value = '';
+        });
+
+        // ── UPLOAD ──
+        async function handleFileUpload(file) {
+            const modal       = document.getElementById('upload-modal');
+            modal.classList.remove('hidden');
+            setUploadState('Reading metadata…', 'Extracting title and author', 5);
+
+            let title  = file.name.replace(/\.epub$/i, '');
+            let author = 'Unknown Author';
+            let coverBlob = null;
+
+            try {
+                const ab   = await file.arrayBuffer();
+                const book = ePub(ab, { openAs: 'epub' });
+                await book.ready;
+                const meta = await book.loaded.metadata;
+                if (meta.title)   title  = meta.title;
+                if (meta.creator) author = meta.creator;
+                const blobUrl = await book.coverUrl();
+                if (blobUrl) {
+                    const res = await fetch(blobUrl);
+                    coverBlob = await res.blob();
+                }
+                book.destroy();
+            } catch { /* metadata extraction failed — continue with filename */ }
+
+            setUploadState('Uploading…', `"${title}"`, 20);
+
+            const bookId  = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const epubRef = storage.ref(`library/books/${bookId}.epub`);
+            const task    = epubRef.put(file);
+
+            await new Promise((resolve, reject) => {
+                task.on('state_changed',
+                    snap => {
+                        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 60) + 20;
+                        setUploadState('Uploading book…',
+                            `${Math.round(snap.bytesTransferred / 1024)} KB`, pct);
+                    },
+                    reject,
+                    resolve
+                );
+            });
+
+            const fileUrl = await epubRef.getDownloadURL();
+
+            setUploadState('Uploading cover…', 'Processing cover image', 85);
+            let coverUrl = null;
+            if (coverBlob) {
+                try {
+                    const coverRef = storage.ref(`library/covers/${bookId}.jpg`);
+                    await coverRef.put(coverBlob, { contentType: coverBlob.type || 'image/jpeg' });
+                    coverUrl = await coverRef.getDownloadURL();
+                } catch { /* cover upload failed — continue without */ }
+            }
+
+            modal.classList.add('hidden');
+
+            // Ask for category before saving
+            const category = await showCategoryPicker(title, author);
+
+            modal.classList.remove('hidden');
+            setUploadState('Done!', 'Your book is ready', 100);
+            document.getElementById('upload-icon').className = 'fa-solid fa-check text-green-500 text-xl';
+
+            await db.collection('library').doc(bookId).set({
+                title, author, category,
+                fileUrl, coverUrl,
+                status: 'unread',
+                percentage: 0,
+                currentChapter: '',
+                currentCfi: '',
+                highlights: [],
+                lastRead: null,
+                uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await new Promise(r => setTimeout(r, 700));
+            modal.classList.add('hidden');
+            document.getElementById('upload-icon').className = 'fa-solid fa-circle-notch spin-slow text-warm-400 text-xl';
+            loadBooks();
+        }
+
+        function setUploadState(title, text, pct) {
+            document.getElementById('upload-status-title').textContent = title;
+            document.getElementById('upload-status-text').textContent  = text;
+            document.getElementById('upload-progress-bar').style.width = `${pct}%`;
+            document.getElementById('upload-progress-label').textContent = `${pct}%`;
+        }
+
+        function showCategoryPicker(title, author) {
+            return new Promise(resolve => {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm';
+                overlay.innerHTML = `
+                    <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-8 w-full max-w-sm mx-4">
+                        <h3 class="font-heavy text-xl text-warm-900 mb-1 leading-tight">${escHtml(title)}</h3>
+                        <p class="font-mono text-xs text-warm-400 mb-6">${escHtml(author)}</p>
+                        <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">Category</label>
+                        <select id="cat-select" class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400 mb-6">
+                            <option value="fiction">Fiction</option>
+                            <option value="non-fiction">Non-Fiction</option>
+                            <option value="essays">Essays</option>
+                            <option value="manuscripts">Manuscripts</option>
+                        </select>
+                        <button id="cat-confirm"
+                            class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus text-xs text-warm-400"></i> Add to Library
+                        </button>
+                    </div>`;
+                document.body.appendChild(overlay);
+                document.getElementById('cat-confirm').onclick = () => {
+                    const cat = document.getElementById('cat-select').value;
+                    document.body.removeChild(overlay);
+                    resolve(cat);
+                };
+            });
+        }
+
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>

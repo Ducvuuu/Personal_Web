@@ -6,6 +6,7 @@
     const currentSection = pathname.includes('/about') ? 'about'
                         : pathname.includes('/writing') ? 'writing'
                         : pathname.includes('/journal') ? 'journal'
+                        : pathname.includes('/library') ? 'library'
                         : 'home';
 
     const navLinks = [
@@ -13,6 +14,7 @@
         { href: '../home/#work', label: 'Work',    key: 'work' },
         { href: '../writing/',   label: 'Writing', key: 'writing' },
         { href: '../journal/',   label: 'Journal', key: 'journal' },
+        { href: '../library/',   label: 'Library', key: 'library' },
         { href: '../home/#life', label: 'Life',    key: 'life' },
     ];
 

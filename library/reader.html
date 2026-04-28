@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading — The Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#fffbf7', 100: '#fdf5eb', 200: '#fbe8d4', 300: '#f5d3b3',
+                            400: '#ebad7a', 500: '#e38847', 600: '#d56a31', 700: '#b15129',
+                            800: '#8f4228', 900: '#4a2517',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                        book: ['"Lora"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ── THEMES ── */
+        body { background-color: #fdfcf6; color: #332925; transition: background-color 0.3s, color 0.3s; }
+        body.theme-light { background-color: #ffffff; color: #1a1a1a; }
+        body.theme-dark  { background-color: #1a1612; color: #d4c5b0; }
+
+        /* ── READER UI FADE (distraction-free) ── */
+        .reader-ui { transition: opacity 0.5s ease; }
+        body.reading-mode .reader-ui { opacity: 0; pointer-events: none; }
+        body.reading-mode .nav-arrow  { opacity: 0; pointer-events: none; }
+
+        /* ── EPUB VIEWER ── */
+        #viewer { width: 100%; height: 100%; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(143,66,40,0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(143,66,40,0.35); }
+
+        /* ── TOC PANEL ── */
+        #toc-panel {
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #toc-panel.open { transform: translateX(0); }
+
+        /* ── PAGE NAV ARROWS ── */
+        .nav-arrow {
+            position: fixed; top: 50%; transform: translateY(-50%);
+            z-index: 25; width: 44px; height: 44px;
+            background: rgba(253,252,246,0.9);
+            border: 1px solid #f5d3b3; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #8f4228;
+            box-shadow: 0 2px 8px rgba(74,37,23,0.1);
+            transition: all 0.2s;
+        }
+        .nav-arrow:hover { background: #fdf5eb; color: #d56a31; }
+        .nav-arrow.left  { left: 12px; }
+        .nav-arrow.right { right: 12px; }
+        body.theme-dark .nav-arrow {
+            background: rgba(26,22,18,0.9); border-color: #4a2517; color: #d4c5b0;
+        }
+
+        /* ── LOADING ── */
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ── THEME-AWARE TOP/BOTTOM BARS ── */
+        .bar-bg       { background: rgba(253,252,246,0.95); border-color: rgba(245,211,179,0.5); }
+        .theme-light .bar-bg { background: rgba(255,255,255,0.95); }
+        .theme-dark  .bar-bg { background: rgba(26,22,18,0.95); border-color: rgba(74,37,23,0.4); }
+    </style>
+</head>
+<body class="min-h-screen font-book selection:bg-orange-200 selection:text-warm-900">
+
+    <!-- ── AUTH GATE ── -->
+    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm relative mx-4">
+            <div class="absolute top-0 left-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded"
+                style="transform: translateX(-50%) rotate(-1.5deg);"></div>
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <i class="fa-solid fa-book-open text-warm-400 text-xl"></i>
+                </div>
+                <h1 class="font-heavy text-2xl text-warm-900 mb-1" style="font-family:'Outfit',sans-serif; font-weight:900;">The Library</h1>
+                <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private collection — authorised only</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
+                </div>
+                <div>
+                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••"
+                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
+                        onkeydown="if(event.key==='Enter') login()">
+                </div>
+                <p id="login-error" class="font-mono text-xs text-red-500 hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    <span id="login-error-msg"></span>
+                </p>
+                <button id="login-btn" onclick="login()"
+                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TOC PANEL ── -->
+    <div id="toc-panel" class="reader-ui fixed top-0 left-0 bottom-0 z-40 w-72 bg-warm-50 border-r border-warm-200 shadow-2xl overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-outfit font-heavy text-lg text-warm-900">Contents</h3>
+                <button onclick="toggleToc()" class="text-warm-400 hover:text-warm-700 transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-warm-100">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <ul id="toc-list" class="space-y-0.5 font-outfit text-sm text-warm-700"></ul>
+        </div>
+    </div>
+    <div id="toc-backdrop" class="hidden fixed inset-0 z-30" onclick="toggleToc()"></div>
+
+    <!-- ── TOP NAV ── -->
+    <nav id="top-nav" class="reader-ui bar-bg fixed top-0 inset-x-0 z-20 flex justify-between items-center px-5 py-3 border-b backdrop-blur-md">
+        <a href="index.html" class="flex items-center gap-2 font-mono text-sm font-bold text-warm-500 hover:text-orange-600 transition-colors shrink-0">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="hidden sm:inline">Library</span>
+        </a>
+        <div class="text-center hidden sm:block overflow-hidden px-4">
+            <p class="font-outfit font-bold text-[10px] tracking-widest uppercase text-warm-400 truncate" id="nav-author"></p>
+            <h1 class="font-outfit font-bold text-sm text-warm-800 truncate" id="nav-title">Loading…</h1>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+            <button onclick="toggleToc()" class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Table of contents">
+                <i class="fa-solid fa-list"></i>
+            </button>
+            <button onclick="toggleHighlightMode()" id="highlight-btn"
+                class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Highlight mode (toggle)">
+                <i class="fa-solid fa-highlighter"></i>
+            </button>
+            <div class="h-4 w-px bg-warm-300"></div>
+            <button onclick="toggleSettings()" class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Appearance">
+                <i class="fa-solid fa-font"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ── SETTINGS PANEL ── -->
+    <div id="settings-panel"
+        class="reader-ui fixed top-14 right-4 z-50 bg-warm-50 rounded-2xl shadow-2xl border border-warm-200 p-6 w-72 hidden">
+        <h3 class="font-outfit font-bold text-warm-900 mb-4 border-b border-warm-100 pb-2 text-sm tracking-wide">Appearance</h3>
+
+        <!-- Theme -->
+        <div class="flex gap-2 mb-5">
+            <button onclick="setTheme('light')" data-theme="light"
+                class="theme-btn flex-1 py-2 rounded-xl border-2 border-warm-200 bg-white text-gray-700 font-outfit text-xs font-bold">Light</button>
+            <button onclick="setTheme('sepia')" data-theme="sepia"
+                class="theme-btn flex-1 py-2 rounded-xl border-2 border-orange-400 bg-[#fdfcf6] text-warm-900 font-outfit text-xs font-bold ring-2 ring-orange-200 ring-offset-1">Sepia</button>
+            <button onclick="setTheme('dark')" data-theme="dark"
+                class="theme-btn flex-1 py-2 rounded-xl border-2 border-gray-700 bg-gray-900 text-gray-300 font-outfit text-xs font-bold">Dark</button>
+        </div>
+
+        <!-- Font size -->
+        <div class="flex items-center justify-between bg-warm-50 rounded-xl p-1 border border-warm-200 mb-4">
+            <button onclick="changeFontSize(-2)" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+            <span class="font-mono text-sm font-bold text-warm-800" id="font-size-display">18px</span>
+            <button onclick="changeFontSize(2)" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- Font family -->
+        <div class="flex gap-2">
+            <button onclick="setFont('serif')" id="btn-serif"
+                class="flex-1 py-2 rounded-xl bg-warm-200 text-warm-900 font-book text-sm transition-colors">Serif</button>
+            <button onclick="setFont('sans')" id="btn-sans"
+                class="flex-1 py-2 rounded-xl text-warm-600 font-outfit text-sm hover:bg-warm-100 transition-colors">Sans</button>
+        </div>
+    </div>
+
+    <!-- ── LOADING SCREEN ── -->
+    <div id="loading-screen" class="hidden fixed inset-0 z-30 flex flex-col items-center justify-center">
+        <i class="fa-solid fa-circle-notch spin-slow text-3xl text-warm-300 mb-4"></i>
+        <p class="font-mono text-sm text-warm-400" id="loading-text">Opening book…</p>
+    </div>
+
+    <!-- ── PAGE NAV ARROWS ── -->
+    <button class="nav-arrow left" onclick="prevPage()" title="Previous page" aria-label="Previous page">
+        <i class="fa-solid fa-chevron-left text-sm"></i>
+    </button>
+    <button class="nav-arrow right" onclick="nextPage()" title="Next page" aria-label="Next page">
+        <i class="fa-solid fa-chevron-right text-sm"></i>
+    </button>
+
+    <!-- ── EPUB VIEWER ── -->
+    <div id="reader-area" class="hidden fixed inset-0 pt-[52px] pb-[72px]">
+        <div id="viewer"></div>
+    </div>
+
+    <!-- ── BOTTOM PROGRESS BAR ── -->
+    <footer id="bottom-nav" class="reader-ui bar-bg fixed bottom-0 inset-x-0 z-20 px-6 py-3 border-t backdrop-blur-md">
+        <div class="max-w-3xl mx-auto flex flex-col gap-2">
+            <div class="flex justify-between items-center font-mono text-[10px] text-warm-500 uppercase tracking-widest">
+                <span id="chapter-label">—</span>
+                <span class="font-bold text-orange-600" id="pct-label">0%</span>
+                <span id="loc-label">—</span>
+            </div>
+            <div class="w-full h-1.5 bg-warm-200 rounded-full relative group cursor-pointer" id="progress-track"
+                onclick="seekProgress(event)">
+                <div class="h-full bg-orange-500 rounded-full relative transition-all duration-300" id="progress-fill" style="width:0%">
+                    <div class="absolute right-0 top-1/2 w-3 h-3 bg-white border-2 border-orange-500 rounded-full shadow-sm
+                        scale-0 group-hover:scale-100 transition-transform"
+                        style="transform: translate(50%, -50%) scale(var(--tw-scale-x, 0));"></div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <!-- epub.js -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+
+    <script>
+        // ── FIREBASE ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+            authDomain: "personal-web-journal.firebaseapp.com",
+            projectId: "personal-web-journal",
+            storageBucket: "personal-web-journal.firebasestorage.app",
+            messagingSenderId: "980592936593",
+            appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db   = firebase.firestore();
+
+        // ── STATE ──
+        const bookId      = new URLSearchParams(window.location.search).get('id');
+        let rendition     = null;
+        let bookDoc       = null;
+        let epubBook      = null;
+        let highlightMode = false;
+        let saveTimer     = null;
+        let fontSize      = parseInt(localStorage.getItem('lib_fontSize') || '18');
+        let currentTheme  = localStorage.getItem('lib_theme')  || 'sepia';
+        let currentFont   = localStorage.getItem('lib_font')   || 'serif';
+
+        // ── AUTH ──
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-gate').classList.add('hidden');
+                if (!bookId) { window.location.href = 'index.html'; return; }
+                initBook();
+            } else {
+                document.getElementById('auth-gate').classList.remove('hidden');
+            }
+        });
+
+        async function login() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn      = document.getElementById('login-btn');
+            const errEl    = document.getElementById('login-error');
+            const errMsg   = document.getElementById('login-error-msg');
+            if (!email || !password) return;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Unlocking…';
+            btn.disabled  = true;
+            errEl.classList.add('hidden');
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch {
+                errMsg.textContent = 'Wrong email or password.';
+                errEl.classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library';
+                btn.disabled  = false;
+            }
+        }
+
+        // ── INIT BOOK ──
+        async function initBook() {
+            showLoading('Opening book…');
+            try {
+                const snap = await db.collection('library').doc(bookId).get();
+                if (!snap.exists) { window.location.href = 'index.html'; return; }
+                bookDoc = { id: snap.id, ...snap.data() };
+
+                document.getElementById('nav-title').textContent  = bookDoc.title;
+                document.getElementById('nav-author').textContent = bookDoc.author || '';
+                document.title = `Reading: ${bookDoc.title}`;
+
+                await initReader(bookDoc.fileUrl);
+            } catch (err) {
+                showLoading('Could not load book.');
+                console.error(err);
+            }
+        }
+
+        // ── INIT READER ──
+        async function initReader(url) {
+            showLoading('Rendering…');
+
+            epubBook  = ePub(url);
+            rendition = epubBook.renderTo(document.getElementById('viewer'), {
+                width:  '100%',
+                height: '100%',
+                spread: 'none',
+                flow:   'paginated'
+            });
+
+            // Apply saved preferences before first render
+            registerThemes();
+            rendition.themes.select(currentTheme);
+            rendition.themes.fontSize(`${fontSize}px`);
+            document.getElementById('font-size-display').textContent = `${fontSize}px`;
+            updateFontButtons();
+            updateThemeButtons();
+            applyBodyTheme(currentTheme);
+
+            // Display at saved position or start
+            if (bookDoc.currentCfi) {
+                await rendition.display(bookDoc.currentCfi);
+            } else {
+                await rendition.display();
+            }
+
+            showLoading(null);
+            document.getElementById('reader-area').classList.remove('hidden');
+
+            // Generate locations (enables accurate percentage)
+            epubBook.locations.generate(1600).then(() => {
+                const loc = rendition.currentLocation();
+                if (loc) updateProgress(loc);
+            });
+
+            // Track page changes
+            rendition.on('relocated', location => {
+                updateProgress(location);
+                scheduleSave(location);
+            });
+
+            // Build TOC
+            epubBook.loaded.navigation.then(nav => buildToc(nav.toc));
+
+            // Text selection → highlight
+            rendition.on('selected', (cfiRange) => {
+                if (!highlightMode) return;
+                addHighlight(cfiRange);
+                // Clear browser selection inside iframe
+                rendition.getContents().forEach(c => c.window.getSelection().removeAllRanges());
+            });
+
+            // Restore saved highlights
+            (bookDoc.highlights || []).forEach(h => paintHighlight(h.cfi));
+
+            // Keyboard navigation
+            document.addEventListener('keydown', e => {
+                if (!document.getElementById('settings-panel').classList.contains('hidden')) return;
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextPage(); }
+                if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') { e.preventDefault(); prevPage(); }
+            });
+
+            // Click in epub content → toggle distraction-free
+            rendition.on('click', () => {
+                document.getElementById('settings-panel').classList.add('hidden');
+                document.body.classList.toggle('reading-mode');
+            });
+
+            // Touch swipe support
+            let touchStartX = 0;
+            const viewerEl = document.getElementById('viewer');
+            viewerEl.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+            viewerEl.addEventListener('touchend',   e => {
+                const dx = e.changedTouches[0].clientX - touchStartX;
+                if (Math.abs(dx) > 50) dx < 0 ? nextPage() : prevPage();
+            });
+        }
+
+        function prevPage() { if (rendition) rendition.prev(); }
+        function nextPage() { if (rendition) rendition.next(); }
+
+        // ── PROGRESS ──
+        function updateProgress(location) {
+            if (!location || !location.start) return;
+            const pct = Math.round(location.start.percentage * 100);
+            document.getElementById('pct-label').textContent       = `${pct}%`;
+            document.getElementById('progress-fill').style.width   = `${pct}%`;
+            document.getElementById('loc-label').textContent       =
+                location.start.displayed
+                    ? `${location.start.displayed.page} / ${location.start.displayed.total}`
+                    : '';
+            const href = location.start.href || '';
+            document.getElementById('chapter-label').textContent   =
+                href ? href.split('/').pop().replace(/\.(html|xhtml)$/, '').replace(/-/g, ' ') : '—';
+        }
+
+        function scheduleSave(location) {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => saveProgress(location), 2500);
+        }
+
+        async function saveProgress(location) {
+            if (!location?.start || !bookId) return;
+            const cfi     = location.start.cfi;
+            const pct     = Math.round(location.start.percentage * 100);
+            const chapter = document.getElementById('chapter-label').textContent;
+            await db.collection('library').doc(bookId).update({
+                currentCfi:     cfi,
+                percentage:     pct,
+                currentChapter: chapter,
+                status:         pct >= 99 ? 'finished' : 'reading',
+                lastRead:       firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // Seek by clicking the progress bar
+        function seekProgress(e) {
+            if (!epubBook || !epubBook.locations || !epubBook.locations.length()) return;
+            const track   = document.getElementById('progress-track');
+            const pct     = e.offsetX / track.offsetWidth;
+            const cfi     = epubBook.locations.cfiFromPercentage(pct);
+            if (cfi) rendition.display(cfi);
+        }
+
+        // ── HIGHLIGHTS ──
+        function toggleHighlightMode() {
+            highlightMode = !highlightMode;
+            const btn = document.getElementById('highlight-btn');
+            btn.className = highlightMode
+                ? 'text-orange-500 text-base'
+                : 'text-warm-400 hover:text-warm-800 transition-colors text-base';
+            btn.title = highlightMode ? 'Highlight mode ON — select text to highlight' : 'Highlight mode (toggle)';
+        }
+
+        function paintHighlight(cfi) {
+            try {
+                rendition.annotations.add('highlight', cfi, {}, null, 'hl', {
+                    fill: 'rgba(227,136,71,0.3)',
+                    'fill-opacity': '1'
+                });
+            } catch { /* CFI may be invalid after book update */ }
+        }
+
+        async function addHighlight(cfi) {
+            paintHighlight(cfi);
+            const highlights = [...(bookDoc.highlights || []), { cfi, createdAt: new Date().toISOString() }];
+            bookDoc.highlights = highlights;
+            await db.collection('library').doc(bookId).update({ highlights });
+        }
+
+        // ── TOC ──
+        function buildToc(toc) {
+            const list = document.getElementById('toc-list');
+            if (!toc || toc.length === 0) {
+                list.innerHTML = '<li class="font-mono text-xs text-warm-400 px-3 py-2">No table of contents available.</li>';
+                return;
+            }
+            list.innerHTML = toc.map(item => tocItemHTML(item, 0)).join('');
+        }
+
+        function tocItemHTML(item, depth) {
+            const indent = depth > 0 ? `padding-left:${depth * 12 + 12}px` : 'padding-left:12px';
+            let html = `
+                <li>
+                    <button onclick="rendition.display('${item.href}'); toggleToc();"
+                        style="${indent}"
+                        class="w-full text-left py-2 pr-3 rounded-lg hover:bg-warm-100 text-warm-700 hover:text-warm-900 transition-colors font-outfit text-sm">
+                        ${item.label.trim()}
+                    </button>
+                </li>`;
+            if (item.subitems && item.subitems.length > 0) {
+                html += item.subitems.map(sub => tocItemHTML(sub, depth + 1)).join('');
+            }
+            return html;
+        }
+
+        function toggleToc() {
+            document.getElementById('toc-panel').classList.toggle('open');
+            document.getElementById('toc-backdrop').classList.toggle('hidden');
+        }
+
+        // ── SETTINGS ──
+        function toggleSettings() {
+            document.getElementById('settings-panel').classList.toggle('hidden');
+        }
+
+        function registerThemes() {
+            const themes = {
+                sepia: { body: { background: '#fdfcf6 !important', color: '#332925 !important' } },
+                light: { body: { background: '#ffffff !important', color: '#1a1a1a !important' } },
+                dark:  { body: { background: '#1a1612 !important', color: '#d4c5b0 !important' } }
+            };
+            Object.entries(themes).forEach(([name, css]) => rendition.themes.register(name, css));
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('lib_theme', theme);
+            rendition.themes.select(theme);
+            applyBodyTheme(theme);
+            updateThemeButtons();
+        }
+
+        function applyBodyTheme(theme) {
+            document.body.classList.remove('theme-light', 'theme-dark');
+            if (theme === 'light') document.body.classList.add('theme-light');
+            if (theme === 'dark')  document.body.classList.add('theme-dark');
+        }
+
+        function updateThemeButtons() {
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                const isActive = btn.dataset.theme === currentTheme;
+                btn.classList.toggle('ring-2',       isActive);
+                btn.classList.toggle('ring-orange-200', isActive);
+                btn.classList.toggle('ring-offset-1',   isActive);
+            });
+        }
+
+        function changeFontSize(delta) {
+            fontSize = Math.min(28, Math.max(12, fontSize + delta));
+            localStorage.setItem('lib_fontSize', fontSize);
+            document.getElementById('font-size-display').textContent = `${fontSize}px`;
+            rendition.themes.fontSize(`${fontSize}px`);
+        }
+
+        function setFont(font) {
+            currentFont = font;
+            localStorage.setItem('lib_font', font);
+            const family = font === 'serif' ? "'Lora', serif" : "'Outfit', sans-serif";
+            rendition.themes.override('font-family', family);
+            updateFontButtons();
+        }
+
+        function updateFontButtons() {
+            const isSerif = currentFont === 'serif';
+            document.getElementById('btn-serif').className =
+                `flex-1 py-2 rounded-xl font-book text-sm transition-colors ${isSerif ? 'bg-warm-200 text-warm-900' : 'text-warm-600 hover:bg-warm-100'}`;
+            document.getElementById('btn-sans').className =
+                `flex-1 py-2 rounded-xl font-outfit text-sm transition-colors ${!isSerif ? 'bg-warm-200 text-warm-900' : 'text-warm-600 hover:bg-warm-100'}`;
+        }
+
+        // ── HELPERS ──
+        function showLoading(text) {
+            const el = document.getElementById('loading-screen');
+            if (text === null) { el.classList.add('hidden'); return; }
+            document.getElementById('loading-text').textContent = text;
+            el.classList.remove('hidden');
+        }
+
+        // Close settings on outside click
+        document.addEventListener('click', e => {
+            const panel = document.getElementById('settings-panel');
+            if (!panel.classList.contains('hidden') &&
+                !panel.contains(e.target) &&
+                !e.target.closest('[onclick="toggleSettings()"]')) {
+                panel.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
