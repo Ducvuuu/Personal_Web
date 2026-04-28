@@ -319,104 +319,112 @@
 
         // ── INIT READER ──
         async function initReader(url) {
-            // Download the EPUB ourselves so we control progress + timeout,
-            // then hand an ArrayBuffer to epub.js instead of a URL.
+            // ── 1. DOWNLOAD ──
             showLoading('Downloading book…');
             let arrayBuffer;
             try {
-                const ctrl    = new AbortController();
-                const timer   = setTimeout(() => ctrl.abort(), 60000);
-                const resp    = await fetch(url, { signal: ctrl.signal });
+                const ctrl  = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 60000);
+                const resp  = await fetch(url, { signal: ctrl.signal });
                 clearTimeout(timer);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const total   = parseInt(resp.headers.get('content-length') || '0');
-                const reader  = resp.body.getReader();
-                const chunks  = [];
-                let received  = 0;
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    chunks.push(value);
-                    received += value.length;
-                    if (total) showLoading(`Downloading… ${Math.round(received / total * 100)}%`);
-                }
-                arrayBuffer = new Uint8Array(chunks.reduce((acc, c) => [...acc, ...c], [])).buffer;
+                const blob  = await resp.blob();
+                arrayBuffer = await blob.arrayBuffer();
             } catch (err) {
-                showLoading(err.name === 'AbortError' ? 'Download timed out.' : `Download failed: ${err.message}`);
+                showLoading(err.name === 'AbortError'
+                    ? 'Download timed out — check your connection.'
+                    : `Download failed: ${err.message}`);
                 return;
             }
 
-            showLoading('Rendering…');
-
-            // Must be visible before renderTo — epub.js needs real dimensions
+            // ── 2. SETUP RENDITION (viewer must be visible first) ──
             document.getElementById('reader-area').classList.remove('hidden');
+            applyBodyTheme(currentTheme);
 
-            epubBook  = ePub(arrayBuffer, { openAs: 'epub' });
-            rendition = epubBook.renderTo(document.getElementById('viewer'), {
-                width:  '100%',
-                height: '100%',
-                spread: 'none',
-                flow:   'paginated'
-            });
+            try {
+                showLoading('Opening book…');
+                epubBook  = ePub(arrayBuffer);
+                rendition = epubBook.renderTo(document.getElementById('viewer'), {
+                    width:  '100%',
+                    height: '100%',
+                    spread: 'none',
+                    flow:   'paginated',
+                    allowScriptedContent: true
+                });
+            } catch (err) {
+                showLoading(`Could not open book: ${err.message}`);
+                return;
+            }
 
-            // Apply saved preferences before first render
+            // ── 3. DISPLAY (with timeout + CFI fallback) ──
+            showLoading('Rendering…');
+            const tryDisplay = target => Promise.race([
+                rendition.display(target),
+                new Promise((_, r) => setTimeout(() => r(new Error('display-timeout')), 30000))
+            ]);
+
+            try {
+                if (bookDoc.currentCfi) {
+                    try { await tryDisplay(bookDoc.currentCfi); }
+                    catch { await tryDisplay(); }       // saved CFI may be stale
+                } else {
+                    await tryDisplay();
+                }
+            } catch (err) {
+                showLoading(err.message === 'display-timeout'
+                    ? 'Render timed out — this EPUB may be malformed.'
+                    : `Render failed: ${err.message}`);
+                return;
+            }
+
+            // ── 4. APPLY THEMES + FONT (after first render) ──
             registerThemes();
             rendition.themes.select(currentTheme);
             rendition.themes.fontSize(`${fontSize}px`);
+            if (currentFont === 'sans') {
+                rendition.themes.override('font-family', "'Outfit', sans-serif");
+            }
             document.getElementById('font-size-display').textContent = `${fontSize}px`;
             updateFontButtons();
             updateThemeButtons();
-            applyBodyTheme(currentTheme);
-
-            // Display at saved position or start
-            if (bookDoc.currentCfi) {
-                await rendition.display(bookDoc.currentCfi);
-            } else {
-                await rendition.display();
-            }
 
             showLoading(null);
 
-            // Generate locations (enables accurate percentage)
+            // ── 5. BACKGROUND TASKS (don't block UI) ──
             epubBook.locations.generate(1600).then(() => {
                 const loc = rendition.currentLocation();
                 if (loc) updateProgress(loc);
-            });
+            }).catch(() => {});
 
-            // Track page changes
+            epubBook.loaded.navigation
+                .then(nav => buildToc(nav.toc))
+                .catch(() => {});
+
+            // ── 6. EVENTS ──
             rendition.on('relocated', location => {
                 updateProgress(location);
                 scheduleSave(location);
             });
 
-            // Build TOC
-            epubBook.loaded.navigation.then(nav => buildToc(nav.toc));
-
-            // Text selection → highlight
-            rendition.on('selected', (cfiRange) => {
+            rendition.on('selected', cfiRange => {
                 if (!highlightMode) return;
                 addHighlight(cfiRange);
-                // Clear browser selection inside iframe
                 rendition.getContents().forEach(c => c.window.getSelection().removeAllRanges());
             });
 
-            // Restore saved highlights
             (bookDoc.highlights || []).forEach(h => paintHighlight(h.cfi));
 
-            // Keyboard navigation
-            document.addEventListener('keydown', e => {
-                if (!document.getElementById('settings-panel').classList.contains('hidden')) return;
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextPage(); }
-                if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') { e.preventDefault(); prevPage(); }
-            });
-
-            // Click in epub content → toggle distraction-free
             rendition.on('click', () => {
                 document.getElementById('settings-panel').classList.add('hidden');
                 document.body.classList.toggle('reading-mode');
             });
 
-            // Touch swipe support
+            document.addEventListener('keydown', e => {
+                if (!document.getElementById('settings-panel').classList.contains('hidden')) return;
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextPage(); }
+                if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevPage(); }
+            });
+
             let touchStartX = 0;
             const viewerEl = document.getElementById('viewer');
             viewerEl.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
