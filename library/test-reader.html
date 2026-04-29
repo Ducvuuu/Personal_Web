@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPUB Test Reader</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: monospace; background: #f5f0eb; color: #333; }
+
+        #controls {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: #1a1612; color: #d4c5b0; padding: 10px 14px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        }
+        #url-input {
+            flex: 1; min-width: 200px; padding: 6px 10px;
+            background: #2a2420; border: 1px solid #4a3828; color: #d4c5b0;
+            border-radius: 6px; font-family: monospace; font-size: 12px;
+        }
+        button {
+            padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: monospace; font-size: 12px; font-weight: bold;
+        }
+        #load-btn  { background: #d56a31; color: white; }
+        #clear-btn { background: #4a3828; color: #d4c5b0; }
+
+        #log {
+            position: fixed; top: 52px; left: 0; width: 260px; bottom: 0;
+            background: #1a1612; color: #d4c5b0; overflow-y: auto;
+            font-size: 11px; padding: 10px;
+        }
+        .log-ok   { color: #6fcf97; }
+        .log-err  { color: #eb5757; }
+        .log-info { color: #f2c94c; }
+
+        #viewer-wrap {
+            position: fixed; top: 52px; left: 260px; right: 0; bottom: 0;
+            background: white;
+        }
+        #viewer { width: 100%; height: 100%; }
+
+        #status-overlay {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: white; z-index: 10; font-family: monospace; color: #888;
+        }
+        .spin { animation: spin 1.5s linear infinite; display: inline-block; font-size: 22px; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <span style="color:#e38847;font-weight:bold">epub test</span>
+    <input id="url-input" type="text" placeholder="Paste Firebase Storage download URL here…">
+    <button id="load-btn" onclick="loadUrl()">Load</button>
+    <button id="clear-btn" onclick="clearReader()">Clear</button>
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer">
+        <input type="checkbox" id="use-fetch" checked> fetch→ArrayBuffer
+    </label>
+</div>
+
+<div id="log"></div>
+
+<div id="viewer-wrap">
+    <div id="status-overlay">
+        <div class="spin">◌</div>
+        <div id="status-text">Paste a URL above and click Load</div>
+    </div>
+    <div id="viewer"></div>
+</div>
+
+<script>
+    // ── LOGGING ──
+    function log(msg, type = 'info') {
+        const el = document.getElementById('log');
+        const line = document.createElement('div');
+        line.className = `log-${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+        console.log(`[epub-test] ${msg}`);
+    }
+
+    function status(text) {
+        document.getElementById('status-text').textContent = text;
+    }
+
+    function hideOverlay() {
+        document.getElementById('status-overlay').style.display = 'none';
+    }
+
+    // Capture all unhandled errors
+    window.onerror = (msg, src, line) => log(`JS Error: ${msg} (${src}:${line})`, 'err');
+    window.onunhandledrejection = e => log(`Unhandled rejection: ${e.reason}`, 'err');
+
+    // ── LIBRARY CHECKS ──
+    log('Checking libraries…');
+</script>
+
+<!-- JSZip first, then epub.js -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+    onload="log('JSZip loaded ✓', 'ok')"
+    onerror="log('JSZip FAILED to load', 'err')"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"
+    onload="log('epub.js loaded ✓', 'ok')"
+    onerror="log('epub.js FAILED to load', 'err')"></script>
+
+<script>
+    let currentBook = null;
+
+    function clearReader() {
+        if (currentBook) { try { currentBook.destroy(); } catch {} currentBook = null; }
+        document.getElementById('viewer').innerHTML = '';
+        document.getElementById('status-overlay').style.display = 'flex';
+        status('Paste a URL above and click Load');
+    }
+
+    async function loadUrl() {
+        const url = document.getElementById('url-input').value.trim();
+        if (!url) { log('No URL entered', 'err'); return; }
+
+        clearReader();
+        status('Starting…');
+        log(`URL: ${url.slice(0, 80)}…`);
+
+        // ── Step 1: Library checks ──
+        if (typeof JSZip === 'undefined') {
+            log('JSZip is NOT defined as a global — rendering will fail', 'err');
+        } else {
+            log('window.JSZip is available ✓', 'ok');
+        }
+        if (typeof ePub === 'undefined') {
+            log('ePub function not found — epub.js not loaded', 'err');
+            status('epub.js not loaded'); return;
+        } else {
+            log('ePub function available ✓', 'ok');
+        }
+
+        const useFetch = document.getElementById('use-fetch').checked;
+        let input;
+
+        // ── Step 2: Get EPUB data ──
+        if (useFetch) {
+            try {
+                status('Fetching EPUB…');
+                log('Fetching via fetch()…');
+                const ctrl  = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 60000);
+                const resp  = await fetch(url, { signal: ctrl.signal });
+                clearTimeout(timer);
+                log(`HTTP ${resp.status} ${resp.statusText}`, resp.ok ? 'ok' : 'err');
+                if (!resp.ok) { status(`HTTP error ${resp.status}`); return; }
+
+                const blob = await resp.blob();
+                log(`Blob: ${(blob.size / 1024).toFixed(1)} KB, type=${blob.type}`, 'ok');
+                input = await blob.arrayBuffer();
+                log(`ArrayBuffer: ${input.byteLength} bytes ✓`, 'ok');
+            } catch (err) {
+                log(`Fetch failed: ${err.message}`, 'err');
+                status(`Fetch failed: ${err.message}`);
+                return;
+            }
+        } else {
+            log('Using URL directly (no fetch)');
+            input = url;
+        }
+
+        // ── Step 3: Open with epub.js ──
+        try {
+            status('Opening with epub.js…');
+            log('Calling ePub()…');
+            if (useFetch) {
+                currentBook = ePub(input, { openAs: 'epub' });
+            } else {
+                currentBook = ePub(input);
+            }
+            log('ePub() returned ✓', 'ok');
+        } catch (err) {
+            log(`ePub() threw: ${err.message}`, 'err');
+            status(`ePub error: ${err.message}`);
+            return;
+        }
+
+        // ── Step 4: renderTo ──
+        try {
+            status('Calling renderTo…');
+            log('Calling renderTo()…');
+            const viewerEl = document.getElementById('viewer');
+            const rendition = currentBook.renderTo(viewerEl, {
+                width: '100%', height: '100%',
+                spread: 'none', flow: 'paginated',
+                allowScriptedContent: true
+            });
+            log('renderTo() returned ✓', 'ok');
+
+            // ── Step 5: display ──
+            status('Calling display()…');
+            log('Calling rendition.display()…');
+
+            const displayPromise = rendition.display();
+            const timeout = new Promise((_, r) =>
+                setTimeout(() => r(new Error('display() timed out after 30s')), 30000));
+
+            await Promise.race([displayPromise, timeout]);
+            log('rendition.display() resolved ✓', 'ok');
+            hideOverlay();
+            status('Done');
+
+            rendition.on('relocated', loc => {
+                const pct = Math.round((loc.start.percentage || 0) * 100);
+                log(`Relocated: ${pct}%`);
+            });
+
+            // Arrow keys to navigate
+            document.addEventListener('keydown', e => {
+                if (e.key === 'ArrowRight') rendition.next();
+                if (e.key === 'ArrowLeft')  rendition.prev();
+            });
+
+            // Log metadata
+            currentBook.loaded.metadata.then(meta => {
+                log(`Title: ${meta.title}`, 'ok');
+                log(`Author: ${meta.creator}`, 'ok');
+            }).catch(e => log(`Metadata error: ${e.message}`, 'err'));
+
+        } catch (err) {
+            log(`Render failed: ${err.message}`, 'err');
+            status(`Render failed: ${err.message}`);
+        }
+    }
+
+    // Allow pressing Enter in URL input
+    document.getElementById('url-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') loadUrl();
+    });
+</script>
+</body>
+</html>
