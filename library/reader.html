@@ -346,11 +346,12 @@
             try {
                 showLoading('Opening book…');
                 epubBook  = ePub(arrayBuffer, { openAs: 'epub' });
-                rendition = epubBook.renderTo(document.getElementById('viewer'), {
-                    width:  '100%',
-                    height: '100%',
+                const viewerEl = document.getElementById('viewer');
+                rendition = epubBook.renderTo(viewerEl, {
+                    width:  viewerEl.offsetWidth  || window.innerWidth,
+                    height: viewerEl.offsetHeight || (window.innerHeight - 124),
                     spread: 'none',
-                    flow:   'paginated',
+                    flow:   'scrolled-doc',
                     allowScriptedContent: true
                 });
             } catch (err) {
