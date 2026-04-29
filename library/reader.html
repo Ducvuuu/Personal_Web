@@ -197,7 +197,7 @@
     </div>
 
     <!-- ── LOADING SCREEN ── -->
-    <div id="loading-screen" class="hidden fixed inset-0 z-30 flex flex-col items-center justify-center">
+    <div id="loading-screen" class="hidden fixed inset-0 z-30 flex flex-col items-center justify-center bg-[#fdfcf6]/95 backdrop-blur-sm">
         <i class="fa-solid fa-circle-notch spin-slow text-3xl text-warm-300 mb-4"></i>
         <p class="font-mono text-sm text-warm-400" id="loading-text">Opening book…</p>
     </div>
@@ -239,6 +239,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+    <!-- JSZip (required by epub.js to unzip EPUB files) -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <!-- epub.js -->
     <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
 
@@ -343,7 +345,7 @@
 
             try {
                 showLoading('Opening book…');
-                epubBook  = ePub(arrayBuffer);
+                epubBook  = ePub(arrayBuffer, { openAs: 'epub' });
                 rendition = epubBook.renderTo(document.getElementById('viewer'), {
                     width:  '100%',
                     height: '100%',
