@@ -212,7 +212,7 @@
 
     <!-- ── EPUB VIEWER ── -->
     <div id="reader-area" class="hidden fixed inset-0 pt-[52px] pb-[72px] flex justify-center">
-        <div class="w-full max-w-3xl h-full">
+        <div class="w-full max-w-2xl h-full">
             <div id="viewer" class="w-full h-full"></div>
         </div>
     </div>
@@ -503,8 +503,11 @@
         function paintHighlight(cfi) {
             try {
                 rendition.annotations.add('highlight', cfi, {}, null, 'hl', {
-                    fill: 'rgba(227,136,71,0.3)',
-                    'fill-opacity': '1'
+                    fill: 'rgba(227,136,71,0.2)',
+                    'fill-opacity': '1',
+                    'stroke': 'rgba(227,136,71,0.5)',
+                    'stroke-width': '1.5',
+                    'stroke-alignment': 'inner'
                 });
             } catch { /* CFI may be invalid after book update */ }
         }
@@ -580,20 +583,59 @@
                 a:   { color: '#e38847 !important', 'text-decoration': 'none !important' },
             });
 
-            // Inject Google Fonts + selection colour into every rendered iframe
+            // Inject Google Fonts + prototype typography into every rendered iframe
             rendition.hooks.content.register(contents => {
                 const doc = contents.document;
                 if (!doc?.head) return;
 
                 const link = doc.createElement('link');
                 link.rel  = 'stylesheet';
-                link.href = 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&display=swap';
+                link.href = 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;900&display=swap';
                 doc.head.appendChild(link);
 
                 const style = doc.createElement('style');
                 style.textContent = `
-                    ::selection { background: rgba(227,136,71,0.25); }
-                    p, li { hyphens: auto; -webkit-hyphens: auto; }
+                    /* Selection */
+                    ::selection { background: rgba(251,176,64,0.35); color: #332925; }
+
+                    /* Paragraphs */
+                    p {
+                        margin-bottom: 1.5em !important;
+                        line-height: 1.8 !important;
+                        hyphens: auto; -webkit-hyphens: auto;
+                        orphans: 3; widows: 3;
+                    }
+
+                    /* Drop cap — first letter of each section's opening paragraph */
+                    p:first-of-type::first-letter {
+                        font-family: 'Outfit', sans-serif !important;
+                        font-weight: 900 !important;
+                        font-size: 4.2em !important;
+                        line-height: 0.8 !important;
+                        float: left !important;
+                        padding-right: 0.12em !important;
+                        padding-top: 0.08em !important;
+                        color: #d56a31 !important;
+                    }
+
+                    /* Headings — match prototype's chapter title style */
+                    h1, h2, h3, h4 {
+                        font-family: 'Outfit', sans-serif !important;
+                        font-weight: 900 !important;
+                        line-height: 1.25 !important;
+                        color: #4a2517 !important;
+                        margin-bottom: 0.75em !important;
+                    }
+                    h1 { font-size: 2em !important; }
+                    h2 { font-size: 1.5em !important; color: #d56a31 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; font-size: 0.8em !important; }
+
+                    /* Highlight marks (epub.js SVG + any native <mark>) */
+                    mark, .highlight {
+                        background: rgba(227,136,71,0.2) !important;
+                        border-bottom: 2px solid rgba(227,136,71,0.5) !important;
+                        border-radius: 0 !important;
+                        padding-bottom: 1px !important;
+                    }
                 `;
                 doc.head.appendChild(style);
             });
