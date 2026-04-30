@@ -182,7 +182,7 @@
         try {
             status('Opening with epub.js…');
             log('Calling ePub()…');
-            currentBook = ePub(input);
+            currentBook = ePub(input, { openAs: 'epub' });
             log('ePub() returned ✓', 'ok');
         } catch (err) {
             log(`ePub() threw: ${err.message}`, 'err');
