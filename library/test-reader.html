@@ -169,20 +169,38 @@
         }
 
         // ── Step 3: Open with epub.js ──
+        // Convert ArrayBuffer → Blob URL so epub.js has a real URL base for
+        // resolving internal EPUB paths. Passing an ArrayBuffer directly causes
+        // epub.js to use "[object ArrayBuffer]" as the URL, giving 404s.
+        if (useFetch && input instanceof ArrayBuffer) {
+            const blob   = new Blob([input], { type: 'application/epub+zip' });
+            const blobUrl = URL.createObjectURL(blob);
+            log(`Blob URL created: ${blobUrl.slice(0, 60)}…`, 'ok');
+            input = blobUrl;
+        }
+
         try {
             status('Opening with epub.js…');
             log('Calling ePub()…');
-            if (useFetch) {
-                currentBook = ePub(input, { openAs: 'epub' });
-            } else {
-                currentBook = ePub(input);
-            }
+            currentBook = ePub(input);
             log('ePub() returned ✓', 'ok');
         } catch (err) {
             log(`ePub() threw: ${err.message}`, 'err');
             status(`ePub error: ${err.message}`);
             return;
         }
+
+        // ── Step 3b: Book internals ──
+        currentBook.loaded.manifest.then(() => log('manifest loaded ✓', 'ok'))
+            .catch(e => log(`manifest FAILED: ${e.message}`, 'err'));
+
+        currentBook.loaded.spine.then(spine => {
+            log(`spine loaded ✓ (${spine.items ? spine.items.length : '?'} items)`, 'ok');
+            if (spine.items && spine.items[0]) log(`  first item: ${spine.items[0].href}`);
+        }).catch(e => log(`spine FAILED: ${e.message}`, 'err'));
+
+        currentBook.ready.then(() => log('book.ready ✓', 'ok'))
+            .catch(e => log(`book.ready FAILED: ${e.message}`, 'err'));
 
         // ── Step 4: renderTo ──
         try {
@@ -192,12 +210,38 @@
             const w = viewerEl.offsetWidth  || window.innerWidth  - 260;
             const h = viewerEl.offsetHeight || window.innerHeight - 52;
             log(`Viewer size: ${w}×${h}px`);
+
+            // Watch for iframe creation
+            const iframeObserver = new MutationObserver(mutations => {
+                for (const m of mutations) {
+                    for (const node of m.addedNodes) {
+                        if (node.nodeType === 1) {
+                            log(`DOM added: <${node.tagName.toLowerCase()}> class="${node.className}"`);
+                            if (node.tagName === 'IFRAME') {
+                                log('  → iframe created ✓', 'ok');
+                                log(`    src: ${node.src || node.getAttribute('srcdoc') ? '(srcdoc)' : '(none yet)'}`);
+                                node.addEventListener('load',  () => log('  → iframe load event fired ✓', 'ok'));
+                                node.addEventListener('error', e  => log(`  → iframe ERROR: ${e.message}`, 'err'));
+                            }
+                        }
+                    }
+                }
+            });
+            iframeObserver.observe(viewerEl, { childList: true, subtree: true });
+
             const rendition = currentBook.renderTo(viewerEl, {
                 width: w, height: h,
                 spread: 'none', flow: 'scrolled-doc',
                 allowScriptedContent: true
             });
             log('renderTo() returned ✓', 'ok');
+
+            // Rendition events
+            rendition.on('started',  () => log('rendition: started ✓', 'ok'));
+            rendition.on('attached', () => log('rendition: attached ✓', 'ok'));
+            rendition.on('displayed', section => log(`rendition: displayed section ${section?.index ?? '?'} ✓`, 'ok'));
+            rendition.on('rendered', section => log(`rendition: rendered ✓`, 'ok'));
+            rendition.on('layout',   layout  => log(`rendition: layout — flow=${layout.flow}, w=${layout.width}`));
 
             // ── Step 5: display ──
             status('Calling display()…');
@@ -208,6 +252,7 @@
                 setTimeout(() => r(new Error('display() timed out after 30s')), 30000));
 
             await Promise.race([displayPromise, timeout]);
+            iframeObserver.disconnect();
             log('rendition.display() resolved ✓', 'ok');
             hideOverlay();
             status('Done');
@@ -217,13 +262,11 @@
                 log(`Relocated: ${pct}%`);
             });
 
-            // Arrow keys to navigate
             document.addEventListener('keydown', e => {
                 if (e.key === 'ArrowRight') rendition.next();
                 if (e.key === 'ArrowLeft')  rendition.prev();
             });
 
-            // Log metadata
             currentBook.loaded.metadata.then(meta => {
                 log(`Title: ${meta.title}`, 'ok');
                 log(`Author: ${meta.creator}`, 'ok');
