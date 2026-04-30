@@ -426,18 +426,35 @@
         function nextPage() { if (rendition) rendition.next(); }
 
         // ── PROGRESS ──
+        function bookPct(cfi) {
+            // Use accurate whole-book percentage once locations are generated;
+            // fall back to spine-section estimate before that.
+            if (epubBook && epubBook.locations && epubBook.locations.length()) {
+                return Math.round(epubBook.locations.percentageFromCfi(cfi) * 100);
+            }
+            return null; // not ready yet
+        }
+
         function updateProgress(location) {
             if (!location || !location.start) return;
-            const pct = Math.round(location.start.percentage * 100);
-            document.getElementById('pct-label').textContent       = `${pct}%`;
-            document.getElementById('progress-fill').style.width   = `${pct}%`;
-            document.getElementById('loc-label').textContent       =
-                location.start.displayed
-                    ? `${location.start.displayed.page} / ${location.start.displayed.total}`
-                    : '';
+            const cfi = location.start.cfi;
+            const pct = bookPct(cfi);
+
+            document.getElementById('pct-label').textContent     = pct !== null ? `${pct}%` : '…';
+            document.getElementById('progress-fill').style.width = pct !== null ? `${pct}%` : '0%';
+
+            // Show location index / total once generated; hide the confusing per-chapter page count
+            if (epubBook && epubBook.locations && epubBook.locations.length()) {
+                const locIdx = epubBook.locations.locationFromCfi(cfi);
+                const total  = epubBook.locations.length();
+                document.getElementById('loc-label').textContent = `${locIdx + 1} / ${total}`;
+            } else {
+                document.getElementById('loc-label').textContent = '';
+            }
+
             const href = location.start.href || '';
-            document.getElementById('chapter-label').textContent   =
-                href ? href.split('/').pop().replace(/\.(html|xhtml)$/, '').replace(/-/g, ' ') : '—';
+            document.getElementById('chapter-label').textContent =
+                href ? href.split('/').pop().replace(/\.(html|xhtml)$/, '').replace(/-/g, ' ').toUpperCase() : '—';
         }
 
         function scheduleSave(location) {
@@ -447,8 +464,8 @@
 
         async function saveProgress(location) {
             if (!location?.start || !bookId) return;
-            const cfi     = location.start.cfi;
-            const pct     = Math.round(location.start.percentage * 100);
+            const cfi = location.start.cfi;
+            const pct = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
             const chapter = document.getElementById('chapter-label').textContent;
             await db.collection('library').doc(bookId).update({
                 currentCfi:     cfi,
