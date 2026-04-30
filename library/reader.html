@@ -321,31 +321,16 @@
 
         // ── INIT READER ──
         async function initReader(url) {
-            // ── 1. DOWNLOAD ──
-            showLoading('Downloading book…');
-            let arrayBuffer;
-            try {
-                const ctrl  = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 60000);
-                const resp  = await fetch(url, { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const blob  = await resp.blob();
-                arrayBuffer = await blob.arrayBuffer();
-            } catch (err) {
-                showLoading(err.name === 'AbortError'
-                    ? 'Download timed out — check your connection.'
-                    : `Download failed: ${err.message}`);
-                return;
-            }
-
-            // ── 2. SETUP RENDITION (viewer must be visible first) ──
+            // ── 1. OPEN + RENDER ──
+            // Pass the Firebase Storage URL directly to epub.js — it fetches and
+            // unarchives internally. Pre-fetching to ArrayBuffer and converting to
+            // a blob URL causes epub.js to lose its URL base and 404 on content.
             document.getElementById('reader-area').classList.remove('hidden');
             applyBodyTheme(currentTheme);
 
             try {
                 showLoading('Opening book…');
-                epubBook  = ePub(arrayBuffer, { openAs: 'epub' });
+                epubBook  = ePub(url, { openAs: 'epub' });
                 const viewerEl = document.getElementById('viewer');
                 rendition = epubBook.renderTo(viewerEl, {
                     width:  viewerEl.offsetWidth  || window.innerWidth,
