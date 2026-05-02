@@ -41,14 +41,26 @@ window.addEventListener('message', e => {
         rsvpEpubNavigating    = false;
 
         const rawWords  = e.data.words || [];
-        const pageWords = rawWords.map(w => w.toLowerCase().replace(/[^\w]/g, ''));
+        const pageWords = rawWords.map(w => w.toLowerCase().replace(/[^\w]/g, '')).filter(Boolean);
         if (pageWords.length >= 2 && rsvpWordsArray.length > 0) {
-            const searchStart = Math.max(0, rsvpIndex - 150);
-            const searchEnd   = Math.min(rsvpWordsArray.length - 5, rsvpIndex + 600);
+            // Search the full current chapter, not just a narrow window around rsvpIndex
+            let chIdx = -1;
+            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) { chIdx = i; break; }
+            }
+            const searchStart = chIdx >= 0
+                ? rsvpChapterBoundaries[chIdx].startWordIdx
+                : Math.max(0, rsvpIndex - 500);
+            const chEnd = chIdx >= 0 && chIdx + 1 < rsvpChapterBoundaries.length
+                ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
+                : rsvpWordsArray.length;
+            const searchEnd  = Math.min(chEnd - 1, rsvpIndex + 1500);
+            const matchLen   = Math.min(10, pageWords.length);
+
             outer: for (let i = searchStart; i <= searchEnd; i++) {
                 const cand = (rsvpWordsArray[i]?.word || '').toLowerCase().replace(/[^\w]/g, '');
                 if (cand !== pageWords[0]) continue;
-                for (let j = 1; j < Math.min(5, pageWords.length); j++) {
+                for (let j = 1; j < matchLen; j++) {
                     if ((rsvpWordsArray[i + j]?.word || '').toLowerCase().replace(/[^\w]/g, '') !== pageWords[j]) continue outer;
                 }
                 rsvpEpubPageWordStart = i;
@@ -58,8 +70,37 @@ window.addEventListener('message', e => {
         if (rsvpActive) rsvpHighlightInEpub(rsvpIndex);
     }
 
+    // Iframe reports highlighted word is off the visible page — flip now
+    if (e.data.type === 'rsvp-need-flip' && rsvpActive && !rsvpEpubNavigating) {
+        rsvpEpubNavigating = true;
+        if (e.data.forward) rendition?.next?.();
+        else rendition?.prev?.();
+    }
+
     if (e.data.type === 'rsvp-epub-click' && rsvpActive) {
-        const globalIdx = rsvpEpubPageWordStart + e.data.li;
+        const li           = e.data.li;
+        const clickedWord  = (e.data.word || '').toLowerCase().replace(/[^\w]/g, '');
+        let   globalIdx    = rsvpEpubPageWordStart + li;
+
+        // Verify the word at the estimated position actually matches what was clicked.
+        // If calibration was off, search ±60 words around the estimate for the closest match.
+        if (clickedWord) {
+            const est     = globalIdx;
+            const lo      = Math.max(0, est - 60);
+            const hi      = Math.min(rsvpWordsArray.length - 1, est + 60);
+            const atEst   = (rsvpWordsArray[est]?.word || '').toLowerCase().replace(/[^\w]/g, '');
+            if (atEst !== clickedWord) {
+                let bestDist = Infinity;
+                for (let i = lo; i <= hi; i++) {
+                    const w = (rsvpWordsArray[i]?.word || '').toLowerCase().replace(/[^\w]/g, '');
+                    if (w === clickedWord) {
+                        const dist = Math.abs(i - est);
+                        if (dist < bestDist) { bestDist = dist; globalIdx = i; }
+                    }
+                }
+            }
+        }
+
         if (globalIdx >= 0 && globalIdx < rsvpWordsArray.length) {
             rsvpJumpToGlobalWord(globalIdx);
         }
@@ -201,16 +242,21 @@ function rsvpSplitSentences(text) {
     return sentences;
 }
 
-// ── Score all chapters upfront; check Firestore cache first ──
+// ── Score all chapters upfront; load from Storage cache if available ──
 async function rsvpScoreAllChapters(chapters) {
-    const cacheRef = db.collection('library').doc(bookId).collection('rsvp').doc('scores');
+    const cacheFile = storage.ref(`library/rsvp/${bookId}.csv`);
+
+    // Try loading from Storage first
     try {
-        const cacheDoc = await cacheRef.get();
-        if (cacheDoc.exists && cacheDoc.data()?.csv) {
-            return cacheDoc.data().csv.split(',').map(Number);
+        const url = await cacheFile.getDownloadURL();
+        const res = await fetch(url);
+        if (res.ok) {
+            const csv = await res.text();
+            if (csv.trim().length > 0) return csv.trim().split(',').map(Number);
         }
     } catch {}
 
+    // Cache miss — score with Gemini and save to Storage
     const allScores = [];
     for (let i = 0; i < chapters.length; i++) {
         if (rsvpCancelled) return allScores;
@@ -220,10 +266,9 @@ async function rsvpScoreAllChapters(chapters) {
     }
 
     try {
-        await cacheRef.set({
-            csv:      allScores.join(','),
-            scoredAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
+        const csv  = allScores.join(',');
+        const blob = new Blob([csv], { type: 'text/plain' });
+        await cacheFile.put(blob);
     } catch {}
 
     return allScores;

@@ -8,8 +8,9 @@ const firebaseConfig = {
     appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.firestore();
+const auth    = firebase.auth();
+const db      = firebase.firestore();
+const storage = firebase.storage();
 
 // ── STATE ──
 const bookId      = new URLSearchParams(window.location.search).get('id');
@@ -465,7 +466,17 @@ function registerThemes() {
         for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
         if (li < 0) return;
         var target = document.querySelector('.rsvp-w[data-li="' + li + '"]');
-        if (target) target.classList.add('rsvp-current');
+        if (target) {
+            target.classList.add('rsvp-current');
+            var rect = target.getBoundingClientRect();
+            var vH = window.innerHeight || document.documentElement.clientHeight;
+            var vW = window.innerWidth  || document.documentElement.clientWidth;
+            if (rect.bottom < 0 || rect.top > vH || rect.right < 0 || rect.left > vW) {
+                window.parent.postMessage({ type: 'rsvp-need-flip', forward: rect.top >= 0 }, '*');
+            }
+        } else {
+            window.parent.postMessage({ type: 'rsvp-need-flip', forward: true }, '*');
+        }
     }
 
     window.addEventListener('message', function(e) {
