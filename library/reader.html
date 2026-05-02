@@ -82,6 +82,14 @@
         .bar-bg       { background: rgba(253,252,246,0.95); border-color: rgba(245,211,179,0.5); }
         .theme-light .bar-bg { background: rgba(255,255,255,0.95); }
         .theme-dark  .bar-bg { background: rgba(26,22,18,0.95); border-color: rgba(74,37,23,0.4); }
+
+        /* ── RSVP ── */
+        #rsvp-btn.rsvp-active { color: #d56a31; }
+        .rsvp-mode-active { background: #d56a31 !important; color: white !important; border-color: #d56a31 !important; }
+        .rsvp-mode-active span { color: white !important; }
+        .rsvp-word-highlight { background: #fef08a; color: #8f4228; font-weight: 600; border-radius: 3px; }
+        @keyframes rsvp-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+        .rsvp-bar-pulse { animation: rsvp-pulse 1.4s ease-in-out infinite; }
     </style>
 </head>
 <body class="min-h-screen font-book selection:bg-orange-200 selection:text-warm-900">
@@ -154,6 +162,11 @@
                 class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Highlight mode (toggle)">
                 <i class="fa-solid fa-highlighter"></i>
             </button>
+            <!-- RSVP mode toggle -->
+            <button onclick="toggleRsvpMode()" id="rsvp-btn"
+                class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="RSVP speed reading">
+                <i class="fa-solid fa-bolt"></i>
+            </button>
             <div class="h-4 w-px bg-warm-300"></div>
             <button onclick="toggleSettings()" class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Appearance">
                 <i class="fa-solid fa-font"></i>
@@ -214,6 +227,133 @@
     <div id="reader-area" class="hidden fixed inset-0 pt-[52px] pb-[72px] flex justify-center">
         <div class="w-full max-w-2xl h-full">
             <div id="viewer" class="w-full h-full"></div>
+        </div>
+    </div>
+
+    <!-- ── RSVP PREPROCESSING MODAL ── -->
+    <div id="rsvp-prep-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm">
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm mx-4 text-center relative">
+            <div class="absolute top-0 left-1/2 w-28 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded"
+                style="transform: translateX(-50%) rotate(-1.5deg);"></div>
+            <div class="w-12 h-12 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-bolt text-warm-400 text-lg"></i>
+            </div>
+            <h3 class="font-outfit font-bold text-lg text-warm-900 mb-1" id="rsvp-prep-title">Preparing RSVP…</h3>
+            <p class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-6" id="rsvp-prep-sub">Analysing complexity and pacing</p>
+            <div class="w-full h-2 bg-warm-200 rounded-full overflow-hidden mb-2">
+                <div id="rsvp-prep-bar" class="h-full bg-orange-500 rounded-full transition-all duration-500 rsvp-bar-pulse" style="width:0%"></div>
+            </div>
+            <p class="font-mono text-[10px] text-warm-500 mb-6" id="rsvp-prep-chunk">Chapter 0 of 0</p>
+            <button onclick="cancelRsvpPrep()" class="font-mono text-[10px] text-warm-400 uppercase tracking-widest hover:text-warm-700 transition">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ── RSVP READER AREA ── -->
+    <div id="rsvp-area" class="hidden fixed inset-0 pt-[52px] pb-[56px] flex overflow-hidden">
+
+        <!-- Player panel -->
+        <div class="w-[340px] xl:w-[380px] shrink-0 flex flex-col border-r border-warm-200 bg-[#fdfaf6] overflow-y-auto">
+
+            <!-- Word display -->
+            <div id="rsvp-display-area" class="h-52 flex flex-col items-center justify-center relative cursor-pointer select-none border-b border-warm-100"
+                onclick="rsvpTogglePlay()">
+                <div id="rsvp-context" class="absolute top-3 left-4 right-4 text-center font-outfit text-xs text-warm-400 opacity-0 transition-opacity duration-300 leading-snug italic"></div>
+                <!-- ORP word -->
+                <div id="rsvp-word" class="font-outfit font-black text-5xl text-warm-900 tracking-tight flex items-baseline justify-center w-full px-4">
+                    <span id="rsvp-before"></span><span id="rsvp-pivot" class="text-red-600"></span><span id="rsvp-after"></span>
+                </div>
+                <!-- Focus dot -->
+                <div class="absolute bottom-8 w-1.5 h-1.5 bg-orange-400 rounded-full opacity-50 shadow-[0_0_6px_rgba(235,173,122,0.9)]"></div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="w-full h-1.5 bg-warm-100">
+                <div id="rsvp-progress" class="h-full bg-orange-500 rounded-r-full transition-all duration-100" style="width:0%"></div>
+            </div>
+
+            <!-- Controls -->
+            <div class="px-6 py-5 flex flex-col gap-5 bg-white flex-1">
+
+                <!-- Status badge -->
+                <div class="flex justify-between items-center">
+                    <span id="rsvp-status" class="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest bg-warm-100 text-warm-700 border border-warm-200">
+                        Ready
+                    </span>
+                    <span id="rsvp-chapter-badge" class="font-mono text-[9px] text-warm-400 uppercase tracking-widest truncate max-w-[140px]"></span>
+                </div>
+
+                <!-- Playback buttons -->
+                <div class="flex items-center justify-center gap-5">
+                    <button onclick="rsvpRestart()" class="p-2.5 text-warm-400 hover:text-warm-700 hover:bg-warm-50 rounded-full transition" title="Restart">
+                        <i class="fa-solid fa-rotate-left text-sm"></i>
+                    </button>
+                    <button onclick="rsvpJumpSeconds(-5)" class="p-3 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Rewind 5s">
+                        <i class="fa-solid fa-backward text-base"></i>
+                    </button>
+                    <button id="rsvp-play-btn" onclick="rsvpTogglePlay()"
+                        class="p-4 bg-warm-600 hover:bg-warm-700 text-white rounded-full shadow-lg shadow-warm-900/20 hover:scale-105 active:scale-95 transition">
+                        <i class="fa-solid fa-play text-xl ml-0.5" id="rsvp-icon-play"></i>
+                        <i class="fa-solid fa-pause text-xl hidden" id="rsvp-icon-pause"></i>
+                    </button>
+                    <button onclick="rsvpJumpSeconds(5)" class="p-3 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Forward 5s">
+                        <i class="fa-solid fa-forward text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Pacing mode -->
+                <div class="pt-4 border-t border-warm-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-mono text-[10px] font-bold text-warm-500 uppercase tracking-widest">Pacing Mode</span>
+                        <span class="font-outfit font-bold text-warm-800 text-sm" id="rsvp-mode-label">Focused</span>
+                    </div>
+                    <div class="grid grid-cols-5 gap-1">
+                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="1" onclick="rsvpSetMode(1)">
+                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">1</span>Leisurely
+                        </button>
+                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="2" onclick="rsvpSetMode(2)">
+                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">2</span>Comfort
+                        </button>
+                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5 rsvp-mode-active" data-mode="3" onclick="rsvpSetMode(3)">
+                            <span class="font-outfit font-black text-sm leading-none">3</span>Focused
+                        </button>
+                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="4" onclick="rsvpSetMode(4)">
+                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">4</span>Brisk
+                        </button>
+                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="5" onclick="rsvpSetMode(5)">
+                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">5</span>Sprint
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Prefetch status -->
+                <div id="rsvp-prefetch-notice" class="hidden font-mono text-[9px] text-warm-400 text-center">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Scoring next chapter…
+                </div>
+            </div>
+        </div>
+
+        <!-- Manuscript panel -->
+        <div class="flex-1 overflow-y-auto bg-[#fdfcf6] flex flex-col">
+            <div class="px-8 py-6 border-b border-warm-100 flex justify-between items-start">
+                <div>
+                    <span class="font-mono text-[9px] font-bold uppercase tracking-widest text-orange-600 block mb-1" id="rsvp-ms-chapter">—</span>
+                    <h2 class="font-outfit font-black text-2xl text-warm-900 leading-tight" id="rsvp-ms-title">—</h2>
+                </div>
+                <span class="font-mono text-[9px] text-warm-400 uppercase tracking-widest mt-1">Click word to jump</span>
+            </div>
+            <div class="px-8 py-6 flex-1">
+                <div id="rsvp-ms-text" class="font-book text-warm-800 text-base leading-[1.85] select-none"></div>
+            </div>
+            <!-- Pagination -->
+            <div class="px-8 py-4 border-t border-warm-100 flex justify-between items-center">
+                <button id="rsvp-ms-prev" onclick="rsvpPrevPage()" class="p-2 text-warm-400 hover:text-warm-800 hover:bg-warm-100 rounded-full transition disabled:opacity-30">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+                <span id="rsvp-ms-page" class="font-mono text-[9px] text-warm-400 uppercase tracking-widest font-bold">Page 1 of 1</span>
+                <button id="rsvp-ms-next" onclick="rsvpNextPage()" class="p-2 text-warm-400 hover:text-warm-800 hover:bg-warm-100 rounded-full transition disabled:opacity-30">
+                    <i class="fa-solid fa-chevron-right text-sm"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -706,6 +846,550 @@
                 panel.classList.add('hidden');
             }
         });
+    </script>
+
+    <!-- ── RSVP INTEGRATION ── -->
+    <script>
+    // ─────────────────────────────────────────────
+    //  RSVP — constants & state
+    // ─────────────────────────────────────────────
+    const RSVP_MODES = {
+        1: { label: 'Leisurely',   wpm: 180 },
+        2: { label: 'Comfortable', wpm: 250 },
+        3: { label: 'Focused',     wpm: 320 },
+        4: { label: 'Brisk',       wpm: 420 },
+        5: { label: 'Sprint',      wpm: 550 },
+    };
+    const RSVP_WORDS_PER_CHUNK = 500;
+    const RSVP_WORDS_PER_PAGE  = 120;
+
+    const RSVP_PROMPT = `You are a reading-pace annotator for an RSVP reading app.
+Analyse the passage and return a JSON score controlling display speed per sentence.
+For each sentence return exactly:
+- index: integer starting at 0
+- text: the sentence exactly as written
+- content_type: one of: narrative_action, dialogue, exposition, key_argument, definition, transition, description, data_or_statistic
+- complexity: float 0.7–1.8 (0.7=easy/fast, 1.0=baseline, 1.8=very dense/slow)
+- reread_flag: true if load-bearing, false otherwise
+- pause_after_ms: 0 mid-paragraph, 150 end-sentence, 400 end-paragraph
+Return ONLY valid JSON. Start with { end with }.
+Passage:\n`;
+
+    let rsvpGeminiKey   = null;   // fetched from Firestore _config/App
+    let rsvpActive      = false;
+    let rsvpIsPlaying   = false;
+    let rsvpWordsArray  = [];
+    let rsvpPagesHTML   = [];
+    let rsvpWordToPage  = {};
+    let rsvpIndex       = 0;
+    let rsvpLastHL      = -1;
+    let rsvpMode        = 3;
+    let rsvpBaseWpm     = RSVP_MODES[3].wpm;
+    let rsvpTimer       = null;
+    let rsvpBrowsing    = false;
+    let rsvpBrowseTimer = null;
+    let rsvpVisPage     = 0;
+    let rsvpCancelled   = false;
+    let rsvpChapterMap  = [];   // [{chapterIndex, chapterTitle, spineHref, chunks:[]}]
+    let rsvpCurrentChapterIdx = 0;
+    let rsvpPrefetching = false;
+
+    // ─────────────────────────────────────────────
+    //  Fetch Gemini key from _config/App (auth-gated)
+    // ─────────────────────────────────────────────
+    async function rsvpFetchKey() {
+        if (rsvpGeminiKey) return rsvpGeminiKey;
+        try {
+            const snap = await db.collection('_config').doc('App').get();
+            rsvpGeminiKey = snap.data()?.geminiApiKey || null;
+        } catch { rsvpGeminiKey = null; }
+        return rsvpGeminiKey;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Mode toggle entry point
+    // ─────────────────────────────────────────────
+    async function toggleRsvpMode() {
+        if (rsvpActive) { exitRsvpMode(); return; }
+
+        const key = await rsvpFetchKey();
+        if (!key) { alert('Gemini API key not found in _config/App.'); return; }
+
+        // Pause the epub reader
+        if (rendition) rendition.pause && rendition.pause();
+
+        // Show preprocessing modal
+        rsvpCancelled = false;
+        rsvpShowPrep('Preparing RSVP…', 'Extracting text from chapters', 0, 0);
+        document.getElementById('rsvp-prep-modal').classList.remove('hidden');
+
+        try {
+            await rsvpInitSession();
+        } catch (err) {
+            document.getElementById('rsvp-prep-modal').classList.add('hidden');
+            if (!rsvpCancelled) alert(`RSVP error: ${err.message}`);
+        }
+    }
+
+    function cancelRsvpPrep() {
+        rsvpCancelled = true;
+        document.getElementById('rsvp-prep-modal').classList.add('hidden');
+    }
+
+    // ─────────────────────────────────────────────
+    //  Session init — extract text, score current chapter, prefetch next
+    // ─────────────────────────────────────────────
+    async function rsvpInitSession() {
+        // 1. Extract all spine items as chapters
+        rsvpShowPrep('Extracting chapters…', bookDoc.title, 0, 0);
+        await rsvpExtractChapters();
+        if (rsvpCancelled || rsvpChapterMap.length === 0) return;
+
+        // 2. Determine which chapter is currently visible
+        const loc  = rendition ? rendition.currentLocation() : null;
+        const href = loc?.start?.href || '';
+        let startChIdx = rsvpChapterMap.findIndex(c => href.includes(c.spineHref.split('/').pop()));
+        if (startChIdx < 0) startChIdx = 0;
+        rsvpCurrentChapterIdx = startChIdx;
+
+        // 3. Score current chapter (from Firestore cache or fresh Gemini calls)
+        await rsvpEnsureChapterScored(startChIdx);
+        if (rsvpCancelled) return;
+
+        // 4. Build player from current chapter
+        rsvpBuildPlayer(startChIdx);
+
+        // 5. Hide modal, show RSVP area
+        document.getElementById('rsvp-prep-modal').classList.add('hidden');
+        enterRsvpMode();
+
+        // 6. Prefetch next chapter in background
+        if (startChIdx + 1 < rsvpChapterMap.length) {
+            rsvpPrefetchChapter(startChIdx + 1);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Extract text from all spine items via epub.js
+    // ─────────────────────────────────────────────
+    async function rsvpExtractChapters() {
+        if (rsvpChapterMap.length > 0) return; // already extracted this session
+        const items = epubBook.spine.items;
+        rsvpChapterMap = [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            try {
+                const section = epubBook.spine.get(i);
+                const doc     = await section.load(epubBook.load.bind(epubBook));
+                const text    = rsvpExtractText(doc);
+                section.unload();
+                if (text.trim().length > 100) {
+                    rsvpChapterMap.push({
+                        chapterIndex: i,
+                        chapterTitle: item.idref || `Chapter ${i + 1}`,
+                        spineHref:    item.href || '',
+                        rawText:      text.trim(),
+                        chunks:       rsvpChunkText(text.trim()),
+                        scored:       false,
+                    });
+                }
+            } catch { /* skip */ }
+        }
+    }
+
+    function rsvpExtractText(doc) {
+        if (!doc) return '';
+        const body = doc.body || doc;
+        ['script','style','nav','aside','figure'].forEach(tag => {
+            body.querySelectorAll && body.querySelectorAll(tag).forEach(el => el.remove());
+        });
+        return (body.innerText || body.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function rsvpChunkText(text) {
+        const sentences = text.match(/[^.!?]+[.!?]+[\s]*/g) || [text];
+        const chunks = [];
+        let cur = [], words = 0;
+        sentences.forEach(s => {
+            const wc = s.trim().split(/\s+/).length;
+            if (words + wc > RSVP_WORDS_PER_CHUNK && cur.length > 0) {
+                chunks.push(cur.join(' ').trim());
+                cur = []; words = 0;
+            }
+            cur.push(s.trim()); words += wc;
+        });
+        if (cur.length) chunks.push(cur.join(' ').trim());
+        return chunks;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Score a chapter — Firestore cache first, then Gemini
+    // ─────────────────────────────────────────────
+    async function rsvpEnsureChapterScored(chIdx) {
+        const ch = rsvpChapterMap[chIdx];
+        if (!ch || ch.scored) return;
+
+        // Check Firestore
+        const cacheDoc = await db.collection('library').doc(bookId)
+            .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`).get();
+
+        if (cacheDoc.exists && cacheDoc.data().status === 'done') {
+            ch.scoredSentences = cacheDoc.data().sentences;
+            ch.scored = true;
+            return;
+        }
+
+        // Score all chunks in parallel (all at once — paid tier)
+        const total = ch.chunks.length;
+        rsvpShowPrep(`Scoring "${ch.chapterTitle}"…`, 'Analysing complexity and pacing', 0, total);
+
+        let done = 0;
+        const allSentences = [];
+
+        await Promise.all(ch.chunks.map(async (chunkText, i) => {
+            const sentences = await rsvpScoreChunk(chunkText);
+            allSentences.push(...(sentences || rsvpFallback(chunkText)));
+            done++;
+            rsvpShowPrep(`Scoring "${ch.chapterTitle}"…`, 'Analysing complexity and pacing', done, total);
+        }));
+
+        ch.scoredSentences = allSentences;
+        ch.scored = true;
+
+        // Persist to Firestore
+        try {
+            await db.collection('library').doc(bookId)
+                .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`).set({
+                    status: 'done',
+                    chapterTitle: ch.chapterTitle,
+                    sentences: allSentences,
+                    scoredAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+        } catch { /* cache write failed — non-fatal */ }
+    }
+
+    async function rsvpPrefetchChapter(chIdx) {
+        if (rsvpPrefetching || !rsvpChapterMap[chIdx] || rsvpChapterMap[chIdx].scored) return;
+        rsvpPrefetching = true;
+        document.getElementById('rsvp-prefetch-notice').classList.remove('hidden');
+        try {
+            await rsvpEnsureChapterScored(chIdx);
+        } finally {
+            rsvpPrefetching = false;
+            document.getElementById('rsvp-prefetch-notice').classList.add('hidden');
+        }
+    }
+
+    async function rsvpScoreChunk(text) {
+        const key = rsvpGeminiKey;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-client': 'genai-js/flex'
+                        },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: RSVP_PROMPT + text }] }],
+                            generationConfig: {
+                                temperature: 0.1,
+                                thinkingConfig: { thinkingBudget: 0 }
+                            }
+                        })
+                    }
+                );
+                if (res.status === 429) { await rsvpSleep(2000); continue; }
+                const data = await res.json();
+                if (data.error) throw new Error(data.error.message);
+                const raw     = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const cleaned = raw.trim().replace(/^```json\s*/i,'').replace(/```\s*$/,'');
+                return JSON.parse(cleaned).sentences || [];
+            } catch { if (attempt === 0) { await rsvpSleep(800); continue; } return null; }
+        }
+        return null;
+    }
+
+    function rsvpFallback(text) {
+        return (text.match(/[^.!?]+[.!?]+[\s]*/g) || [text]).map((s,i) => ({
+            index: i, text: s.trim(), content_type: 'exposition',
+            complexity: 1.0, reread_flag: false, pause_after_ms: 150
+        }));
+    }
+
+    // ─────────────────────────────────────────────
+    //  Build player from a scored chapter
+    // ─────────────────────────────────────────────
+    function rsvpBuildPlayer(chIdx) {
+        const ch = rsvpChapterMap[chIdx];
+        if (!ch) return;
+
+        rsvpWordsArray = [];
+        rsvpPagesHTML  = [];
+        rsvpWordToPage = {};
+
+        const sentences = ch.scoredSentences || [];
+        sentences.forEach(s => {
+            if (!s.text) return;
+            s.text.split(' ').forEach((word, wi, arr) => {
+                const isLast = wi === arr.length - 1;
+                rsvpWordsArray.push({
+                    word,
+                    complexity:     s.complexity    || 1.0,
+                    pause_after_ms: isLast ? (s.pause_after_ms || 150) : 0,
+                    content_type:   s.content_type  || 'exposition',
+                    sentence_text:  s.text,
+                    is_para_end:    isLast && (s.pause_after_ms || 0) >= 400,
+                });
+            });
+        });
+
+        // Paginate manuscript
+        let html = '', count = 0, pageIdx = 0;
+        rsvpWordsArray.forEach((wd, i) => {
+            html += `<span id="rw-${i}" data-i="${i}" class="cursor-pointer hover:bg-orange-100 rounded px-px transition-colors duration-100">${wd.word}</span> `;
+            rsvpWordToPage[i] = pageIdx;
+            count++;
+            if (wd.is_para_end) html += '<span class="block h-3"></span>';
+            if (count >= RSVP_WORDS_PER_PAGE || i === rsvpWordsArray.length - 1) {
+                rsvpPagesHTML.push(html);
+                html = ''; count = 0; pageIdx++;
+            }
+        });
+
+        // Update manuscript header
+        document.getElementById('rsvp-ms-chapter').textContent = `Chapter ${ch.chapterIndex + 1}`;
+        document.getElementById('rsvp-ms-title').textContent   = bookDoc.title;
+        document.getElementById('rsvp-chapter-badge').textContent = ch.chapterTitle;
+
+        rsvpIndex = 0; rsvpLastHL = -1; rsvpVisPage = 0;
+        rsvpRenderPage(0);
+        rsvpSetWord('Ready.');
+        rsvpUpdateProgress();
+    }
+
+    // ─────────────────────────────────────────────
+    //  Mode switching
+    // ─────────────────────────────────────────────
+    function enterRsvpMode() {
+        rsvpActive = true;
+        document.getElementById('rsvp-area').classList.remove('hidden');
+        document.getElementById('reader-area').classList.add('hidden');
+        document.querySelectorAll('.nav-arrow').forEach(el => el.style.display = 'none');
+        document.getElementById('rsvp-btn').classList.add('rsvp-active');
+        document.getElementById('rsvp-btn').title = 'Exit RSVP mode';
+        rsvpSetMode(rsvpMode);
+    }
+
+    function exitRsvpMode() {
+        rsvpActive = false;
+        rsvpStopPlayer();
+        document.getElementById('rsvp-area').classList.add('hidden');
+        document.getElementById('reader-area').classList.remove('hidden');
+        document.querySelectorAll('.nav-arrow').forEach(el => el.style.display = '');
+        document.getElementById('rsvp-btn').classList.remove('rsvp-active');
+        document.getElementById('rsvp-btn').title = 'RSVP speed reading';
+    }
+
+    // ─────────────────────────────────────────────
+    //  Player engine
+    // ─────────────────────────────────────────────
+    function rsvpOrpIdx(word) {
+        const l = word.length;
+        if (l <= 1) return 0;
+        if (l <= 5) return Math.floor(l / 2);
+        return Math.floor(l / 2) - 1;
+    }
+
+    function rsvpSetWord(word) {
+        const el = document.getElementById('rsvp-word');
+        el.classList.remove('text-3xl','text-4xl','text-5xl','text-6xl');
+        const l = word.length;
+        el.classList.add(l > 12 ? 'text-3xl' : l > 8 ? 'text-4xl' : l > 5 ? 'text-5xl' : 'text-6xl');
+        const p = rsvpOrpIdx(word);
+        document.getElementById('rsvp-before').textContent = word.slice(0, p);
+        document.getElementById('rsvp-pivot').textContent  = word[p] || '';
+        document.getElementById('rsvp-after').textContent  = word.slice(p + 1);
+    }
+
+    function rsvpTogglePlay() {
+        if (rsvpIndex >= rsvpWordsArray.length) rsvpIndex = 0;
+        rsvpIsPlaying = !rsvpIsPlaying;
+        rsvpUpdatePlayUI();
+        if (rsvpIsPlaying) {
+            document.getElementById('rsvp-context').style.opacity = '0';
+            rsvpLoop();
+        } else {
+            clearTimeout(rsvpTimer);
+            rsvpShowContext();
+        }
+    }
+
+    function rsvpLoop() {
+        if (!rsvpIsPlaying || rsvpIndex >= rsvpWordsArray.length) {
+            rsvpIsPlaying = false;
+            rsvpUpdatePlayUI();
+            if (rsvpIndex >= rsvpWordsArray.length) {
+                rsvpSetWord('Done.');
+                rsvpTryNextChapter();
+            }
+            return;
+        }
+        const wd = rsvpWordsArray[rsvpIndex];
+        rsvpSetWord(wd.word);
+        rsvpUpdateProgress();
+        rsvpUpdateStatus(wd.complexity, wd.content_type);
+        rsvpSyncHL();
+
+        const ms = (60000 / rsvpBaseWpm) * wd.complexity;
+        rsvpTimer = setTimeout(() => {
+            if (wd.pause_after_ms > 0) {
+                rsvpSetWord('');
+                rsvpTimer = setTimeout(() => { rsvpIndex++; rsvpLoop(); }, wd.pause_after_ms);
+            } else { rsvpIndex++; rsvpLoop(); }
+        }, ms);
+    }
+
+    function rsvpStopPlayer() {
+        rsvpIsPlaying = false;
+        clearTimeout(rsvpTimer);
+        rsvpUpdatePlayUI();
+    }
+
+    function rsvpRestart() {
+        rsvpIndex = 0;
+        rsvpStopPlayer();
+        rsvpSetWord('Ready.');
+        rsvpUpdateProgress();
+        document.getElementById('rsvp-context').style.opacity = '0';
+    }
+
+    function rsvpJumpSeconds(sec) {
+        const wps = rsvpBaseWpm / 60;
+        rsvpIndex  = Math.max(0, Math.min(rsvpIndex + Math.round(wps * sec), rsvpWordsArray.length - 1));
+        if (!rsvpIsPlaying) { rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || ''); rsvpSyncHL(); rsvpShowContext(); }
+        else { clearTimeout(rsvpTimer); rsvpLoop(); }
+    }
+
+    async function rsvpTryNextChapter() {
+        const nextIdx = rsvpCurrentChapterIdx + 1;
+        if (nextIdx >= rsvpChapterMap.length) return;
+
+        // Score if needed, then load
+        if (!rsvpChapterMap[nextIdx].scored) {
+            document.getElementById('rsvp-prep-modal').classList.remove('hidden');
+            rsvpCancelled = false;
+            await rsvpEnsureChapterScored(nextIdx);
+            document.getElementById('rsvp-prep-modal').classList.add('hidden');
+            if (rsvpCancelled) return;
+        }
+
+        rsvpCurrentChapterIdx = nextIdx;
+        rsvpBuildPlayer(nextIdx);
+        rsvpIsPlaying = true;
+        rsvpUpdatePlayUI();
+        rsvpLoop();
+
+        // Prefetch the one after
+        if (nextIdx + 1 < rsvpChapterMap.length) rsvpPrefetchChapter(nextIdx + 1);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Manuscript sync
+    // ─────────────────────────────────────────────
+    function rsvpSyncHL() {
+        document.querySelectorAll('.rsvp-word-highlight').forEach(el => el.classList.remove('rsvp-word-highlight'));
+        if (rsvpIndex < 0 || rsvpIndex >= rsvpWordsArray.length) return;
+        const tp = rsvpWordToPage[rsvpIndex];
+        if (!rsvpBrowsing && rsvpVisPage !== tp) rsvpRenderPage(tp);
+        if (rsvpVisPage === tp) {
+            const sp = document.getElementById(`rw-${rsvpIndex}`);
+            if (sp) sp.classList.add('rsvp-word-highlight');
+        }
+        rsvpLastHL = rsvpIndex;
+    }
+
+    function rsvpRenderPage(idx) {
+        if (idx < 0 || idx >= rsvpPagesHTML.length) return;
+        rsvpVisPage = idx;
+        const ms = document.getElementById('rsvp-ms-text');
+        ms.innerHTML = rsvpPagesHTML[idx];
+        document.getElementById('rsvp-ms-page').textContent = `Page ${idx + 1} of ${rsvpPagesHTML.length}`;
+        document.getElementById('rsvp-ms-prev').disabled = idx === 0;
+        document.getElementById('rsvp-ms-next').disabled = idx === rsvpPagesHTML.length - 1;
+        if (rsvpWordToPage[rsvpIndex] === idx) {
+            const sp = document.getElementById(`rw-${rsvpIndex}`);
+            if (sp) sp.classList.add('rsvp-word-highlight');
+        }
+        ms.addEventListener('click', e => {
+            if (e.target.dataset.i !== undefined) {
+                rsvpBrowsing = false;
+                rsvpIndex = parseInt(e.target.dataset.i);
+                if (!rsvpIsPlaying) { rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || ''); rsvpSyncHL(); rsvpShowContext(); }
+                else { clearTimeout(rsvpTimer); rsvpLoop(); }
+            }
+        });
+        ms.addEventListener('mouseenter', () => rsvpBrowsing = true);
+        ms.addEventListener('mouseleave', () => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); });
+    }
+
+    function rsvpPrevPage() { rsvpBrowsing = true; rsvpRenderPage(rsvpVisPage - 1); clearTimeout(rsvpBrowseTimer); rsvpBrowseTimer = setTimeout(() => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); }, 3000); }
+    function rsvpNextPage() { rsvpBrowsing = true; rsvpRenderPage(rsvpVisPage + 1); clearTimeout(rsvpBrowseTimer); rsvpBrowseTimer = setTimeout(() => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); }, 3000); }
+
+    function rsvpShowContext() {
+        const ctx = document.getElementById('rsvp-context');
+        if (rsvpIndex < rsvpWordsArray.length) { ctx.textContent = rsvpWordsArray[rsvpIndex].sentence_text; ctx.style.opacity = '1'; }
+    }
+
+    // ─────────────────────────────────────────────
+    //  UI helpers
+    // ─────────────────────────────────────────────
+    function rsvpSetMode(m) {
+        rsvpMode    = m;
+        rsvpBaseWpm = RSVP_MODES[m].wpm;
+        document.getElementById('rsvp-mode-label').textContent = RSVP_MODES[m].label;
+        document.querySelectorAll('.rsvp-mode-btn').forEach(b => {
+            b.classList.toggle('rsvp-mode-active', parseInt(b.dataset.mode) === m);
+        });
+    }
+
+    function rsvpUpdatePlayUI() {
+        const playing = rsvpIsPlaying;
+        document.getElementById('rsvp-icon-play').classList.toggle('hidden', playing);
+        document.getElementById('rsvp-icon-pause').classList.toggle('hidden', !playing);
+        document.getElementById('rsvp-play-btn').classList.toggle('bg-warm-800', playing);
+        document.getElementById('rsvp-play-btn').classList.toggle('bg-warm-600', !playing);
+    }
+
+    function rsvpUpdateProgress() {
+        const pct = rsvpWordsArray.length ? (rsvpIndex / rsvpWordsArray.length) * 100 : 0;
+        document.getElementById('rsvp-progress').style.width = `${pct}%`;
+    }
+
+    function rsvpUpdateStatus(complexity, type) {
+        const label = `${complexity.toFixed(1)}× ${(type||'').replace(/_/g,' ')}`;
+        const el    = document.getElementById('rsvp-status');
+        el.textContent = label;
+        el.className   = `px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest border ${
+            complexity > 1.2 ? 'bg-warm-200 text-warm-800 border-warm-300' :
+            complexity < 0.9 ? 'bg-white text-warm-500 border-warm-200' :
+                               'bg-warm-100 text-warm-700 border-warm-200'}`;
+    }
+
+    function rsvpShowPrep(title, sub, done, total) {
+        document.getElementById('rsvp-prep-title').textContent = title;
+        document.getElementById('rsvp-prep-sub').textContent   = sub;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        document.getElementById('rsvp-prep-bar').style.width   = `${pct}%`;
+        document.getElementById('rsvp-prep-chunk').textContent =
+            total > 0 ? `Chunk ${done} of ${total}` : 'Starting…';
+        if (done >= total && total > 0) document.getElementById('rsvp-prep-bar').classList.remove('rsvp-bar-pulse');
+        else document.getElementById('rsvp-prep-bar').classList.add('rsvp-bar-pulse');
+    }
+
+    function rsvpSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     </script>
 </body>
 </html>
