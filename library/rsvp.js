@@ -95,32 +95,47 @@ window.addEventListener('message', e => {
     }
 
     if (e.data.type === 'rsvp-epub-click' && rsvpActive) {
-        const li           = e.data.li;
-        const clickedWord  = (e.data.word || '').toLowerCase().replace(/[^\w]/g, '');
-        let   globalIdx    = rsvpEpubPageWordStart + li;
+        // ── Pillar 1: Chapter mapping via rendition location ──
+        const loc  = rendition?.currentLocation();
+        const href = (loc?.start?.href || '').split('#')[0];
+        const chIdx = rsvpChapterBoundaries.findIndex(b => {
+            const bHref = (b.spineHref || '').split('#')[0];
+            return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
+        });
+        if (chIdx < 0) return;
 
-        // Verify the word at the estimated position actually matches what was clicked.
-        // If calibration was off, search ±60 words around the estimate for the closest match.
-        if (clickedWord) {
-            const est     = globalIdx;
-            const lo      = Math.max(0, est - 60);
-            const hi      = Math.min(rsvpWordsArray.length - 1, est + 60);
-            const atEst   = (rsvpWordsArray[est]?.word || '').toLowerCase().replace(/[^\w]/g, '');
-            if (atEst !== clickedWord) {
-                let bestDist = Infinity;
-                for (let i = lo; i <= hi; i++) {
-                    const w = (rsvpWordsArray[i]?.word || '').toLowerCase().replace(/[^\w]/g, '');
-                    if (w === clickedWord) {
-                        const dist = Math.abs(i - est);
-                        if (dist < bestDist) { bestDist = dist; globalIdx = i; }
-                    }
-                }
+        const parentChapterStart = rsvpChapterBoundaries[chIdx].startWordIdx;
+        const parentChapterEnd   = chIdx + 1 < rsvpChapterBoundaries.length
+            ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
+            : rsvpWordsArray.length;
+
+        // ── Pillar 2: Proportional anchoring ──
+        const chapterRatio    = e.data.li / (e.data.totalChapterWords || 1);
+        const estimatedGlobalIdx = parentChapterStart + Math.floor(chapterRatio * (parentChapterEnd - parentChapterStart));
+
+        // ── Pillar 3: Fingerprint search ±100 words within chapter bounds ──
+        const fp  = e.data.fingerprint || [];
+        const lo  = Math.max(parentChapterStart, estimatedGlobalIdx - 100);
+        const hi  = Math.min(parentChapterEnd - 1, estimatedGlobalIdx + 100);
+        const clean = s => (s || '').toLowerCase().replace(/[^\w]/g, '');
+
+        let bestScore    = -1;
+        let bestMatchIdx = estimatedGlobalIdx;
+
+        for (let i = lo; i <= hi; i++) {
+            // fp[2] is the clicked word; align it to position i
+            let score = 0;
+            for (let f = 0; f < fp.length; f++) {
+                if (!fp[f]) continue;
+                const globalPos = i + (f - 2);
+                if (globalPos < 0 || globalPos >= rsvpWordsArray.length) continue;
+                if (clean(rsvpWordsArray[globalPos]?.word) === fp[f]) score++;
             }
+            if (score > bestScore) { bestScore = score; bestMatchIdx = i; }
+            if (score === 5) break;
         }
 
-        if (globalIdx >= 0 && globalIdx < rsvpWordsArray.length) {
-            rsvpJumpToGlobalWord(globalIdx);
-        }
+        rsvpJumpToGlobalWord(bestMatchIdx);
     }
 });
 
