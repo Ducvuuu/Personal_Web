@@ -96,8 +96,10 @@
             transform: translateX(-100%);
         }
         body.rsvp-on #rsvp-panel { transform: translateX(0); }
-        body.rsvp-on #reader-area { padding-left: 300px; }
-        body.rsvp-on .nav-arrow.left { left: 316px; }
+        @media (min-width: 768px) {
+            body.rsvp-on #reader-area { padding-left: 300px; }
+            body.rsvp-on .nav-arrow.left { left: 316px; }
+        }
         body.theme-dark #rsvp-panel { background: #1e1a16 !important; border-color: rgba(74,37,23,0.5) !important; }
         body.theme-dark #rsvp-panel .bg-white { background: #1a1612 !important; }
     </style>
@@ -231,10 +233,10 @@
     </div>
 
     <!-- ── PAGE NAV ARROWS ── -->
-    <button class="nav-arrow left" onclick="prevPage()" aria-label="Previous page">
+    <button class="nav-arrow left hidden md:flex" onclick="prevPage()" aria-label="Previous page">
         <i class="fa-solid fa-chevron-left text-sm" aria-hidden="true"></i>
     </button>
-    <button class="nav-arrow right" onclick="nextPage()" aria-label="Next page">
+    <button class="nav-arrow right hidden md:flex" onclick="nextPage()" aria-label="Next page">
         <i class="fa-solid fa-chevron-right text-sm" aria-hidden="true"></i>
     </button>
 
@@ -265,7 +267,7 @@
     </div>
 
     <!-- ── RSVP PLAYER PANEL (fixed left, alongside epub) ── -->
-    <div id="rsvp-panel" class="fixed top-[52px] bottom-[56px] left-0 z-30 w-[300px] flex flex-col border-r border-warm-200 bg-[#fdfaf6] shadow-[2px_0_24px_rgba(74,37,23,0.1)]">
+    <div id="rsvp-panel" class="fixed top-[52px] bottom-[56px] left-0 z-30 w-full md:w-[300px] flex flex-col border-r border-warm-200 bg-[#fdfaf6] shadow-[2px_0_24px_rgba(74,37,23,0.1)]">
 
         <!-- Word display — click to play/pause -->
         <div id="rsvp-display-area"
