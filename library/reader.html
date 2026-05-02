@@ -863,17 +863,17 @@
     const RSVP_WORDS_PER_CHUNK = 500;
     const RSVP_WORDS_PER_PAGE  = 120;
 
-    const RSVP_PROMPT = `You are a reading-pace annotator for an RSVP reading app.
-Analyse the passage and return a JSON score controlling display speed per sentence.
-For each sentence return exactly:
-- index: integer starting at 0
-- text: the sentence exactly as written
+    // Sentences are pre-indexed by us — Gemini returns scores only, never rewrites text
+    const RSVP_PROMPT = `You are a reading-pace annotator for an RSVP speed-reading app.
+The passage below is already split into numbered sentences (format: [0] sentence text).
+Return a JSON object with a "scores" array — one entry per sentence in the same order.
+Each entry must have exactly:
+- index: integer matching the sentence number
 - content_type: one of: narrative_action, dialogue, exposition, key_argument, definition, transition, description, data_or_statistic
-- complexity: float 0.7–1.8 (0.7=easy/fast, 1.0=baseline, 1.8=very dense/slow)
-- reread_flag: true if load-bearing, false otherwise
+- complexity: float 0.7–1.8 (0.7=very easy/fast, 1.0=baseline, 1.6=dense, 1.8=very difficult)
 - pause_after_ms: 0 mid-paragraph, 150 end-sentence, 400 end-paragraph
-Return ONLY valid JSON. Start with { end with }.
-Passage:\n`;
+Do NOT return or modify the sentence text. Return ONLY valid JSON starting with { and ending with }.
+Numbered passage:\n`;
 
     let rsvpGeminiKey   = null;   // fetched from Firestore _config/App
     let rsvpActive      = false;
@@ -940,85 +940,129 @@ Passage:\n`;
     //  Session init — extract text, score current chapter, prefetch next
     // ─────────────────────────────────────────────
     async function rsvpInitSession() {
-        // 1. Extract all spine items as chapters
+        // 1. Build chapter map from TOC navigation (real labels, skip front matter)
         rsvpShowPrep('Extracting chapters…', bookDoc.title, 0, 0);
         await rsvpExtractChapters();
         if (rsvpCancelled || rsvpChapterMap.length === 0) return;
 
-        // 2. Determine which chapter is currently visible
+        // 2. Find which TOC chapter the current epub position is in
         const loc  = rendition ? rendition.currentLocation() : null;
         const href = loc?.start?.href || '';
-        let startChIdx = rsvpChapterMap.findIndex(c => href.includes(c.spineHref.split('/').pop()));
+        let startChIdx = rsvpChapterMap.findIndex(c =>
+            href && (href === c.spineHref || href.endsWith(c.spineHref) || c.spineHref.endsWith(href.split('/').pop()))
+        );
         if (startChIdx < 0) startChIdx = 0;
         rsvpCurrentChapterIdx = startChIdx;
 
-        // 3. Score current chapter (from Firestore cache or fresh Gemini calls)
+        // 3. Score current chapter (Firestore cache → Gemini)
         await rsvpEnsureChapterScored(startChIdx);
         if (rsvpCancelled) return;
 
-        // 4. Build player from current chapter
-        rsvpBuildPlayer(startChIdx);
+        // 4. Build player; jump to approximate word matching epub position
+        const startWord = rsvpFindStartWord(startChIdx, loc);
+        rsvpBuildPlayer(startChIdx, startWord);
 
-        // 5. Hide modal, show RSVP area
+        // 5. Show RSVP area
         document.getElementById('rsvp-prep-modal').classList.add('hidden');
         enterRsvpMode();
 
-        // 6. Prefetch next chapter in background
-        if (startChIdx + 1 < rsvpChapterMap.length) {
-            rsvpPrefetchChapter(startChIdx + 1);
-        }
+        // 6. Prefetch next chapter silently
+        if (startChIdx + 1 < rsvpChapterMap.length) rsvpPrefetchChapter(startChIdx + 1);
     }
 
     // ─────────────────────────────────────────────
-    //  Extract text from all spine items via epub.js
+    //  Chapter extraction via TOC navigation
     // ─────────────────────────────────────────────
     async function rsvpExtractChapters() {
-        if (rsvpChapterMap.length > 0) return; // already extracted this session
-        const items = epubBook.spine.items;
+        if (rsvpChapterMap.length > 0) return;
         rsvpChapterMap = [];
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
+
+        // Load TOC
+        let tocItems = [];
+        try {
+            const nav  = await epubBook.loaded.navigation;
+            tocItems   = nav.toc || [];
+        } catch { tocItems = []; }
+
+        // Flatten nested TOC to a single level
+        function flattenToc(items, depth = 0) {
+            const out = [];
+            items.forEach(item => {
+                out.push({ label: item.label?.trim() || '', href: item.href || '', depth });
+                if (item.subitems?.length) out.push(...flattenToc(item.subitems, depth + 1));
+            });
+            return out;
+        }
+        const flatToc = flattenToc(tocItems);
+
+        // Build a href → label map (strip fragment)
+        const hrefToLabel = {};
+        flatToc.forEach(t => {
+            const base = t.href.split('#')[0];
+            if (!hrefToLabel[base]) hrefToLabel[base] = t.label;
+        });
+
+        // Iterate spine, include only items that appear in TOC (or all if TOC empty)
+        const useToc = Object.keys(hrefToLabel).length > 0;
+        const spineItems = epubBook.spine.items;
+
+        for (let i = 0; i < spineItems.length; i++) {
+            const item     = spineItems[i];
+            const hrefBase = (item.href || '').split('#')[0].split('/').pop();
+            const fullBase = (item.href || '').split('#')[0];
+
+            // Determine label: prefer TOC label, else skip if TOC exists
+            const label = hrefToLabel[fullBase] || hrefToLabel[hrefBase] || null;
+            if (useToc && !label) continue; // skip front-matter / cover / copyright
+
             try {
                 const section = epubBook.spine.get(i);
                 const doc     = await section.load(epubBook.load.bind(epubBook));
                 const text    = rsvpExtractText(doc);
                 section.unload();
-                if (text.trim().length > 100) {
-                    rsvpChapterMap.push({
-                        chapterIndex: i,
-                        chapterTitle: item.idref || `Chapter ${i + 1}`,
-                        spineHref:    item.href || '',
-                        rawText:      text.trim(),
-                        chunks:       rsvpChunkText(text.trim()),
-                        scored:       false,
-                    });
-                }
-            } catch { /* skip */ }
+                if (text.trim().length < 100) continue; // too short — skip
+
+                const sentences = rsvpSplitSentences(text.trim());
+                rsvpChapterMap.push({
+                    chapterIndex:  i,
+                    chapterTitle:  label || `Section ${rsvpChapterMap.length + 1}`,
+                    spineHref:     item.href || '',
+                    sentences,                      // original sentences — source of truth
+                    chunks:        rsvpMakeChunks(sentences),
+                    scored:        false,
+                    scoreMap:      {},              // sentenceIndex → {complexity, content_type, pause_after_ms}
+                });
+            } catch { /* skip unreadable item */ }
         }
     }
 
     function rsvpExtractText(doc) {
         if (!doc) return '';
         const body = doc.body || doc;
-        ['script','style','nav','aside','figure'].forEach(tag => {
+        ['script','style','nav','aside','figure','figcaption'].forEach(tag => {
             body.querySelectorAll && body.querySelectorAll(tag).forEach(el => el.remove());
         });
         return (body.innerText || body.textContent || '').replace(/\s+/g, ' ').trim();
     }
 
-    function rsvpChunkText(text) {
-        const sentences = text.match(/[^.!?]+[.!?]+[\s]*/g) || [text];
+    // Split text into sentences; returns [{index, text}]
+    function rsvpSplitSentences(text) {
+        const raw = text.match(/[^.!?…]+[.!?…]+["']?\s*/g) || [text];
+        return raw.map((s, i) => ({ index: i, text: s.trim() })).filter(s => s.text.length > 0);
+    }
+
+    // Group sentences into ~500-word chunks; each chunk carries [{sentenceIndex, text}]
+    function rsvpMakeChunks(sentences) {
         const chunks = [];
         let cur = [], words = 0;
         sentences.forEach(s => {
-            const wc = s.trim().split(/\s+/).length;
+            const wc = s.text.split(/\s+/).length;
             if (words + wc > RSVP_WORDS_PER_CHUNK && cur.length > 0) {
-                chunks.push(cur.join(' ').trim());
-                cur = []; words = 0;
+                chunks.push([...cur]); cur = []; words = 0;
             }
-            cur.push(s.trim()); words += wc;
+            cur.push(s); words += wc;
         });
-        if (cur.length) chunks.push(cur.join(' ').trim());
+        if (cur.length) chunks.push(cur);
         return chunks;
     }
 
@@ -1029,100 +1073,103 @@ Passage:\n`;
         const ch = rsvpChapterMap[chIdx];
         if (!ch || ch.scored) return;
 
-        // Check Firestore
-        const cacheDoc = await db.collection('library').doc(bookId)
-            .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`).get();
+        // Check Firestore cache (stores scoreMap only — text stays local)
+        const cacheRef = db.collection('library').doc(bookId)
+            .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`);
+        const cacheDoc = await cacheRef.get();
 
-        if (cacheDoc.exists && cacheDoc.data().status === 'done') {
-            ch.scoredSentences = cacheDoc.data().sentences;
-            ch.scored = true;
+        // v2 cache uses scoreMap (not sentences) — ignore old format
+        if (cacheDoc.exists && cacheDoc.data().status === 'done' && cacheDoc.data().scoreMap) {
+            ch.scoreMap = cacheDoc.data().scoreMap || {};
+            ch.scored   = true;
             return;
         }
 
-        // Score all chunks in parallel (all at once — paid tier)
+        // Score all chunks in parallel
         const total = ch.chunks.length;
         rsvpShowPrep(`Scoring "${ch.chapterTitle}"…`, 'Analysing complexity and pacing', 0, total);
-
         let done = 0;
-        const allSentences = [];
 
-        await Promise.all(ch.chunks.map(async (chunkText, i) => {
-            const sentences = await rsvpScoreChunk(chunkText);
-            allSentences.push(...(sentences || rsvpFallback(chunkText)));
+        await Promise.all(ch.chunks.map(async (chunkSentences) => {
+            const scores = await rsvpScoreChunk(chunkSentences);
+            scores.forEach(sc => { ch.scoreMap[sc.index] = sc; });
             done++;
             rsvpShowPrep(`Scoring "${ch.chapterTitle}"…`, 'Analysing complexity and pacing', done, total);
         }));
 
-        ch.scoredSentences = allSentences;
         ch.scored = true;
 
-        // Persist to Firestore
+        // Persist scoreMap to Firestore (no original text stored — cheaper)
         try {
-            await db.collection('library').doc(bookId)
-                .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`).set({
-                    status: 'done',
-                    chapterTitle: ch.chapterTitle,
-                    sentences: allSentences,
-                    scoredAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-        } catch { /* cache write failed — non-fatal */ }
+            await cacheRef.set({
+                status: 'done',
+                chapterTitle: ch.chapterTitle,
+                scoreMap: ch.scoreMap,
+                scoredAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch { /* non-fatal */ }
     }
 
     async function rsvpPrefetchChapter(chIdx) {
         if (rsvpPrefetching || !rsvpChapterMap[chIdx] || rsvpChapterMap[chIdx].scored) return;
         rsvpPrefetching = true;
         document.getElementById('rsvp-prefetch-notice').classList.remove('hidden');
-        try {
-            await rsvpEnsureChapterScored(chIdx);
-        } finally {
+        try { await rsvpEnsureChapterScored(chIdx); }
+        finally {
             rsvpPrefetching = false;
             document.getElementById('rsvp-prefetch-notice').classList.add('hidden');
         }
     }
 
-    async function rsvpScoreChunk(text) {
+    // Send pre-indexed sentences to Gemini; returns [{index, complexity, content_type, pause_after_ms}]
+    async function rsvpScoreChunk(chunkSentences) {
+        // Build numbered passage — Gemini scores by index, never rewrites text
+        const numberedText = chunkSentences.map(s => `[${s.index}] ${s.text}`).join('\n');
         const key = rsvpGeminiKey;
+
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
                 const res = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
                     {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-goog-api-client': 'genai-js/flex'
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-client': 'genai-js/flex' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: RSVP_PROMPT + text }] }],
-                            generationConfig: {
-                                temperature: 0.1,
-                                thinkingConfig: { thinkingBudget: 0 }
-                            }
+                            contents: [{ parts: [{ text: RSVP_PROMPT + numberedText }] }],
+                            generationConfig: { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } }
                         })
                     }
                 );
                 if (res.status === 429) { await rsvpSleep(2000); continue; }
-                const data = await res.json();
+                const data    = await res.json();
                 if (data.error) throw new Error(data.error.message);
                 const raw     = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 const cleaned = raw.trim().replace(/^```json\s*/i,'').replace(/```\s*$/,'');
-                return JSON.parse(cleaned).sentences || [];
-            } catch { if (attempt === 0) { await rsvpSleep(800); continue; } return null; }
+                return JSON.parse(cleaned).scores || [];
+            } catch { if (attempt === 0) { await rsvpSleep(800); continue; } }
         }
-        return null;
-    }
-
-    function rsvpFallback(text) {
-        return (text.match(/[^.!?]+[.!?]+[\s]*/g) || [text]).map((s,i) => ({
-            index: i, text: s.trim(), content_type: 'exposition',
-            complexity: 1.0, reread_flag: false, pause_after_ms: 150
+        // Fallback: baseline scores for all sentences in this chunk
+        return chunkSentences.map(s => ({
+            index: s.index, content_type: 'exposition', complexity: 1.0, pause_after_ms: 150
         }));
     }
 
     // ─────────────────────────────────────────────
-    //  Build player from a scored chapter
+    //  Find start word index from epub CFI position
     // ─────────────────────────────────────────────
-    function rsvpBuildPlayer(chIdx) {
+    function rsvpFindStartWord(chIdx, loc) {
+        if (!loc?.start?.percentage) return 0;
+        const ch = rsvpChapterMap[chIdx];
+        if (!ch) return 0;
+        // Estimate word position from chapter percentage
+        const totalWords = ch.sentences.reduce((n, s) => n + s.text.split(/\s+/).length, 0);
+        return Math.floor((loc.start.percentage || 0) * totalWords);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Build player — ORIGINAL sentences + Gemini scores applied
+    // ─────────────────────────────────────────────
+    function rsvpBuildPlayer(chIdx, startWordIndex = 0) {
         const ch = rsvpChapterMap[chIdx];
         if (!ch) return;
 
@@ -1130,43 +1177,49 @@ Passage:\n`;
         rsvpPagesHTML  = [];
         rsvpWordToPage = {};
 
-        const sentences = ch.scoredSentences || [];
-        sentences.forEach(s => {
-            if (!s.text) return;
-            s.text.split(' ').forEach((word, wi, arr) => {
-                const isLast = wi === arr.length - 1;
+        // Use ORIGINAL sentences as source of truth; look up scores by sentence index
+        ch.sentences.forEach(sent => {
+            const score = ch.scoreMap[sent.index] || {
+                complexity: 1.0, content_type: 'exposition', pause_after_ms: 150
+            };
+            const words  = sent.text.split(/\s+/);
+            const isLast = (si) => si === words.length - 1;
+            words.forEach((word, wi) => {
                 rsvpWordsArray.push({
                     word,
-                    complexity:     s.complexity    || 1.0,
-                    pause_after_ms: isLast ? (s.pause_after_ms || 150) : 0,
-                    content_type:   s.content_type  || 'exposition',
-                    sentence_text:  s.text,
-                    is_para_end:    isLast && (s.pause_after_ms || 0) >= 400,
+                    complexity:     score.complexity,
+                    pause_after_ms: isLast(wi) ? score.pause_after_ms : 0,
+                    content_type:   score.content_type,
+                    sentence_text:  sent.text,    // original text shown in context buffer
+                    is_para_end:    isLast(wi) && score.pause_after_ms >= 400,
                 });
             });
         });
 
-        // Paginate manuscript
+        // Paginate manuscript from ORIGINAL words
         let html = '', count = 0, pageIdx = 0;
         rsvpWordsArray.forEach((wd, i) => {
             html += `<span id="rw-${i}" data-i="${i}" class="cursor-pointer hover:bg-orange-100 rounded px-px transition-colors duration-100">${wd.word}</span> `;
             rsvpWordToPage[i] = pageIdx;
             count++;
-            if (wd.is_para_end) html += '<span class="block h-3"></span>';
+            if (wd.is_para_end) html += '<span class="block h-3 w-full"></span>';
             if (count >= RSVP_WORDS_PER_PAGE || i === rsvpWordsArray.length - 1) {
-                rsvpPagesHTML.push(html);
-                html = ''; count = 0; pageIdx++;
+                rsvpPagesHTML.push(html); html = ''; count = 0; pageIdx++;
             }
         });
 
-        // Update manuscript header
-        document.getElementById('rsvp-ms-chapter').textContent = `Chapter ${ch.chapterIndex + 1}`;
-        document.getElementById('rsvp-ms-title').textContent   = bookDoc.title;
+        // Update headers with real TOC chapter title
+        document.getElementById('rsvp-ms-chapter').textContent    = ch.chapterTitle;
+        document.getElementById('rsvp-ms-title').textContent      = bookDoc.title;
         document.getElementById('rsvp-chapter-badge').textContent = ch.chapterTitle;
 
-        rsvpIndex = 0; rsvpLastHL = -1; rsvpVisPage = 0;
-        rsvpRenderPage(0);
-        rsvpSetWord('Ready.');
+        // Jump to approximate epub position
+        const safeStart = Math.min(startWordIndex, Math.max(0, rsvpWordsArray.length - 1));
+        rsvpIndex   = safeStart;
+        rsvpLastHL  = -1;
+        rsvpVisPage = rsvpWordToPage[safeStart] || 0;
+        rsvpRenderPage(rsvpVisPage);
+        rsvpSetWord(rsvpWordsArray[safeStart]?.word || 'Ready.');
         rsvpUpdateProgress();
     }
 
