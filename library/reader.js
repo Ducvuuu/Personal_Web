@@ -518,10 +518,24 @@ function registerThemes() {
         var el = e.target;
         while (el && el !== document.body) {
             if (el.classList && el.classList.contains('rsvp-w')) {
+                var li = parseInt(el.getAttribute('data-li'));
+                var spans = document.querySelectorAll('.rsvp-w');
+                var clean = function(s) { return (s || '').toLowerCase().replace(/[^\w]/g, ''); };
+
+                // Build 5-word fingerprint: 2 before + clicked + 2 after
+                var fingerprint = [
+                    clean(spans[li - 2] ? spans[li - 2].textContent : ''),
+                    clean(spans[li - 1] ? spans[li - 1].textContent : ''),
+                    clean(el.textContent),
+                    clean(spans[li + 1] ? spans[li + 1].textContent : ''),
+                    clean(spans[li + 2] ? spans[li + 2].textContent : '')
+                ];
+
                 window.parent.postMessage({
-                    type: 'rsvp-epub-click',
-                    li:   parseInt(el.getAttribute('data-li')),
-                    word: el.textContent
+                    type:             'rsvp-epub-click',
+                    li:               li,
+                    totalChapterWords: totalWords,
+                    fingerprint:      fingerprint
                 }, '*');
                 return;
             }
