@@ -76,50 +76,50 @@
             <div class="absolute top-0 left-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded" style="transform: translateX(-50%) rotate(-1.5deg);"></div>
             <div class="text-center mb-8">
                 <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <i class="fa-solid fa-book-open text-warm-400 text-xl"></i>
+                    <i class="fa-solid fa-book-open text-warm-400 text-xl" aria-hidden="true"></i>
                 </div>
                 <h1 class="font-heavy text-2xl text-warm-900 mb-1">The Library</h1>
                 <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private collection — authorised only</p>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <label for="login-email" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
                     <input type="email" id="login-email" placeholder="your@email.com"
                         class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
                 </div>
                 <div>
-                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <label for="login-password" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
                     <input type="password" id="login-password" placeholder="••••••••"
                         class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
                         onkeydown="if(event.key==='Enter') login()">
                 </div>
                 <p id="login-error" class="font-mono text-xs text-red-500 hidden">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> <span id="login-error-msg"></span>
+                    <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i> <span id="login-error-msg"></span>
                 </p>
                 <button id="login-btn" onclick="login()"
                     class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
-                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library
+                    <i class="fa-solid fa-lock text-xs text-warm-400" aria-hidden="true"></i> Open the library
                 </button>
             </div>
         </div>
     </div>
 
     <!-- ── LOGOUT BUTTON ── -->
-    <button id="logout-btn" onclick="logout()" title="Lock library"
+    <button id="logout-btn" onclick="logout()" aria-label="Lock library"
         class="hidden fixed bottom-6 right-6 z-40 bg-warm-900/80 backdrop-blur text-warm-400 hover:text-warm-50 w-10 h-10 rounded-full shadow-lg items-center justify-center transition-colors">
-        <i class="fa-solid fa-lock text-sm"></i>
+        <i class="fa-solid fa-lock text-sm" aria-hidden="true"></i>
     </button>
 
     <!-- ── UPLOAD PROGRESS MODAL ── -->
     <div id="upload-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm">
         <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm text-center">
             <div class="w-14 h-14 bg-warm-100 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-warm-200">
-                <i id="upload-icon" class="fa-solid fa-circle-notch spin-slow text-warm-400 text-xl"></i>
+                <i id="upload-icon" class="fa-solid fa-circle-notch spin-slow text-warm-400 text-xl" aria-hidden="true"></i>
             </div>
             <h3 class="font-heavy text-xl text-warm-900 mb-2" id="upload-status-title">Adding to library…</h3>
             <p class="font-mono text-xs text-warm-400 mb-6" id="upload-status-text">Reading book metadata</p>
             <div class="progress-bar-container h-2 mb-2">
-                <div class="progress-bar-fill" id="upload-progress-bar" style="width:0%"></div>
+                <div class="progress-bar-fill" id="upload-progress-bar" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width:0%"></div>
             </div>
             <p class="font-mono text-[10px] text-warm-400" id="upload-progress-label">0%</p>
         </div>
@@ -135,7 +135,7 @@
         <!-- Full-page drag overlay -->
         <div id="drag-overlay" class="hidden pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-warm-50/95 backdrop-blur-sm">
             <div class="w-24 h-24 rounded-[2rem] bg-warm-100 border-2 border-dashed border-warm-400 flex items-center justify-center mb-4">
-                <i class="fa-solid fa-file-arrow-up text-4xl text-warm-400"></i>
+                <i class="fa-solid fa-file-arrow-up text-4xl text-warm-400" aria-hidden="true"></i>
             </div>
             <p class="font-heavy text-2xl text-warm-700">Drop your .epub here</p>
             <p class="font-mono text-xs text-warm-400 mt-2">Release to add to the library</p>
@@ -268,19 +268,19 @@
 
             const pct = reading.percentage || 0;
             const coverHtml = reading.coverUrl
-                ? `<img src="${reading.coverUrl}" alt="Cover" class="book-cover-image">`
+                ? `<img src="${reading.coverUrl}" alt="Cover of ${escHtml(reading.title)}" class="book-cover-image">`
                 : `<div class="absolute inset-0 p-4 flex flex-col justify-center items-center bg-warm-700 rounded-r-lg"><span class="font-heavy text-white text-sm text-center leading-tight">${escHtml(reading.title)}</span></div>`;
 
             section.innerHTML = `
                 <div class="bg-[#fffdfa] rounded-[2rem] border border-warm-200 p-6 md:p-10 shadow-[0_15px_35px_-5px_rgba(74,37,23,0.1)] relative overflow-hidden">
                     <div class="absolute -right-20 -top-20 w-96 h-96 bg-orange-50 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
                     <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center relative z-10">
-                        <div class="w-40 sm:w-48 shrink-0 book-card cursor-pointer" onclick="openBook('${reading.id}')">
+                        <button class="w-40 sm:w-48 shrink-0 book-card text-left" data-book-id="${escHtml(reading.id)}" aria-label="Open ${escHtml(reading.title)}">
                             <div class="book-cover aspect-[2/3] bg-warm-800 relative">${coverHtml}</div>
-                        </div>
+                        </button>
                         <div class="flex-1 w-full">
                             <div class="inline-flex items-center gap-2 font-mono text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-4">
-                                <i class="fa-solid fa-bookmark"></i> Currently Reading
+                                <i class="fa-solid fa-bookmark" aria-hidden="true"></i> Currently Reading
                             </div>
                             <h2 class="font-heavy text-3xl md:text-4xl text-warm-900 mb-2 leading-tight">${escHtml(reading.title)}</h2>
                             <p class="text-lg text-warm-500 mb-6 font-light">${escHtml(reading.author || 'Unknown Author')}</p>
@@ -294,9 +294,9 @@
                                 </div>
                             </div>
                             <div class="flex gap-3">
-                                <button onclick="openBook('${reading.id}')"
+                                <button data-book-id="${escHtml(reading.id)}"
                                     class="bg-warm-900 text-warm-50 px-8 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-warm-800 transition-colors flex items-center gap-2">
-                                    <i class="fa-solid fa-book-open text-xs text-warm-300"></i> Continue Reading
+                                    <i class="fa-solid fa-book-open text-xs text-warm-300" aria-hidden="true"></i> Continue Reading
                                 </button>
                             </div>
                         </div>
@@ -320,12 +320,12 @@
         function bookCardHTML(book) {
             const pct = book.percentage || 0;
             const coverHtml = book.coverUrl
-                ? `<img src="${book.coverUrl}" alt="Cover" class="book-cover-image">`
+                ? `<img src="${book.coverUrl}" alt="Cover of ${escHtml(book.title)}" class="book-cover-image">`
                 : `<div class="absolute inset-0 p-3 flex flex-col justify-center items-center bg-warm-700 rounded-r-lg"><span class="font-heavy text-white text-xs text-center leading-tight">${escHtml(book.title)}</span></div>`;
 
             let statusHtml = '';
             if (book.status === 'finished') {
-                statusHtml = `<div class="flex items-center gap-1 font-mono text-[9px] text-green-600 font-bold bg-green-50 w-fit px-2 py-0.5 rounded border border-green-200 mt-2"><i class="fa-solid fa-check"></i> Finished</div>`;
+                statusHtml = `<div class="flex items-center gap-1 font-mono text-[9px] text-green-600 font-bold bg-green-50 w-fit px-2 py-0.5 rounded border border-green-200 mt-2"><i class="fa-solid fa-check" aria-hidden="true"></i> Finished</div>`;
             } else if (pct > 0) {
                 statusHtml = `<div class="progress-bar-container h-1 mt-2"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
             } else {
@@ -333,24 +333,24 @@
             }
 
             return `
-                <div class="group cursor-pointer" onclick="openBook('${book.id}')">
+                <button class="group text-left w-full" data-book-id="${escHtml(book.id)}" aria-label="Open ${escHtml(book.title)}">
                     <div class="w-full book-card mb-3">
                         <div class="book-cover aspect-[2/3] bg-warm-800 relative">${coverHtml}</div>
                     </div>
                     <h4 class="font-bold text-warm-900 text-sm leading-tight mb-0.5 group-hover:text-orange-600 transition-colors line-clamp-2">${escHtml(book.title)}</h4>
                     <p class="text-xs text-warm-500 mb-1">${escHtml(book.author || 'Unknown')}</p>
                     ${statusHtml}
-                </div>`;
+                </button>`;
         }
 
         function uploadCardHTML() {
             return `
-                <div class="group cursor-pointer" onclick="document.getElementById('file-input').click()">
+                <button class="group text-left w-full" id="upload-card-btn" aria-label="Add a book — drop or select an epub file">
                     <div class="w-full aspect-[2/3] rounded-lg border-2 border-dashed border-warm-300 bg-warm-50/50 hover:bg-warm-100 flex flex-col items-center justify-center transition-colors mb-3">
-                        <i class="fa-solid fa-plus text-2xl text-warm-300 group-hover:text-orange-500 transition-colors mb-2"></i>
+                        <i class="fa-solid fa-plus text-2xl text-warm-300 group-hover:text-orange-500 transition-colors mb-2" aria-hidden="true"></i>
                         <span class="font-mono text-[10px] font-bold text-warm-400 uppercase tracking-widest">Drop .epub</span>
                     </div>
-                </div>`;
+                </button>`;
         }
 
         // ── FILTER ──
@@ -395,6 +395,15 @@
             const file = e.target.files[0];
             if (file) handleFileUpload(file);
             e.target.value = '';
+        });
+
+        // Delegated listener for book cards (data-book-id) and upload card
+        document.getElementById('main-library').addEventListener('click', e => {
+            const bookBtn = e.target.closest('[data-book-id]');
+            if (bookBtn) { openBook(bookBtn.dataset.bookId); return; }
+            if (e.target.closest('#upload-card-btn')) {
+                document.getElementById('file-input').click();
+            }
         });
 
         // ── UPLOAD ──
@@ -495,7 +504,9 @@
         function setUploadState(title, text, pct) {
             document.getElementById('upload-status-title').textContent = title;
             document.getElementById('upload-status-text').textContent  = text;
-            document.getElementById('upload-progress-bar').style.width = `${pct}%`;
+            const bar = document.getElementById('upload-progress-bar');
+            bar.style.width = `${pct}%`;
+            bar.setAttribute('aria-valuenow', pct);
             document.getElementById('upload-progress-label').textContent = `${pct}%`;
         }
 
@@ -516,7 +527,7 @@
                         </select>
                         <button id="cat-confirm"
                             class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-plus text-xs text-warm-400"></i> Add to Library
+                            <i class="fa-solid fa-plus text-xs text-warm-400" aria-hidden="true"></i> Add to Library
                         </button>
                     </div>`;
                 document.body.appendChild(overlay);
@@ -533,7 +544,8 @@
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
     </script>
 </body>

@@ -111,30 +111,30 @@
                 style="transform: translateX(-50%) rotate(-1.5deg);"></div>
             <div class="text-center mb-8">
                 <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <i class="fa-solid fa-book-open text-warm-400 text-xl"></i>
+                    <i class="fa-solid fa-book-open text-warm-400 text-xl" aria-hidden="true"></i>
                 </div>
                 <h1 class="font-heavy text-2xl text-warm-900 mb-1" style="font-family:'Outfit',sans-serif; font-weight:900;">The Library</h1>
                 <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private collection — authorised only</p>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
+                    <label for="login-email" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
                     <input type="email" id="login-email" placeholder="your@email.com"
                         class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
                 </div>
                 <div>
-                    <label class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
+                    <label for="login-password" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
                     <input type="password" id="login-password" placeholder="••••••••"
                         class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
                         onkeydown="if(event.key==='Enter') login()">
                 </div>
                 <p id="login-error" class="font-mono text-xs text-red-500 hidden">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i>
                     <span id="login-error-msg"></span>
                 </p>
                 <button id="login-btn" onclick="login()"
                     class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
-                    <i class="fa-solid fa-lock text-xs text-warm-400"></i> Open the library
+                    <i class="fa-solid fa-lock text-xs text-warm-400" aria-hidden="true"></i> Open the library
                 </button>
             </div>
         </div>
@@ -145,8 +145,8 @@
         <div class="p-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="font-outfit font-heavy text-lg text-warm-900">Contents</h3>
-                <button onclick="toggleToc()" class="text-warm-400 hover:text-warm-700 transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-warm-100">
-                    <i class="fa-solid fa-xmark"></i>
+                <button onclick="toggleToc()" aria-label="Close contents" class="text-warm-400 hover:text-warm-700 transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-warm-100">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
             <ul id="toc-list" class="space-y-0.5 font-outfit text-sm text-warm-700"></ul>
@@ -156,30 +156,30 @@
 
     <!-- ── TOP NAV ── -->
     <nav id="top-nav" class="reader-ui bar-bg fixed top-0 inset-x-0 z-20 flex justify-between items-center px-5 py-3 border-b backdrop-blur-md">
-        <a href="index.html" class="flex items-center gap-2 font-mono text-sm font-bold text-warm-500 hover:text-orange-600 transition-colors shrink-0">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span class="hidden sm:inline">Library</span>
+        <a href="index.html" aria-label="Back to library" class="flex items-center gap-2 font-mono text-sm font-bold text-warm-500 hover:text-orange-600 transition-colors shrink-0">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span class="hidden sm:inline" aria-hidden="true">Library</span>
         </a>
         <div class="text-center hidden sm:block overflow-hidden px-4">
             <p class="font-outfit font-bold text-[10px] tracking-widest uppercase text-warm-400 truncate" id="nav-author"></p>
             <h1 class="font-outfit font-bold text-sm text-warm-800 truncate" id="nav-title">Loading…</h1>
         </div>
         <div class="flex items-center gap-3 shrink-0">
-            <button onclick="toggleToc()" class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Table of contents">
-                <i class="fa-solid fa-list"></i>
+            <button onclick="toggleToc()" aria-label="Table of contents" class="text-warm-400 hover:text-warm-800 transition-colors text-base">
+                <i class="fa-solid fa-list" aria-hidden="true"></i>
             </button>
-            <button onclick="toggleHighlightMode()" id="highlight-btn"
-                class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Highlight mode (toggle)">
-                <i class="fa-solid fa-highlighter"></i>
+            <button onclick="toggleHighlightMode()" id="highlight-btn" aria-label="Toggle highlight mode" aria-pressed="false"
+                class="text-warm-400 hover:text-warm-800 transition-colors text-base">
+                <i class="fa-solid fa-highlighter" aria-hidden="true"></i>
             </button>
             <!-- RSVP mode toggle -->
-            <button onclick="toggleRsvpMode()" id="rsvp-btn"
-                class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="RSVP speed reading">
-                <i class="fa-solid fa-bolt"></i>
+            <button onclick="toggleRsvpMode()" id="rsvp-btn" aria-label="Toggle RSVP speed reading" aria-pressed="false"
+                class="text-warm-400 hover:text-warm-800 transition-colors text-base">
+                <i class="fa-solid fa-bolt" aria-hidden="true"></i>
             </button>
-            <div class="h-4 w-px bg-warm-300"></div>
-            <button onclick="toggleSettings()" class="text-warm-400 hover:text-warm-800 transition-colors text-base" title="Appearance">
-                <i class="fa-solid fa-font"></i>
+            <div class="h-4 w-px bg-warm-300" aria-hidden="true"></div>
+            <button onclick="toggleSettings()" aria-label="Appearance settings" class="text-warm-400 hover:text-warm-800 transition-colors text-base">
+                <i class="fa-solid fa-font" aria-hidden="true"></i>
             </button>
         </div>
     </nav>
@@ -201,12 +201,12 @@
 
         <!-- Font size -->
         <div class="flex items-center justify-between bg-warm-50 rounded-xl p-1 border border-warm-200 mb-4">
-            <button onclick="changeFontSize(-2)" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
-                <i class="fa-solid fa-minus"></i>
+            <button onclick="changeFontSize(-2)" aria-label="Decrease font size" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
+                <i class="fa-solid fa-minus" aria-hidden="true"></i>
             </button>
             <span class="font-mono text-sm font-bold text-warm-800" id="font-size-display">18px</span>
-            <button onclick="changeFontSize(2)" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
-                <i class="fa-solid fa-plus"></i>
+            <button onclick="changeFontSize(2)" aria-label="Increase font size" class="px-4 py-2 hover:bg-white rounded-lg text-warm-600 transition-colors text-sm">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
             </button>
         </div>
 
@@ -221,16 +221,16 @@
 
     <!-- ── LOADING SCREEN ── -->
     <div id="loading-screen" class="hidden fixed inset-0 z-30 flex flex-col items-center justify-center bg-[#fdfcf6]/95 backdrop-blur-sm">
-        <i class="fa-solid fa-circle-notch spin-slow text-3xl text-warm-300 mb-4"></i>
+        <i class="fa-solid fa-circle-notch spin-slow text-3xl text-warm-300 mb-4" aria-hidden="true"></i>
         <p class="font-mono text-sm text-warm-400" id="loading-text">Opening book…</p>
     </div>
 
     <!-- ── PAGE NAV ARROWS ── -->
-    <button class="nav-arrow left" onclick="prevPage()" title="Previous page" aria-label="Previous page">
-        <i class="fa-solid fa-chevron-left text-sm"></i>
+    <button class="nav-arrow left" onclick="prevPage()" aria-label="Previous page">
+        <i class="fa-solid fa-chevron-left text-sm" aria-hidden="true"></i>
     </button>
-    <button class="nav-arrow right" onclick="nextPage()" title="Next page" aria-label="Next page">
-        <i class="fa-solid fa-chevron-right text-sm"></i>
+    <button class="nav-arrow right" onclick="nextPage()" aria-label="Next page">
+        <i class="fa-solid fa-chevron-right text-sm" aria-hidden="true"></i>
     </button>
 
     <!-- ── EPUB VIEWER ── -->
@@ -246,7 +246,7 @@
             <div class="absolute top-0 left-1/2 w-28 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded"
                 style="transform: translateX(-50%) rotate(-1.5deg);"></div>
             <div class="w-12 h-12 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-bolt text-warm-400 text-lg"></i>
+                <i class="fa-solid fa-bolt text-warm-400 text-lg" aria-hidden="true"></i>
             </div>
             <h3 class="font-outfit font-bold text-lg text-warm-900 mb-1" id="rsvp-prep-title">Preparing RSVP…</h3>
             <p class="font-mono text-[10px] text-warm-400 uppercase tracking-widest mb-6" id="rsvp-prep-sub">Analysing complexity and pacing</p>
@@ -280,7 +280,7 @@
 
         <!-- Progress bar -->
         <div class="w-full h-1.5 bg-warm-100 shrink-0">
-            <div id="rsvp-progress" class="h-full bg-orange-500 rounded-r-full transition-all duration-100" style="width:0%"></div>
+            <div id="rsvp-progress" role="progressbar" aria-label="RSVP reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" class="h-full bg-orange-500 rounded-r-full transition-all duration-100" style="width:0%"></div>
         </div>
 
         <!-- Controls -->
@@ -298,19 +298,19 @@
 
             <!-- Playback buttons -->
             <div class="flex items-center justify-center gap-4">
-                <button onclick="rsvpRestart()" class="p-2 text-warm-400 hover:text-warm-700 hover:bg-warm-50 rounded-full transition" title="Restart book">
-                    <i class="fa-solid fa-rotate-left text-sm"></i>
+                <button onclick="rsvpRestart()" aria-label="Restart book" class="p-2 text-warm-400 hover:text-warm-700 hover:bg-warm-50 rounded-full transition">
+                    <i class="fa-solid fa-rotate-left text-sm" aria-hidden="true"></i>
                 </button>
-                <button onclick="rsvpJumpSeconds(-5)" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Rewind 5s">
-                    <i class="fa-solid fa-backward text-base"></i>
+                <button onclick="rsvpJumpSeconds(-5)" aria-label="Rewind 5 seconds" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition">
+                    <i class="fa-solid fa-backward text-base" aria-hidden="true"></i>
                 </button>
-                <button id="rsvp-play-btn" onclick="rsvpTogglePlay()"
+                <button id="rsvp-play-btn" onclick="rsvpTogglePlay()" aria-label="Play" aria-pressed="false"
                     class="p-4 bg-warm-600 hover:bg-warm-700 text-white rounded-full shadow-lg shadow-warm-900/20 hover:scale-105 active:scale-95 transition">
-                    <i class="fa-solid fa-play text-lg ml-0.5" id="rsvp-icon-play"></i>
-                    <i class="fa-solid fa-pause text-lg hidden" id="rsvp-icon-pause"></i>
+                    <i class="fa-solid fa-play text-lg ml-0.5" id="rsvp-icon-play" aria-hidden="true"></i>
+                    <i class="fa-solid fa-pause text-lg hidden" id="rsvp-icon-pause" aria-hidden="true"></i>
                 </button>
-                <button onclick="rsvpJumpSeconds(5)" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Forward 5s">
-                    <i class="fa-solid fa-forward text-base"></i>
+                <button onclick="rsvpJumpSeconds(5)" aria-label="Forward 5 seconds" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition">
+                    <i class="fa-solid fa-forward text-base" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -347,7 +347,7 @@
             <!-- Exit button -->
             <button onclick="exitRsvpMode()"
                 class="mt-auto font-mono text-[9px] text-warm-400 hover:text-warm-700 uppercase tracking-widest transition flex items-center justify-center gap-1.5 py-2 hover:bg-warm-50 rounded-lg border border-warm-100">
-                <i class="fa-solid fa-xmark text-xs"></i> Exit RSVP
+                <i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i> Exit RSVP
             </button>
         </div>
     </div>
@@ -362,7 +362,7 @@
             </div>
             <div class="w-full h-1.5 bg-warm-200 rounded-full relative group cursor-pointer" id="progress-track"
                 onclick="seekProgress(event)">
-                <div class="h-full bg-orange-500 rounded-full relative transition-all duration-300" id="progress-fill" style="width:0%">
+                <div id="progress-fill" role="progressbar" aria-label="Book reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" class="h-full bg-orange-500 rounded-full relative transition-all duration-300" style="width:0%">
                     <div class="absolute right-0 top-1/2 w-3 h-3 bg-white border-2 border-orange-500 rounded-full shadow-sm
                         scale-0 group-hover:scale-100 transition-transform"
                         style="transform: translate(50%, -50%) scale(var(--tw-scale-x, 0));"></div>
@@ -576,7 +576,9 @@
             const pct = bookPct(cfi);
 
             document.getElementById('pct-label').textContent     = pct !== null ? `${pct}%` : '…';
-            document.getElementById('progress-fill').style.width = pct !== null ? `${pct}%` : '0%';
+            const progressFill = document.getElementById('progress-fill');
+            progressFill.style.width = pct !== null ? `${pct}%` : '0%';
+            progressFill.setAttribute('aria-valuenow', pct !== null ? pct : 0);
 
             if (epubBook && epubBook.locations && epubBook.locations.length()) {
                 const locIdx = epubBook.locations.locationFromCfi(cfi);
@@ -625,7 +627,7 @@
             btn.className = highlightMode
                 ? 'text-orange-500 text-base'
                 : 'text-warm-400 hover:text-warm-800 transition-colors text-base';
-            btn.title = highlightMode ? 'Highlight mode ON — select text to highlight' : 'Highlight mode (toggle)';
+            btn.setAttribute('aria-pressed', String(highlightMode));
         }
 
         function paintHighlight(cfi) {
@@ -1283,8 +1285,9 @@ Numbers only. No labels, no JSON, no explanation.\n\n`;
     function enterRsvpMode() {
         rsvpActive = true;
         document.body.classList.add('rsvp-on');
-        document.getElementById('rsvp-btn').classList.add('rsvp-active');
-        document.getElementById('rsvp-btn').title = 'Exit RSVP mode';
+        const rsvpBtn = document.getElementById('rsvp-btn');
+        rsvpBtn.classList.add('rsvp-active');
+        rsvpBtn.setAttribute('aria-pressed', 'true');
         rsvpSetMode(rsvpMode);
 
         setTimeout(() => {
@@ -1300,8 +1303,9 @@ Numbers only. No labels, no JSON, no explanation.\n\n`;
         rsvpActive = false;
         rsvpStopPlayer();
         document.body.classList.remove('rsvp-on');
-        document.getElementById('rsvp-btn').classList.remove('rsvp-active');
-        document.getElementById('rsvp-btn').title = 'RSVP speed reading';
+        const rsvpBtn = document.getElementById('rsvp-btn');
+        rsvpBtn.classList.remove('rsvp-active');
+        rsvpBtn.setAttribute('aria-pressed', 'false');
         rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
         setTimeout(() => {
             if (rendition) {
@@ -1456,7 +1460,9 @@ Numbers only. No labels, no JSON, no explanation.\n\n`;
         rsvpBaseWpm = RSVP_MODES[m].wpm;
         document.getElementById('rsvp-mode-label').textContent = RSVP_MODES[m].label;
         document.querySelectorAll('.rsvp-mode-btn').forEach(b => {
-            b.classList.toggle('rsvp-mode-active', parseInt(b.dataset.mode) === m);
+            const active = parseInt(b.dataset.mode) === m;
+            b.classList.toggle('rsvp-mode-active', active);
+            b.setAttribute('aria-pressed', String(active));
         });
     }
 
@@ -1464,13 +1470,18 @@ Numbers only. No labels, no JSON, no explanation.\n\n`;
         const playing = rsvpIsPlaying;
         document.getElementById('rsvp-icon-play').classList.toggle('hidden', playing);
         document.getElementById('rsvp-icon-pause').classList.toggle('hidden', !playing);
-        document.getElementById('rsvp-play-btn').classList.toggle('bg-warm-800', playing);
-        document.getElementById('rsvp-play-btn').classList.toggle('bg-warm-600', !playing);
+        const playBtn = document.getElementById('rsvp-play-btn');
+        playBtn.classList.toggle('bg-warm-800', playing);
+        playBtn.classList.toggle('bg-warm-600', !playing);
+        playBtn.setAttribute('aria-pressed', String(playing));
+        playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     }
 
     function rsvpUpdateProgress() {
         const pct = rsvpWordsArray.length ? (rsvpIndex / rsvpWordsArray.length) * 100 : 0;
-        document.getElementById('rsvp-progress').style.width = `${pct}%`;
+        const bar = document.getElementById('rsvp-progress');
+        bar.style.width = `${pct}%`;
+        bar.setAttribute('aria-valuenow', Math.round(pct));
     }
 
     function rsvpUpdateStatus(complexity) {
