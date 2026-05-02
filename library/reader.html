@@ -87,9 +87,19 @@
         #rsvp-btn.rsvp-active { color: #d56a31; }
         .rsvp-mode-active { background: #d56a31 !important; color: white !important; border-color: #d56a31 !important; }
         .rsvp-mode-active span { color: white !important; }
-        .rsvp-word-highlight { background: #fef08a; color: #8f4228; font-weight: 600; border-radius: 3px; }
         @keyframes rsvp-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
         .rsvp-bar-pulse { animation: rsvp-pulse 1.4s ease-in-out infinite; }
+
+        /* ── RSVP PANEL LAYOUT — shift epub right when panel is open ── */
+        #rsvp-panel {
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(-100%);
+        }
+        body.rsvp-on #rsvp-panel { transform: translateX(0); }
+        body.rsvp-on #reader-area { padding-left: 300px; }
+        body.rsvp-on .nav-arrow.left { left: 316px; }
+        body.theme-dark #rsvp-panel { background: #1e1a16 !important; border-color: rgba(74,37,23,0.5) !important; }
+        body.theme-dark #rsvp-panel .bg-white { background: #1a1612 !important; }
     </style>
 </head>
 <body class="min-h-screen font-book selection:bg-orange-200 selection:text-warm-900">
@@ -224,7 +234,7 @@
     </button>
 
     <!-- ── EPUB VIEWER ── -->
-    <div id="reader-area" class="hidden fixed inset-0 pt-[52px] pb-[72px] flex justify-center">
+    <div id="reader-area" class="hidden fixed inset-0 pt-[52px] pb-[56px] flex justify-center transition-all duration-250">
         <div class="w-full max-w-2xl h-full">
             <div id="viewer" class="w-full h-full"></div>
         </div>
@@ -248,112 +258,102 @@
         </div>
     </div>
 
-    <!-- ── RSVP READER AREA ── -->
-    <div id="rsvp-area" class="hidden fixed inset-0 pt-[52px] pb-[56px] flex overflow-hidden">
+    <!-- ── RSVP PLAYER PANEL (fixed left, alongside epub) ── -->
+    <div id="rsvp-panel" class="fixed top-[52px] bottom-[56px] left-0 z-30 w-[300px] flex flex-col border-r border-warm-200 bg-[#fdfaf6] shadow-[2px_0_24px_rgba(74,37,23,0.1)]">
 
-        <!-- Player panel -->
-        <div class="w-[340px] xl:w-[380px] shrink-0 flex flex-col border-r border-warm-200 bg-[#fdfaf6] overflow-y-auto">
-
-            <!-- Word display -->
-            <div id="rsvp-display-area" class="h-52 flex flex-col items-center justify-center relative cursor-pointer select-none border-b border-warm-100"
-                onclick="rsvpTogglePlay()">
-                <div id="rsvp-context" class="absolute top-3 left-4 right-4 text-center font-outfit text-xs text-warm-400 opacity-0 transition-opacity duration-300 leading-snug italic"></div>
-                <!-- ORP word -->
-                <div id="rsvp-word" class="font-outfit font-black text-5xl text-warm-900 tracking-tight flex items-baseline justify-center w-full px-4">
-                    <span id="rsvp-before"></span><span id="rsvp-pivot" class="text-red-600"></span><span id="rsvp-after"></span>
-                </div>
-                <!-- Focus dot -->
-                <div class="absolute bottom-8 w-1.5 h-1.5 bg-orange-400 rounded-full opacity-50 shadow-[0_0_6px_rgba(235,173,122,0.9)]"></div>
+        <!-- Word display — click to play/pause -->
+        <div id="rsvp-display-area"
+            class="h-48 flex flex-col items-center justify-center relative cursor-pointer select-none border-b border-warm-100 shrink-0"
+            onclick="rsvpTogglePlay()">
+            <!-- Context sentence (shown when paused) -->
+            <div id="rsvp-context"
+                class="absolute top-3 left-4 right-4 text-center font-outfit text-[11px] text-warm-400 opacity-0 transition-opacity duration-300 leading-snug italic"
+                style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden"></div>
+            <!-- ORP word -->
+            <div id="rsvp-word"
+                class="font-outfit font-black text-5xl text-warm-900 tracking-tight flex items-baseline justify-center w-full px-4">
+                <span id="rsvp-before"></span><span id="rsvp-pivot" class="text-red-600"></span><span id="rsvp-after"></span>
             </div>
-
-            <!-- Progress bar -->
-            <div class="w-full h-1.5 bg-warm-100">
-                <div id="rsvp-progress" class="h-full bg-orange-500 rounded-r-full transition-all duration-100" style="width:0%"></div>
-            </div>
-
-            <!-- Controls -->
-            <div class="px-6 py-5 flex flex-col gap-5 bg-white flex-1">
-
-                <!-- Status badge -->
-                <div class="flex justify-between items-center">
-                    <span id="rsvp-status" class="px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest bg-warm-100 text-warm-700 border border-warm-200">
-                        Ready
-                    </span>
-                    <span id="rsvp-chapter-badge" class="font-mono text-[9px] text-warm-400 uppercase tracking-widest truncate max-w-[140px]"></span>
-                </div>
-
-                <!-- Playback buttons -->
-                <div class="flex items-center justify-center gap-5">
-                    <button onclick="rsvpRestart()" class="p-2.5 text-warm-400 hover:text-warm-700 hover:bg-warm-50 rounded-full transition" title="Restart">
-                        <i class="fa-solid fa-rotate-left text-sm"></i>
-                    </button>
-                    <button onclick="rsvpJumpSeconds(-5)" class="p-3 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Rewind 5s">
-                        <i class="fa-solid fa-backward text-base"></i>
-                    </button>
-                    <button id="rsvp-play-btn" onclick="rsvpTogglePlay()"
-                        class="p-4 bg-warm-600 hover:bg-warm-700 text-white rounded-full shadow-lg shadow-warm-900/20 hover:scale-105 active:scale-95 transition">
-                        <i class="fa-solid fa-play text-xl ml-0.5" id="rsvp-icon-play"></i>
-                        <i class="fa-solid fa-pause text-xl hidden" id="rsvp-icon-pause"></i>
-                    </button>
-                    <button onclick="rsvpJumpSeconds(5)" class="p-3 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Forward 5s">
-                        <i class="fa-solid fa-forward text-base"></i>
-                    </button>
-                </div>
-
-                <!-- Pacing mode -->
-                <div class="pt-4 border-t border-warm-100">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="font-mono text-[10px] font-bold text-warm-500 uppercase tracking-widest">Pacing Mode</span>
-                        <span class="font-outfit font-bold text-warm-800 text-sm" id="rsvp-mode-label">Focused</span>
-                    </div>
-                    <div class="grid grid-cols-5 gap-1">
-                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="1" onclick="rsvpSetMode(1)">
-                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">1</span>Leisurely
-                        </button>
-                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="2" onclick="rsvpSetMode(2)">
-                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">2</span>Comfort
-                        </button>
-                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5 rsvp-mode-active" data-mode="3" onclick="rsvpSetMode(3)">
-                            <span class="font-outfit font-black text-sm leading-none">3</span>Focused
-                        </button>
-                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="4" onclick="rsvpSetMode(4)">
-                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">4</span>Brisk
-                        </button>
-                        <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="5" onclick="rsvpSetMode(5)">
-                            <span class="font-outfit font-black text-warm-400 text-sm leading-none">5</span>Sprint
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Prefetch status -->
-                <div id="rsvp-prefetch-notice" class="hidden font-mono text-[9px] text-warm-400 text-center">
-                    <i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Scoring next chapter…
-                </div>
-            </div>
+            <!-- ORP focus dot -->
+            <div class="absolute bottom-5 w-1.5 h-1.5 bg-orange-400 rounded-full opacity-50 shadow-[0_0_6px_rgba(235,173,122,0.9)]"></div>
         </div>
 
-        <!-- Manuscript panel -->
-        <div class="flex-1 overflow-y-auto bg-[#fdfcf6] flex flex-col">
-            <div class="px-8 py-6 border-b border-warm-100 flex justify-between items-start">
-                <div>
-                    <span class="font-mono text-[9px] font-bold uppercase tracking-widest text-orange-600 block mb-1" id="rsvp-ms-chapter">—</span>
-                    <h2 class="font-outfit font-black text-2xl text-warm-900 leading-tight" id="rsvp-ms-title">—</h2>
+        <!-- Progress bar -->
+        <div class="w-full h-1.5 bg-warm-100 shrink-0">
+            <div id="rsvp-progress" class="h-full bg-orange-500 rounded-r-full transition-all duration-100" style="width:0%"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="px-5 py-4 flex flex-col gap-4 bg-white flex-1 overflow-y-auto">
+
+            <!-- Status badge + chapter label -->
+            <div class="flex justify-between items-center gap-2">
+                <span id="rsvp-status"
+                    class="shrink-0 px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest bg-warm-100 text-warm-700 border border-warm-200">
+                    Ready
+                </span>
+                <span id="rsvp-chapter-badge"
+                    class="font-mono text-[9px] text-warm-400 uppercase tracking-widest truncate text-right"></span>
+            </div>
+
+            <!-- Playback buttons -->
+            <div class="flex items-center justify-center gap-4">
+                <button onclick="rsvpRestart()" class="p-2 text-warm-400 hover:text-warm-700 hover:bg-warm-50 rounded-full transition" title="Restart chapter">
+                    <i class="fa-solid fa-rotate-left text-sm"></i>
+                </button>
+                <button onclick="rsvpJumpSeconds(-5)" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Rewind 5s">
+                    <i class="fa-solid fa-backward text-base"></i>
+                </button>
+                <button id="rsvp-play-btn" onclick="rsvpTogglePlay()"
+                    class="p-4 bg-warm-600 hover:bg-warm-700 text-white rounded-full shadow-lg shadow-warm-900/20 hover:scale-105 active:scale-95 transition">
+                    <i class="fa-solid fa-play text-lg ml-0.5" id="rsvp-icon-play"></i>
+                    <i class="fa-solid fa-pause text-lg hidden" id="rsvp-icon-pause"></i>
+                </button>
+                <button onclick="rsvpJumpSeconds(5)" class="p-2.5 text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-full transition" title="Forward 5s">
+                    <i class="fa-solid fa-forward text-base"></i>
+                </button>
+            </div>
+
+            <!-- Pacing mode -->
+            <div class="pt-3 border-t border-warm-100">
+                <div class="flex justify-between items-center mb-2.5">
+                    <span class="font-mono text-[10px] font-bold text-warm-500 uppercase tracking-widest">Pacing</span>
+                    <span class="font-outfit font-bold text-warm-800 text-sm" id="rsvp-mode-label">Focused</span>
                 </div>
-                <span class="font-mono text-[9px] text-warm-400 uppercase tracking-widest mt-1">Click word to jump</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="1" onclick="rsvpSetMode(1)">
+                        <span class="font-outfit font-black text-warm-400 text-sm leading-none">1</span>Leis.
+                    </button>
+                    <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="2" onclick="rsvpSetMode(2)">
+                        <span class="font-outfit font-black text-warm-400 text-sm leading-none">2</span>Comf.
+                    </button>
+                    <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5 rsvp-mode-active" data-mode="3" onclick="rsvpSetMode(3)">
+                        <span class="font-outfit font-black text-sm leading-none">3</span>Focus
+                    </button>
+                    <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="4" onclick="rsvpSetMode(4)">
+                        <span class="font-outfit font-black text-warm-400 text-sm leading-none">4</span>Brisk
+                    </button>
+                    <button class="rsvp-mode-btn py-2 rounded-lg border border-warm-200 font-mono text-[9px] font-bold text-warm-500 hover:bg-warm-100 transition flex flex-col items-center gap-0.5" data-mode="5" onclick="rsvpSetMode(5)">
+                        <span class="font-outfit font-black text-warm-400 text-sm leading-none">5</span>Sprint
+                    </button>
+                </div>
             </div>
-            <div class="px-8 py-6 flex-1">
-                <div id="rsvp-ms-text" class="font-book text-warm-800 text-base leading-[1.85] select-none"></div>
+
+            <!-- Hint -->
+            <p class="font-mono text-[9px] text-warm-300 text-center leading-relaxed">
+                Click any word in the book to jump · Words highlight as you read
+            </p>
+
+            <!-- Prefetch notice -->
+            <div id="rsvp-prefetch-notice" class="hidden font-mono text-[9px] text-warm-400 text-center">
+                <i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Scoring next chapter…
             </div>
-            <!-- Pagination -->
-            <div class="px-8 py-4 border-t border-warm-100 flex justify-between items-center">
-                <button id="rsvp-ms-prev" onclick="rsvpPrevPage()" class="p-2 text-warm-400 hover:text-warm-800 hover:bg-warm-100 rounded-full transition disabled:opacity-30">
-                    <i class="fa-solid fa-chevron-left text-sm"></i>
-                </button>
-                <span id="rsvp-ms-page" class="font-mono text-[9px] text-warm-400 uppercase tracking-widest font-bold">Page 1 of 1</span>
-                <button id="rsvp-ms-next" onclick="rsvpNextPage()" class="p-2 text-warm-400 hover:text-warm-800 hover:bg-warm-100 rounded-full transition disabled:opacity-30">
-                    <i class="fa-solid fa-chevron-right text-sm"></i>
-                </button>
-            </div>
+
+            <!-- Exit button -->
+            <button onclick="exitRsvpMode()"
+                class="mt-auto font-mono text-[9px] text-warm-400 hover:text-warm-700 uppercase tracking-widest transition flex items-center justify-center gap-1.5 py-2 hover:bg-warm-50 rounded-lg border border-warm-100">
+                <i class="fa-solid fa-xmark text-xs"></i> Exit RSVP
+            </button>
         </div>
     </div>
 
@@ -463,10 +463,6 @@
 
         // ── INIT READER ──
         async function initReader(url) {
-            // ── 1. OPEN + RENDER ──
-            // Pass the Firebase Storage URL directly to epub.js — it fetches and
-            // unarchives internally. Pre-fetching to ArrayBuffer and converting to
-            // a blob URL causes epub.js to lose its URL base and 404 on content.
             document.getElementById('reader-area').classList.remove('hidden');
             applyBodyTheme(currentTheme);
 
@@ -489,7 +485,7 @@
             // Register themes + typography hook BEFORE display so first page gets styling
             registerThemes();
 
-            // ── 3. DISPLAY (with timeout + CFI fallback) ──
+            // ── DISPLAY ──
             showLoading('Rendering…');
             const tryDisplay = target => Promise.race([
                 rendition.display(target),
@@ -499,7 +495,7 @@
             try {
                 if (bookDoc.currentCfi) {
                     try { await tryDisplay(bookDoc.currentCfi); }
-                    catch { await tryDisplay(); }       // saved CFI may be stale
+                    catch { await tryDisplay(); }
                 } else {
                     await tryDisplay();
                 }
@@ -510,10 +506,9 @@
                 return;
             }
 
-            // ── 4. APPLY THEMES + FONT (after first render) ──
+            // ── APPLY THEMES + FONT ──
             rendition.themes.select(currentTheme);
             rendition.themes.fontSize(`${fontSize}px`);
-            // Always apply font override so the epub's own font-family doesn't win
             rendition.themes.override('font-family', currentFont === 'sans'
                 ? "'Outfit', system-ui, sans-serif"
                 : "'Lora', Georgia, serif");
@@ -523,7 +518,7 @@
 
             showLoading(null);
 
-            // ── 5. BACKGROUND TASKS (don't block UI) ──
+            // ── BACKGROUND TASKS ──
             epubBook.locations.generate(1600).then(() => {
                 const loc = rendition.currentLocation();
                 if (loc) updateProgress(loc);
@@ -533,10 +528,12 @@
                 .then(nav => buildToc(nav.toc))
                 .catch(() => {});
 
-            // ── 6. EVENTS ──
+            // ── EVENTS ──
             rendition.on('relocated', location => {
                 updateProgress(location);
                 scheduleSave(location);
+                // Notify RSVP of page change
+                if (rsvpActive) rsvpOnEpubRelocated();
             });
 
             rendition.on('selected', cfiRange => {
@@ -549,7 +546,7 @@
 
             rendition.on('click', () => {
                 document.getElementById('settings-panel').classList.add('hidden');
-                document.body.classList.toggle('reading-mode');
+                if (!rsvpActive) document.body.classList.toggle('reading-mode');
             });
 
             document.addEventListener('keydown', e => {
@@ -572,12 +569,10 @@
 
         // ── PROGRESS ──
         function bookPct(cfi) {
-            // Use accurate whole-book percentage once locations are generated;
-            // fall back to spine-section estimate before that.
             if (epubBook && epubBook.locations && epubBook.locations.length()) {
                 return Math.round(epubBook.locations.percentageFromCfi(cfi) * 100);
             }
-            return null; // not ready yet
+            return null;
         }
 
         function updateProgress(location) {
@@ -588,7 +583,6 @@
             document.getElementById('pct-label').textContent     = pct !== null ? `${pct}%` : '…';
             document.getElementById('progress-fill').style.width = pct !== null ? `${pct}%` : '0%';
 
-            // Show location index / total once generated; hide the confusing per-chapter page count
             if (epubBook && epubBook.locations && epubBook.locations.length()) {
                 const locIdx = epubBook.locations.locationFromCfi(cfi);
                 const total  = epubBook.locations.length();
@@ -621,12 +615,11 @@
             });
         }
 
-        // Seek by clicking the progress bar
         function seekProgress(e) {
             if (!epubBook || !epubBook.locations || !epubBook.locations.length()) return;
-            const track   = document.getElementById('progress-track');
-            const pct     = e.offsetX / track.offsetWidth;
-            const cfi     = epubBook.locations.cfiFromPercentage(pct);
+            const track = document.getElementById('progress-track');
+            const pct   = e.offsetX / track.offsetWidth;
+            const cfi   = epubBook.locations.cfiFromPercentage(pct);
             if (cfi) rendition.display(cfi);
         }
 
@@ -649,7 +642,7 @@
                     'stroke-width': '1.5',
                     'stroke-alignment': 'inner'
                 });
-            } catch { /* CFI may be invalid after book update */ }
+            } catch { }
         }
 
         async function addHighlight(cfi) {
@@ -723,7 +716,7 @@
                 a:   { color: '#e38847 !important', 'text-decoration': 'none !important' },
             });
 
-            // Inject Google Fonts + prototype typography into every rendered iframe
+            // Inject Google Fonts + typography into every rendered iframe
             rendition.hooks.content.register(contents => {
                 const doc = contents.document;
                 if (!doc?.head) return;
@@ -746,7 +739,7 @@
                         orphans: 3; widows: 3;
                     }
 
-                    /* Drop cap — first letter of each section's opening paragraph */
+                    /* Drop cap */
                     p:first-of-type::first-letter {
                         font-family: 'Outfit', sans-serif !important;
                         font-weight: 900 !important;
@@ -758,7 +751,7 @@
                         color: #d56a31 !important;
                     }
 
-                    /* Headings — match prototype's chapter title style */
+                    /* Headings */
                     h1, h2, h3, h4 {
                         font-family: 'Outfit', sans-serif !important;
                         font-weight: 900 !important;
@@ -767,9 +760,9 @@
                         margin-bottom: 0.75em !important;
                     }
                     h1 { font-size: 2em !important; }
-                    h2 { font-size: 1.5em !important; color: #d56a31 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; font-size: 0.8em !important; }
+                    h2 { font-size: 0.8em !important; color: #d56a31 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; }
 
-                    /* Highlight marks (epub.js SVG + any native <mark>) */
+                    /* Highlight marks */
                     mark, .highlight {
                         background: rgba(227,136,71,0.2) !important;
                         border-bottom: 2px solid rgba(227,136,71,0.5) !important;
@@ -778,6 +771,133 @@
                     }
                 `;
                 doc.head.appendChild(style);
+
+                // ── RSVP word-injection styles ──
+                const rsvpStyle = doc.createElement('style');
+                rsvpStyle.textContent = `
+                    .rsvp-w {
+                        cursor: pointer;
+                        border-radius: 2px;
+                        padding: 0 1px;
+                        transition: background 0.08s;
+                        display: inline;
+                    }
+                    .rsvp-w:hover { background: rgba(251,176,64,0.28); }
+                    .rsvp-current {
+                        background: #fef08a !important;
+                        color: #8f4228 !important;
+                        font-weight: 700 !important;
+                        border-radius: 3px !important;
+                        box-shadow: 0 0 0 1.5px rgba(235,173,122,0.7) !important;
+                    }
+                `;
+                doc.head.appendChild(rsvpStyle);
+
+                // ── RSVP word-injection script ──
+                // Injected into every epub iframe page. Wraps text nodes in clickable spans
+                // and communicates with the parent window via postMessage.
+                const rsvpScript = doc.createElement('script');
+                rsvpScript.textContent = `
+(function() {
+    var wrapped = false;
+    var totalWords = 0;
+
+    // Walk DOM and wrap every word in a .rsvp-w span with a sequential data-li index
+    function wrapWords() {
+        if (wrapped) return;
+        wrapped = true;
+        var li = 0;
+        var firstWords = [];
+
+        function processNode(node) {
+            if (!node) return;
+            var tag = node.tagName;
+            if (tag && ['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION'].indexOf(tag) >= 0) return;
+            if (node.classList && node.classList.contains('rsvp-w')) return;
+
+            if (node.nodeType === 3) {
+                // Text node — split on whitespace, wrap non-space tokens
+                var text = node.textContent;
+                if (!text.trim()) return;
+                var tokens = text.split(/(\\s+)/);
+                var hasWord = false;
+                for (var t = 0; t < tokens.length; t++) { if (tokens[t] && !/^\\s+$/.test(tokens[t])) { hasWord = true; break; } }
+                if (!hasWord) return;
+
+                var frag = document.createDocumentFragment();
+                for (var t = 0; t < tokens.length; t++) {
+                    var tok = tokens[t];
+                    if (!tok) continue;
+                    if (/^\\s+$/.test(tok)) {
+                        frag.appendChild(document.createTextNode(tok));
+                    } else {
+                        var sp = document.createElement('span');
+                        sp.className = 'rsvp-w';
+                        sp.setAttribute('data-li', li);
+                        sp.textContent = tok;
+                        if (li < 40) firstWords.push(tok.replace(/[^\\w'\\-]/g, ''));
+                        li++;
+                        frag.appendChild(sp);
+                    }
+                }
+                if (node.parentNode) node.parentNode.replaceChild(frag, node);
+                return;
+            }
+
+            if (node.nodeType === 1) {
+                // Element node — recurse over children snapshot
+                var kids = [];
+                for (var k = 0; k < node.childNodes.length; k++) kids.push(node.childNodes[k]);
+                for (var k = 0; k < kids.length; k++) processNode(kids[k]);
+            }
+        }
+
+        if (document.body) processNode(document.body);
+        totalWords = li;
+
+        // Report first words + total to parent for position calibration
+        window.parent.postMessage({
+            type: 'rsvp-page-words',
+            words: firstWords,
+            total: totalWords
+        }, '*');
+    }
+
+    // Highlight word by local index; pass li=-1 to clear
+    function highlight(li) {
+        var els = document.querySelectorAll('.rsvp-current');
+        for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
+        if (li < 0) return;
+        var target = document.querySelector('.rsvp-w[data-li="' + li + '"]');
+        if (target) target.classList.add('rsvp-current');
+    }
+
+    // Listen for commands from parent
+    window.addEventListener('message', function(e) {
+        if (!e.data || !e.data.type) return;
+        if (e.data.type === 'rsvp-activate') wrapWords();
+        if (e.data.type === 'rsvp-hl')       { wrapWords(); highlight(e.data.li); }
+    });
+
+    // Propagate word clicks to parent
+    document.addEventListener('click', function(e) {
+        var el = e.target;
+        // Walk up to find .rsvp-w ancestor
+        while (el && el !== document.body) {
+            if (el.classList && el.classList.contains('rsvp-w')) {
+                window.parent.postMessage({
+                    type: 'rsvp-epub-click',
+                    li:   parseInt(el.getAttribute('data-li')),
+                    word: el.textContent
+                }, '*');
+                return;
+            }
+            el = el.parentNode;
+        }
+    }, true);
+})();
+                `;
+                doc.head.appendChild(rsvpScript);
             });
         }
 
@@ -798,7 +918,7 @@
         function updateThemeButtons() {
             document.querySelectorAll('.theme-btn').forEach(btn => {
                 const isActive = btn.dataset.theme === currentTheme;
-                btn.classList.toggle('ring-2',       isActive);
+                btn.classList.toggle('ring-2',          isActive);
                 btn.classList.toggle('ring-orange-200', isActive);
                 btn.classList.toggle('ring-offset-1',   isActive);
             });
@@ -837,7 +957,6 @@
             el.classList.remove('hidden');
         }
 
-        // Close settings on outside click
         document.addEventListener('click', e => {
             const panel = document.getElementById('settings-panel');
             if (!panel.classList.contains('hidden') &&
@@ -861,9 +980,8 @@
         5: { label: 'Sprint',      wpm: 550 },
     };
     const RSVP_WORDS_PER_CHUNK = 500;
-    const RSVP_WORDS_PER_PAGE  = 120;
 
-    // Sentences are pre-indexed by us — Gemini returns scores only, never rewrites text
+    // Gemini scores by sentence index — never rewrites text
     const RSVP_PROMPT = `You are a reading-pace annotator for an RSVP speed-reading app.
 The passage below is already split into numbered sentences (format: [0] sentence text).
 Return a JSON object with a "scores" array — one entry per sentence in the same order.
@@ -875,24 +993,69 @@ Each entry must have exactly:
 Do NOT return or modify the sentence text. Return ONLY valid JSON starting with { and ending with }.
 Numbered passage:\n`;
 
-    let rsvpGeminiKey   = null;   // fetched from Firestore _config/App
+    // ── Player state ──
+    let rsvpGeminiKey   = null;
     let rsvpActive      = false;
     let rsvpIsPlaying   = false;
     let rsvpWordsArray  = [];
-    let rsvpPagesHTML   = [];
-    let rsvpWordToPage  = {};
     let rsvpIndex       = 0;
-    let rsvpLastHL      = -1;
     let rsvpMode        = 3;
     let rsvpBaseWpm     = RSVP_MODES[3].wpm;
     let rsvpTimer       = null;
-    let rsvpBrowsing    = false;
-    let rsvpBrowseTimer = null;
-    let rsvpVisPage     = 0;
     let rsvpCancelled   = false;
-    let rsvpChapterMap  = [];   // [{chapterIndex, chapterTitle, spineHref, chunks:[]}]
+    let rsvpChapterMap  = [];
     let rsvpCurrentChapterIdx = 0;
     let rsvpPrefetching = false;
+
+    // ── Epub iframe sync state ──
+    let rsvpEpubPageWordStart = 0;   // global rsvpWordsArray index of first word on epub page
+    let rsvpEpubPageWordCount = 0;   // total words counted by iframe on current page
+    let rsvpEpubNavigating    = false; // true while waiting for epub page flip to settle
+
+    // ─────────────────────────────────────────────
+    //  Listen for messages from epub iframe
+    // ─────────────────────────────────────────────
+    window.addEventListener('message', e => {
+        if (!e.data?.type) return;
+
+        // Iframe has wrapped words and sent calibration data
+        if (e.data.type === 'rsvp-page-words' && rsvpActive) {
+            rsvpEpubPageWordCount = e.data.total || 0;
+            rsvpEpubNavigating    = false;
+
+            // Calibrate: find which global word index the page starts at
+            const rawWords = e.data.words || [];
+            const pageWords = rawWords.map(w => w.toLowerCase().replace(/[^\w]/g, ''));
+            if (pageWords.length >= 2 && rsvpWordsArray.length > 0) {
+                const searchStart = Math.max(0, rsvpIndex - 150);
+                const searchEnd   = Math.min(rsvpWordsArray.length - 5, rsvpIndex + 600);
+                outer: for (let i = searchStart; i <= searchEnd; i++) {
+                    const cand = (rsvpWordsArray[i]?.word || '').toLowerCase().replace(/[^\w]/g, '');
+                    if (cand !== pageWords[0]) continue;
+                    for (let j = 1; j < Math.min(5, pageWords.length); j++) {
+                        const nxt = (rsvpWordsArray[i + j]?.word || '').toLowerCase().replace(/[^\w]/g, '');
+                        if (nxt !== pageWords[j]) continue outer;
+                    }
+                    rsvpEpubPageWordStart = i;
+                    break;
+                }
+            }
+
+            // Highlight current word with freshly calibrated local index
+            if (rsvpActive) rsvpHighlightInEpub(rsvpIndex);
+        }
+
+        // User clicked a word in the epub iframe
+        if (e.data.type === 'rsvp-epub-click' && rsvpActive) {
+            const globalIdx = rsvpEpubPageWordStart + e.data.li;
+            if (globalIdx >= 0 && globalIdx < rsvpWordsArray.length) {
+                rsvpJumpToGlobalWord(globalIdx);
+            } else {
+                // Word is from a different / unprocessed chapter
+                rsvpHandleCrossChapterClick(e.data.li, e.data.word);
+            }
+        }
+    });
 
     // ─────────────────────────────────────────────
     //  Fetch Gemini key from _config/App (auth-gated)
@@ -907,7 +1070,7 @@ Numbered passage:\n`;
     }
 
     // ─────────────────────────────────────────────
-    //  Mode toggle entry point
+    //  Toggle entry point (⚡ button)
     // ─────────────────────────────────────────────
     async function toggleRsvpMode() {
         if (rsvpActive) { exitRsvpMode(); return; }
@@ -915,10 +1078,6 @@ Numbered passage:\n`;
         const key = await rsvpFetchKey();
         if (!key) { alert('Gemini API key not found in _config/App.'); return; }
 
-        // Pause the epub reader
-        if (rendition) rendition.pause && rendition.pause();
-
-        // Show preprocessing modal
         rsvpCancelled = false;
         rsvpShowPrep('Preparing RSVP…', 'Extracting text from chapters', 0, 0);
         document.getElementById('rsvp-prep-modal').classList.remove('hidden');
@@ -937,15 +1096,14 @@ Numbered passage:\n`;
     }
 
     // ─────────────────────────────────────────────
-    //  Session init — extract text, score current chapter, prefetch next
+    //  Session init — extract → score current chapter → enter mode
     // ─────────────────────────────────────────────
     async function rsvpInitSession() {
-        // 1. Build chapter map from TOC navigation (real labels, skip front matter)
         rsvpShowPrep('Extracting chapters…', bookDoc.title, 0, 0);
         await rsvpExtractChapters();
         if (rsvpCancelled || rsvpChapterMap.length === 0) return;
 
-        // 2. Find which TOC chapter the current epub position is in
+        // Find which chapter the current epub position is in
         const loc  = rendition ? rendition.currentLocation() : null;
         const href = loc?.start?.href || '';
         let startChIdx = rsvpChapterMap.findIndex(c =>
@@ -954,19 +1112,15 @@ Numbered passage:\n`;
         if (startChIdx < 0) startChIdx = 0;
         rsvpCurrentChapterIdx = startChIdx;
 
-        // 3. Score current chapter (Firestore cache → Gemini)
         await rsvpEnsureChapterScored(startChIdx);
         if (rsvpCancelled) return;
 
-        // 4. Build player; jump to approximate word matching epub position
         const startWord = rsvpFindStartWord(startChIdx, loc);
         rsvpBuildPlayer(startChIdx, startWord);
 
-        // 5. Show RSVP area
         document.getElementById('rsvp-prep-modal').classList.add('hidden');
         enterRsvpMode();
 
-        // 6. Prefetch next chapter silently
         if (startChIdx + 1 < rsvpChapterMap.length) rsvpPrefetchChapter(startChIdx + 1);
     }
 
@@ -977,14 +1131,12 @@ Numbered passage:\n`;
         if (rsvpChapterMap.length > 0) return;
         rsvpChapterMap = [];
 
-        // Load TOC
         let tocItems = [];
         try {
-            const nav  = await epubBook.loaded.navigation;
-            tocItems   = nav.toc || [];
+            const nav = await epubBook.loaded.navigation;
+            tocItems  = nav.toc || [];
         } catch { tocItems = []; }
 
-        // Flatten nested TOC to a single level
         function flattenToc(items, depth = 0) {
             const out = [];
             items.forEach(item => {
@@ -995,44 +1147,40 @@ Numbered passage:\n`;
         }
         const flatToc = flattenToc(tocItems);
 
-        // Build a href → label map (strip fragment)
         const hrefToLabel = {};
         flatToc.forEach(t => {
             const base = t.href.split('#')[0];
             if (!hrefToLabel[base]) hrefToLabel[base] = t.label;
         });
 
-        // Iterate spine, include only items that appear in TOC (or all if TOC empty)
-        const useToc = Object.keys(hrefToLabel).length > 0;
-        const spineItems = epubBook.spine.items;
+        const useToc      = Object.keys(hrefToLabel).length > 0;
+        const spineItems  = epubBook.spine.items;
 
         for (let i = 0; i < spineItems.length; i++) {
             const item     = spineItems[i];
             const hrefBase = (item.href || '').split('#')[0].split('/').pop();
             const fullBase = (item.href || '').split('#')[0];
-
-            // Determine label: prefer TOC label, else skip if TOC exists
-            const label = hrefToLabel[fullBase] || hrefToLabel[hrefBase] || null;
-            if (useToc && !label) continue; // skip front-matter / cover / copyright
+            const label    = hrefToLabel[fullBase] || hrefToLabel[hrefBase] || null;
+            if (useToc && !label) continue;
 
             try {
                 const section = epubBook.spine.get(i);
                 const doc     = await section.load(epubBook.load.bind(epubBook));
                 const text    = rsvpExtractText(doc);
                 section.unload();
-                if (text.trim().length < 100) continue; // too short — skip
+                if (text.trim().length < 100) continue;
 
                 const sentences = rsvpSplitSentences(text.trim());
                 rsvpChapterMap.push({
                     chapterIndex:  i,
                     chapterTitle:  label || `Section ${rsvpChapterMap.length + 1}`,
                     spineHref:     item.href || '',
-                    sentences,                      // original sentences — source of truth
+                    sentences,
                     chunks:        rsvpMakeChunks(sentences),
                     scored:        false,
-                    scoreMap:      {},              // sentenceIndex → {complexity, content_type, pause_after_ms}
+                    scoreMap:      {},
                 });
-            } catch { /* skip unreadable item */ }
+            } catch { }
         }
     }
 
@@ -1045,13 +1193,11 @@ Numbered passage:\n`;
         return (body.innerText || body.textContent || '').replace(/\s+/g, ' ').trim();
     }
 
-    // Split text into sentences; returns [{index, text}]
     function rsvpSplitSentences(text) {
         const raw = text.match(/[^.!?…]+[.!?…]+["']?\s*/g) || [text];
         return raw.map((s, i) => ({ index: i, text: s.trim() })).filter(s => s.text.length > 0);
     }
 
-    // Group sentences into ~500-word chunks; each chunk carries [{sentenceIndex, text}]
     function rsvpMakeChunks(sentences) {
         const chunks = [];
         let cur = [], words = 0;
@@ -1067,30 +1213,28 @@ Numbered passage:\n`;
     }
 
     // ─────────────────────────────────────────────
-    //  Score a chapter — Firestore cache first, then Gemini
+    //  Score chapter — Firestore cache first, then Gemini
     // ─────────────────────────────────────────────
     async function rsvpEnsureChapterScored(chIdx) {
         const ch = rsvpChapterMap[chIdx];
         if (!ch || ch.scored) return;
 
-        // Check Firestore cache (stores scoreMap only — text stays local)
         const cacheRef = db.collection('library').doc(bookId)
             .collection('rsvpChunks').doc(`ch_${ch.chapterIndex}`);
         const cacheDoc = await cacheRef.get();
 
-        // v2 cache uses scoreMap (not sentences) — ignore old format
+        // v2 cache: scoreMap only (no text stored)
         if (cacheDoc.exists && cacheDoc.data().status === 'done' && cacheDoc.data().scoreMap) {
             ch.scoreMap = cacheDoc.data().scoreMap || {};
             ch.scored   = true;
             return;
         }
 
-        // Score all chunks in parallel
         const total = ch.chunks.length;
         rsvpShowPrep(`Scoring "${ch.chapterTitle}"…`, 'Analysing complexity and pacing', 0, total);
         let done = 0;
 
-        await Promise.all(ch.chunks.map(async (chunkSentences) => {
+        await Promise.all(ch.chunks.map(async chunkSentences => {
             const scores = await rsvpScoreChunk(chunkSentences);
             scores.forEach(sc => { ch.scoreMap[sc.index] = sc; });
             done++;
@@ -1098,16 +1242,14 @@ Numbered passage:\n`;
         }));
 
         ch.scored = true;
-
-        // Persist scoreMap to Firestore (no original text stored — cheaper)
         try {
             await cacheRef.set({
-                status: 'done',
+                status:       'done',
                 chapterTitle: ch.chapterTitle,
-                scoreMap: ch.scoreMap,
-                scoredAt: firebase.firestore.FieldValue.serverTimestamp()
+                scoreMap:     ch.scoreMap,
+                scoredAt:     firebase.firestore.FieldValue.serverTimestamp()
             });
-        } catch { /* non-fatal */ }
+        } catch { }
     }
 
     async function rsvpPrefetchChapter(chIdx) {
@@ -1121,9 +1263,7 @@ Numbered passage:\n`;
         }
     }
 
-    // Send pre-indexed sentences to Gemini; returns [{index, complexity, content_type, pause_after_ms}]
     async function rsvpScoreChunk(chunkSentences) {
-        // Build numbered passage — Gemini scores by index, never rewrites text
         const numberedText = chunkSentences.map(s => `[${s.index}] ${s.text}`).join('\n');
         const key = rsvpGeminiKey;
 
@@ -1133,10 +1273,16 @@ Numbered passage:\n`;
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
                     {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-client': 'genai-js/flex' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-client': 'genai-js/flex'   // Flex tier — 50% cheaper
+                        },
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: RSVP_PROMPT + numberedText }] }],
-                            generationConfig: { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } }
+                            generationConfig: {
+                                temperature: 0.1,
+                                thinkingConfig: { thinkingBudget: 0 }   // no thinking tokens
+                            }
                         })
                     }
                 );
@@ -1144,106 +1290,187 @@ Numbered passage:\n`;
                 const data    = await res.json();
                 if (data.error) throw new Error(data.error.message);
                 const raw     = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                const cleaned = raw.trim().replace(/^```json\s*/i,'').replace(/```\s*$/,'');
+                const cleaned = raw.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '');
                 return JSON.parse(cleaned).scores || [];
             } catch { if (attempt === 0) { await rsvpSleep(800); continue; } }
         }
-        // Fallback: baseline scores for all sentences in this chunk
         return chunkSentences.map(s => ({
             index: s.index, content_type: 'exposition', complexity: 1.0, pause_after_ms: 150
         }));
     }
 
     // ─────────────────────────────────────────────
-    //  Find start word index from epub CFI position
+    //  Find start word from epub CFI position
     // ─────────────────────────────────────────────
     function rsvpFindStartWord(chIdx, loc) {
         if (!loc?.start?.percentage) return 0;
         const ch = rsvpChapterMap[chIdx];
         if (!ch) return 0;
-        // Estimate word position from chapter percentage
         const totalWords = ch.sentences.reduce((n, s) => n + s.text.split(/\s+/).length, 0);
         return Math.floor((loc.start.percentage || 0) * totalWords);
     }
 
     // ─────────────────────────────────────────────
-    //  Build player — ORIGINAL sentences + Gemini scores applied
+    //  Build word array — ORIGINAL sentences + Gemini scores
     // ─────────────────────────────────────────────
     function rsvpBuildPlayer(chIdx, startWordIndex = 0) {
         const ch = rsvpChapterMap[chIdx];
         if (!ch) return;
 
         rsvpWordsArray = [];
-        rsvpPagesHTML  = [];
-        rsvpWordToPage = {};
 
-        // Use ORIGINAL sentences as source of truth; look up scores by sentence index
         ch.sentences.forEach(sent => {
             const score = ch.scoreMap[sent.index] || {
                 complexity: 1.0, content_type: 'exposition', pause_after_ms: 150
             };
-            const words  = sent.text.split(/\s+/);
-            const isLast = (si) => si === words.length - 1;
+            const words = sent.text.split(/\s+/);
             words.forEach((word, wi) => {
+                const isLast = wi === words.length - 1;
                 rsvpWordsArray.push({
                     word,
                     complexity:     score.complexity,
-                    pause_after_ms: isLast(wi) ? score.pause_after_ms : 0,
+                    pause_after_ms: isLast ? score.pause_after_ms : 0,
                     content_type:   score.content_type,
-                    sentence_text:  sent.text,    // original text shown in context buffer
-                    is_para_end:    isLast(wi) && score.pause_after_ms >= 400,
+                    sentence_text:  sent.text,
+                    is_para_end:    isLast && score.pause_after_ms >= 400,
                 });
             });
         });
 
-        // Paginate manuscript from ORIGINAL words
-        let html = '', count = 0, pageIdx = 0;
-        rsvpWordsArray.forEach((wd, i) => {
-            html += `<span id="rw-${i}" data-i="${i}" class="cursor-pointer hover:bg-orange-100 rounded px-px transition-colors duration-100">${wd.word}</span> `;
-            rsvpWordToPage[i] = pageIdx;
-            count++;
-            if (wd.is_para_end) html += '<span class="block h-3 w-full"></span>';
-            if (count >= RSVP_WORDS_PER_PAGE || i === rsvpWordsArray.length - 1) {
-                rsvpPagesHTML.push(html); html = ''; count = 0; pageIdx++;
-            }
-        });
-
-        // Update headers with real TOC chapter title
-        document.getElementById('rsvp-ms-chapter').textContent    = ch.chapterTitle;
-        document.getElementById('rsvp-ms-title').textContent      = bookDoc.title;
         document.getElementById('rsvp-chapter-badge').textContent = ch.chapterTitle;
 
-        // Jump to approximate epub position
         const safeStart = Math.min(startWordIndex, Math.max(0, rsvpWordsArray.length - 1));
-        rsvpIndex   = safeStart;
-        rsvpLastHL  = -1;
-        rsvpVisPage = rsvpWordToPage[safeStart] || 0;
-        rsvpRenderPage(rsvpVisPage);
+        rsvpIndex = safeStart;
         rsvpSetWord(rsvpWordsArray[safeStart]?.word || 'Ready.');
         rsvpUpdateProgress();
     }
 
     // ─────────────────────────────────────────────
-    //  Mode switching
+    //  Mode enter / exit
     // ─────────────────────────────────────────────
     function enterRsvpMode() {
         rsvpActive = true;
-        document.getElementById('rsvp-area').classList.remove('hidden');
-        document.getElementById('reader-area').classList.add('hidden');
-        document.querySelectorAll('.nav-arrow').forEach(el => el.style.display = 'none');
+        document.body.classList.add('rsvp-on');
         document.getElementById('rsvp-btn').classList.add('rsvp-active');
         document.getElementById('rsvp-btn').title = 'Exit RSVP mode';
         rsvpSetMode(rsvpMode);
+
+        // Resize rendition to account for the 300px panel
+        setTimeout(() => {
+            if (rendition) {
+                const v = document.getElementById('viewer');
+                try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
+            }
+            // Activate word injection on the currently visible iframe page
+            rsvpSendToEpub({ type: 'rsvp-activate' });
+        }, 280);
     }
 
     function exitRsvpMode() {
         rsvpActive = false;
         rsvpStopPlayer();
-        document.getElementById('rsvp-area').classList.add('hidden');
-        document.getElementById('reader-area').classList.remove('hidden');
-        document.querySelectorAll('.nav-arrow').forEach(el => el.style.display = '');
+        document.body.classList.remove('rsvp-on');
         document.getElementById('rsvp-btn').classList.remove('rsvp-active');
         document.getElementById('rsvp-btn').title = 'RSVP speed reading';
+
+        // Clear epub highlights
+        rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
+
+        // Restore rendition width
+        setTimeout(() => {
+            if (rendition) {
+                const v = document.getElementById('viewer');
+                try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
+            }
+        }, 280);
+    }
+
+    // Called by the relocated event when RSVP is active (page flip inside epub)
+    function rsvpOnEpubRelocated() {
+        rsvpEpubNavigating    = false;
+        rsvpEpubPageWordStart = 0;
+        rsvpEpubPageWordCount = 0;
+        // Re-activate injection on new page (with slight delay to let iframe render)
+        setTimeout(() => {
+            if (rsvpActive) rsvpSendToEpub({ type: 'rsvp-activate' });
+        }, 180);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Epub iframe communication
+    // ─────────────────────────────────────────────
+    function rsvpSendToEpub(msg) {
+        try {
+            const contents = rendition?.getContents?.();
+            if (contents && contents[0]) contents[0].window.postMessage(msg, '*');
+        } catch {}
+    }
+
+    // Highlight global word index in epub iframe.
+    // If the word is outside the current page, flip the epub page.
+    function rsvpHighlightInEpub(globalIdx) {
+        if (rsvpEpubNavigating) return;
+        const li = globalIdx - rsvpEpubPageWordStart;
+
+        if (rsvpEpubPageWordCount > 0 && li >= rsvpEpubPageWordCount) {
+            // RSVP has advanced past end of epub page — go to next
+            rsvpEpubNavigating = true;
+            rendition?.next?.();
+            return;
+        }
+        if (li < 0) {
+            // RSVP is before start of epub page — go to prev
+            rsvpEpubNavigating = true;
+            rendition?.prev?.();
+            return;
+        }
+        rsvpSendToEpub({ type: 'rsvp-hl', li });
+    }
+
+    // Jump RSVP position to a global word index
+    function rsvpJumpToGlobalWord(globalIdx) {
+        rsvpIndex = Math.max(0, Math.min(globalIdx, rsvpWordsArray.length - 1));
+        rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
+        rsvpUpdateProgress();
+        rsvpHighlightInEpub(rsvpIndex);
+        if (rsvpIsPlaying) { clearTimeout(rsvpTimer); rsvpLoop(); }
+        else { rsvpShowContext(); }
+    }
+
+    // Handle click from a chapter that might not be loaded / scored yet
+    async function rsvpHandleCrossChapterClick(li, word) {
+        const loc  = rendition?.currentLocation?.();
+        const href = loc?.start?.href || '';
+        const chIdx = rsvpChapterMap.findIndex(c =>
+            href && (href === c.spineHref || href.endsWith(c.spineHref) || c.spineHref.endsWith(href.split('/').pop()))
+        );
+        if (chIdx < 0) return;
+
+        const wasPlaying = rsvpIsPlaying;
+        rsvpStopPlayer();
+
+        if (!rsvpChapterMap[chIdx].scored) {
+            document.getElementById('rsvp-prep-modal').classList.remove('hidden');
+            rsvpCancelled = false;
+            await rsvpEnsureChapterScored(chIdx);
+            document.getElementById('rsvp-prep-modal').classList.add('hidden');
+            if (rsvpCancelled) return;
+        }
+
+        rsvpCurrentChapterIdx = chIdx;
+        rsvpBuildPlayer(chIdx, 0);
+
+        // Attempt jump using calibrated page start
+        const globalIdx = rsvpEpubPageWordStart + li;
+        if (globalIdx >= 0 && globalIdx < rsvpWordsArray.length) {
+            rsvpIndex = globalIdx;
+            rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
+            rsvpUpdateProgress();
+            rsvpHighlightInEpub(rsvpIndex);
+        }
+
+        if (wasPlaying) { rsvpIsPlaying = true; rsvpUpdatePlayUI(); rsvpLoop(); }
+        else rsvpShowContext();
     }
 
     // ─────────────────────────────────────────────
@@ -1258,7 +1485,7 @@ Numbered passage:\n`;
 
     function rsvpSetWord(word) {
         const el = document.getElementById('rsvp-word');
-        el.classList.remove('text-3xl','text-4xl','text-5xl','text-6xl');
+        el.classList.remove('text-3xl', 'text-4xl', 'text-5xl', 'text-6xl');
         const l = word.length;
         el.classList.add(l > 12 ? 'text-3xl' : l > 8 ? 'text-4xl' : l > 5 ? 'text-5xl' : 'text-6xl');
         const p = rsvpOrpIdx(word);
@@ -1294,14 +1521,19 @@ Numbered passage:\n`;
         rsvpSetWord(wd.word);
         rsvpUpdateProgress();
         rsvpUpdateStatus(wd.complexity, wd.content_type);
-        rsvpSyncHL();
+
+        // Highlight current word in epub iframe
+        if (rsvpActive) rsvpHighlightInEpub(rsvpIndex);
 
         const ms = (60000 / rsvpBaseWpm) * wd.complexity;
         rsvpTimer = setTimeout(() => {
             if (wd.pause_after_ms > 0) {
                 rsvpSetWord('');
                 rsvpTimer = setTimeout(() => { rsvpIndex++; rsvpLoop(); }, wd.pause_after_ms);
-            } else { rsvpIndex++; rsvpLoop(); }
+            } else {
+                rsvpIndex++;
+                rsvpLoop();
+            }
         }, ms);
     }
 
@@ -1317,20 +1549,28 @@ Numbered passage:\n`;
         rsvpSetWord('Ready.');
         rsvpUpdateProgress();
         document.getElementById('rsvp-context').style.opacity = '0';
+        // Snap epub back to chapter start
+        const ch = rsvpChapterMap[rsvpCurrentChapterIdx];
+        if (ch && rendition) rendition.display(ch.spineHref).catch(() => {});
     }
 
     function rsvpJumpSeconds(sec) {
-        const wps = rsvpBaseWpm / 60;
+        const wps  = rsvpBaseWpm / 60;
         rsvpIndex  = Math.max(0, Math.min(rsvpIndex + Math.round(wps * sec), rsvpWordsArray.length - 1));
-        if (!rsvpIsPlaying) { rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || ''); rsvpSyncHL(); rsvpShowContext(); }
-        else { clearTimeout(rsvpTimer); rsvpLoop(); }
+        if (!rsvpIsPlaying) {
+            rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
+            rsvpHighlightInEpub(rsvpIndex);
+            rsvpShowContext();
+        } else {
+            clearTimeout(rsvpTimer);
+            rsvpLoop();
+        }
     }
 
     async function rsvpTryNextChapter() {
         const nextIdx = rsvpCurrentChapterIdx + 1;
         if (nextIdx >= rsvpChapterMap.length) return;
 
-        // Score if needed, then load
         if (!rsvpChapterMap[nextIdx].scored) {
             document.getElementById('rsvp-prep-modal').classList.remove('hidden');
             rsvpCancelled = false;
@@ -1341,64 +1581,29 @@ Numbered passage:\n`;
 
         rsvpCurrentChapterIdx = nextIdx;
         rsvpBuildPlayer(nextIdx);
+
+        // Navigate epub to new chapter (relocated event will re-activate injection)
+        const ch = rsvpChapterMap[nextIdx];
+        if (ch && rendition) rendition.display(ch.spineHref).catch(() => {});
+
         rsvpIsPlaying = true;
         rsvpUpdatePlayUI();
         rsvpLoop();
 
-        // Prefetch the one after
         if (nextIdx + 1 < rsvpChapterMap.length) rsvpPrefetchChapter(nextIdx + 1);
-    }
-
-    // ─────────────────────────────────────────────
-    //  Manuscript sync
-    // ─────────────────────────────────────────────
-    function rsvpSyncHL() {
-        document.querySelectorAll('.rsvp-word-highlight').forEach(el => el.classList.remove('rsvp-word-highlight'));
-        if (rsvpIndex < 0 || rsvpIndex >= rsvpWordsArray.length) return;
-        const tp = rsvpWordToPage[rsvpIndex];
-        if (!rsvpBrowsing && rsvpVisPage !== tp) rsvpRenderPage(tp);
-        if (rsvpVisPage === tp) {
-            const sp = document.getElementById(`rw-${rsvpIndex}`);
-            if (sp) sp.classList.add('rsvp-word-highlight');
-        }
-        rsvpLastHL = rsvpIndex;
-    }
-
-    function rsvpRenderPage(idx) {
-        if (idx < 0 || idx >= rsvpPagesHTML.length) return;
-        rsvpVisPage = idx;
-        const ms = document.getElementById('rsvp-ms-text');
-        ms.innerHTML = rsvpPagesHTML[idx];
-        document.getElementById('rsvp-ms-page').textContent = `Page ${idx + 1} of ${rsvpPagesHTML.length}`;
-        document.getElementById('rsvp-ms-prev').disabled = idx === 0;
-        document.getElementById('rsvp-ms-next').disabled = idx === rsvpPagesHTML.length - 1;
-        if (rsvpWordToPage[rsvpIndex] === idx) {
-            const sp = document.getElementById(`rw-${rsvpIndex}`);
-            if (sp) sp.classList.add('rsvp-word-highlight');
-        }
-        ms.addEventListener('click', e => {
-            if (e.target.dataset.i !== undefined) {
-                rsvpBrowsing = false;
-                rsvpIndex = parseInt(e.target.dataset.i);
-                if (!rsvpIsPlaying) { rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || ''); rsvpSyncHL(); rsvpShowContext(); }
-                else { clearTimeout(rsvpTimer); rsvpLoop(); }
-            }
-        });
-        ms.addEventListener('mouseenter', () => rsvpBrowsing = true);
-        ms.addEventListener('mouseleave', () => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); });
-    }
-
-    function rsvpPrevPage() { rsvpBrowsing = true; rsvpRenderPage(rsvpVisPage - 1); clearTimeout(rsvpBrowseTimer); rsvpBrowseTimer = setTimeout(() => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); }, 3000); }
-    function rsvpNextPage() { rsvpBrowsing = true; rsvpRenderPage(rsvpVisPage + 1); clearTimeout(rsvpBrowseTimer); rsvpBrowseTimer = setTimeout(() => { rsvpBrowsing = false; if (rsvpIsPlaying) rsvpSyncHL(); }, 3000); }
-
-    function rsvpShowContext() {
-        const ctx = document.getElementById('rsvp-context');
-        if (rsvpIndex < rsvpWordsArray.length) { ctx.textContent = rsvpWordsArray[rsvpIndex].sentence_text; ctx.style.opacity = '1'; }
     }
 
     // ─────────────────────────────────────────────
     //  UI helpers
     // ─────────────────────────────────────────────
+    function rsvpShowContext() {
+        const ctx = document.getElementById('rsvp-context');
+        if (rsvpIndex < rsvpWordsArray.length) {
+            ctx.textContent    = rsvpWordsArray[rsvpIndex].sentence_text;
+            ctx.style.opacity  = '1';
+        }
+    }
+
     function rsvpSetMode(m) {
         rsvpMode    = m;
         rsvpBaseWpm = RSVP_MODES[m].wpm;
@@ -1422,10 +1627,10 @@ Numbered passage:\n`;
     }
 
     function rsvpUpdateStatus(complexity, type) {
-        const label = `${complexity.toFixed(1)}× ${(type||'').replace(/_/g,' ')}`;
+        const label = `${complexity.toFixed(1)}× ${(type || '').replace(/_/g, ' ')}`;
         const el    = document.getElementById('rsvp-status');
         el.textContent = label;
-        el.className   = `px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest border ${
+        el.className   = `shrink-0 px-2.5 py-1 rounded-full font-mono text-[9px] font-bold uppercase tracking-widest border ${
             complexity > 1.2 ? 'bg-warm-200 text-warm-800 border-warm-300' :
             complexity < 0.9 ? 'bg-white text-warm-500 border-warm-200' :
                                'bg-warm-100 text-warm-700 border-warm-200'}`;
