@@ -18,12 +18,67 @@
 │       ├── Avatar.png        # Profile avatar (novel character)
 │       └── masonry1–11.jpg   # Life gallery images
 │
-└── about/
-    ├── index.html        # About/bio page
-    ├── about.css         # About-only styles (add here as the page grows)
-    └── assets/
-        └── cover-about.jpg   # About page header image
+├── about/
+│   ├── index.html        # About/bio page
+│   ├── about.css         # About-only styles (add here as the page grows)
+│   └── assets/
+│       └── cover-about.jpg   # About page header image
+│
+└── library/
+    ├── index.html        # Library home — book grid, upload, currently-reading hero
+    ├── index.js          # All JS for index.html (auth, book loading, rendering, upload, filters)
+    ├── reader.html       # Epub reader — markup only, no inline scripts
+    ├── reader.js         # All JS for reader.html (auth, epub init, progress, highlights, TOC, settings)
+    ├── rsvp.js           # RSVP speed-reading engine (Gemini scoring, playback, epub sync)
+    └── RSVP.md           # Technical reference for the RSVP feature
 ```
+
+---
+
+## Library page
+
+A private, Firebase-gated epub library. Separate from the rest of the site — it has its own
+auth, its own Firebase project, and does not share styles with `home/` or `about/`.
+
+### Files
+
+| File | Role |
+|---|---|
+| `index.html` | Markup for the library home. Book grid, upload modal, currently-reading hero, auth gate, drag-and-drop overlay. No inline scripts. |
+| `index.js` | All logic for `index.html`. Firebase init + auth, loading and rendering books, filter tabs, epub upload pipeline (metadata extraction, Storage upload, cover upload, Firestore write), category picker modal, `escHtml()` XSS helper. |
+| `reader.html` | Markup for the epub reader. Top nav, TOC panel, settings panel, RSVP player panel, RSVP prep modal, epub viewer area, bottom progress bar. No inline scripts. |
+| `reader.js` | All reader logic. Firebase init + auth, epub.js initialisation, theme/font/font-size settings, page navigation, reading progress tracking + Firestore save, highlights, TOC generation. Exposes globals (`rendition`, `epubBook`, `bookDoc`, `bookId`, `db`) that `rsvp.js` reads. |
+| `rsvp.js` | Self-contained RSVP engine. Depends on `db`, `bookId`, `bookDoc`, `rendition`, `epubBook` from `reader.js`. Handles text extraction, Gemini scoring (`gemini-2.5-flash-lite`), Firestore score cache, flat word-array construction, playback loop, epub iframe sync via `postMessage`. See `RSVP.md` for the full technical reference. |
+| `RSVP.md` | Technical reference: architecture, Gemini prompt format, Firestore cache schema, word-array shape, playback timing, epub postMessage protocol, ORP algorithm, cost model. Update this when changing the RSVP architecture. |
+
+### Load order in `reader.html`
+
+```html
+<!-- CDN libraries first -->
+<script src="firebase-app-compat.js"></script>
+<script src="firebase-auth-compat.js"></script>
+<script src="firebase-firestore-compat.js"></script>
+<script src="jszip.min.js"></script>
+<script src="epub.min.js"></script>
+
+<!-- Page scripts — order matters: reader.js sets globals that rsvp.js uses -->
+<script src="reader.js"></script>
+<script src="rsvp.js"></script>
+```
+
+### External services
+
+| Service | Purpose |
+|---|---|
+| Firebase Auth | Email/password gate on both pages |
+| Firestore | Book metadata, reading progress, highlights, RSVP score cache |
+| Firebase Storage | Epub files (`library/books/`) and cover images (`library/covers/`) |
+| Gemini API (`gemini-2.5-flash-lite`) | Sentence complexity scoring for RSVP pacing |
+
+The Firebase config (API key etc.) is hardcoded in `index.js` and `reader.js`. This is
+intentional — web API keys are public by design; security lives in Firestore rules.
+The Gemini API key is stored in Firestore at `_config/App.geminiApiKey` and fetched at
+runtime, never hardcoded.
 
 ---
 
