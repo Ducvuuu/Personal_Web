@@ -174,7 +174,7 @@ function rsvpDomExtract(doc) {
 
     function walk(node) {
         if (!node) return;
-        const tag = node.tagName;
+        const tag = node.tagName?.toUpperCase();
         if (tag && SKIP.has(tag)) return;
 
         if (node.nodeType === 3) {
