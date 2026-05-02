@@ -95,7 +95,12 @@ function cancelRsvpPrep() {
 async function rsvpInitSession() {
     rsvpShowPrep('Extracting text…', bookDoc.title, 0, 0);
     const chapters = await rsvpExtractAllChapters();
-    if (rsvpCancelled || chapters.length === 0) return;
+    if (rsvpCancelled) return;
+    if (chapters.length === 0) {
+        document.getElementById('rsvp-prep-modal').classList.add('hidden');
+        alert('Extraction failed. The book may be empty or use an unsupported format.');
+        return;
+    }
 
     const allScores = await rsvpScoreAllChapters(chapters);
     if (rsvpCancelled) return;
@@ -157,7 +162,9 @@ async function rsvpExtractAllChapters() {
                 spineHref: item.href || '',
                 sentences,
             });
-        } catch {}
+        } catch (err) {
+            console.error('Error extracting chapter:', err);
+        }
     }
     return chapters;
 }
@@ -169,12 +176,21 @@ function rsvpDomExtract(doc) {
     const SKIP  = new Set(['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION','HEAD','TITLE','META']);
     const BLOCK = new Set(['P','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE']);
 
-    const words    = [];          // flat token list — index matches iframe data-li
-    const paraEnds = new Set();   // word indices where a block element ends
+    const words    = [];
+    const paraEnds = new Set();
 
     function walk(node) {
         if (!node) return;
-        const tag = node.tagName?.toUpperCase();
+
+        // Document node — recurse into children without tag checks
+        if (node.nodeType === 9) {
+            if (node.childNodes) {
+                for (let i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+            }
+            return;
+        }
+
+        const tag = node.tagName ? node.tagName.toUpperCase() : null;
         if (tag && SKIP.has(tag)) return;
 
         if (node.nodeType === 3) {
@@ -182,11 +198,13 @@ function rsvpDomExtract(doc) {
             if (!text.trim()) return;
             const tokens = text.split(/(\s+)/);
             let hasWord = false;
-            for (const t of tokens) { if (t && !/^\s+$/.test(t)) { hasWord = true; break; } }
+            for (let t = 0; t < tokens.length; t++) {
+                if (tokens[t] && !/^\s+$/.test(tokens[t])) { hasWord = true; break; }
+            }
             if (!hasWord) return;
-            for (const tok of tokens) {
-                if (!tok || /^\s+$/.test(tok)) continue;
-                words.push(tok);
+            for (let t = 0; t < tokens.length; t++) {
+                if (!tokens[t] || /^\s+$/.test(tokens[t])) continue;
+                words.push(tokens[t]);
             }
             return;
         }
@@ -194,15 +212,17 @@ function rsvpDomExtract(doc) {
         if (node.nodeType === 1) {
             const isBlock = BLOCK.has(tag);
             const before  = words.length;
-            for (const child of [...node.childNodes]) walk(child);
+            if (node.childNodes) {
+                for (let i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+            }
             if (isBlock && words.length > before) paraEnds.add(words.length - 1);
         }
     }
 
-    walk(doc.querySelector('body') || doc.body || doc.documentElement || doc);
+    walk(doc);
+
     if (words.length === 0) return [];
 
-    // Group into sentence objects for Gemini scoring
     const sentences = [];
     let segStart    = 0;
 
