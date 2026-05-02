@@ -387,16 +387,6 @@ function registerThemes() {
                 hyphens: auto; -webkit-hyphens: auto;
                 orphans: 3; widows: 3;
             }
-            p:first-of-type::first-letter {
-                font-family: 'Outfit', sans-serif !important;
-                font-weight: 900 !important;
-                font-size: 4.2em !important;
-                line-height: 0.8 !important;
-                float: left !important;
-                padding-right: 0.12em !important;
-                padding-top: 0.08em !important;
-                color: #d56a31 !important;
-            }
             h1, h2, h3, h4 {
                 font-family: 'Outfit', sans-serif !important;
                 font-weight: 900 !important;
