@@ -356,10 +356,14 @@ function rsvpBuildFullBook(chapters, allScores) {
 // ── Estimate global word index from epub CFI position ──
 function rsvpFindGlobalStartWord(loc) {
     if (!loc?.start) return 0;
-    const href   = loc.start.href || '';
-    const chIdx  = rsvpChapterBoundaries.findIndex(b =>
-        href && (href === b.spineHref || href.endsWith(b.spineHref) || b.spineHref.endsWith(href.split('/').pop()))
-    );
+
+    // Strip fragments so chapter16.xhtml#part2 matches chapter16.xhtml
+    const href = (loc.start.href || '').split('#')[0];
+
+    const chIdx = rsvpChapterBoundaries.findIndex(b => {
+        const bHref = (b.spineHref || '').split('#')[0];
+        return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
+    });
     if (chIdx < 0) return 0;
     const chStart = rsvpChapterBoundaries[chIdx].startWordIdx;
     const chEnd   = chIdx + 1 < rsvpChapterBoundaries.length
