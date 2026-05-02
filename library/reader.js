@@ -439,8 +439,8 @@ function registerThemes() {
 
         function processNode(node) {
             if (!node) return;
-            var tag = node.tagName;
-            if (tag && ['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION'].indexOf(tag) >= 0) return;
+            var tag = node.tagName ? node.tagName.toUpperCase() : null;
+            if (tag && ['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION','HEAD','TITLE','META'].indexOf(tag) >= 0) return;
             if (node.classList && node.classList.contains('rsvp-w')) return;
 
             if (node.nodeType === 3) {

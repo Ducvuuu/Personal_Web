@@ -166,7 +166,7 @@ async function rsvpExtractAllChapters() {
 // Produces sentences with pre-split word arrays so rsvpBuildFullBook never re-tokenises.
 function rsvpDomExtract(doc) {
     if (!doc) return [];
-    const SKIP  = new Set(['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION']);
+    const SKIP  = new Set(['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION','HEAD','TITLE','META']);
     const BLOCK = new Set(['P','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE']);
 
     const words    = [];          // flat token list — index matches iframe data-li
@@ -199,7 +199,7 @@ function rsvpDomExtract(doc) {
         }
     }
 
-    walk(doc.body || doc);
+    walk(doc.querySelector('body') || doc.body || doc.documentElement || doc);
     if (words.length === 0) return [];
 
     // Group into sentence objects for Gemini scoring
