@@ -29,63 +29,11 @@ let rsvpCancelled         = false;
 let rsvpPausedCfi         = null;
 
 // ── Epub iframe sync state ──
-let rsvpEpubPageWordStart = 0;
-let rsvpEpubPageWordCount = 0;
 let rsvpEpubNavigating    = false;
 
 // ── Listen for messages from epub iframe ──
 window.addEventListener('message', e => {
     if (!e.data?.type) return;
-
-    if (e.data.type === 'rsvp-page-words' && rsvpActive) {
-        rsvpEpubPageWordCount = e.data.total || 0;
-        rsvpEpubNavigating    = false;
-
-        const rawWords  = e.data.words || [];
-        const pageWords = rawWords.map(w => w.toLowerCase().replace(/[^\w]/g, '')).filter(Boolean);
-        if (pageWords.length >= 2 && rsvpWordsArray.length > 0) {
-            // FIX: Get actual location from epub.js, not the static rsvpIndex
-            let chIdx = -1;
-            const loc = rendition?.currentLocation();
-            const href = loc?.start?.href || '';
-
-            if (href) {
-                chIdx = rsvpChapterBoundaries.findIndex(b =>
-                    href === b.spineHref || href.endsWith(b.spineHref) || b.spineHref.endsWith(href.split('/').pop())
-                );
-            }
-
-            // Fallback to rsvpIndex only if rendition isn't ready
-            if (chIdx < 0) {
-                for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
-                    if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) { chIdx = i; break; }
-                }
-            }
-
-            const searchStart = chIdx >= 0
-                ? rsvpChapterBoundaries[chIdx].startWordIdx
-                : Math.max(0, rsvpIndex - 500);
-
-            const chEnd = chIdx >= 0 && chIdx + 1 < rsvpChapterBoundaries.length
-                ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
-                : rsvpWordsArray.length;
-
-            // FIX: Search the entire chapter bounds, not a narrow window around rsvpIndex
-            const searchEnd  = chEnd - 1;
-            const matchLen   = Math.min(10, pageWords.length);
-
-            outer: for (let i = searchStart; i <= searchEnd; i++) {
-                const cand = (rsvpWordsArray[i]?.word || '').toLowerCase().replace(/[^\w]/g, '');
-                if (cand !== pageWords[0]) continue;
-                for (let j = 1; j < matchLen; j++) {
-                    if ((rsvpWordsArray[i + j]?.word || '').toLowerCase().replace(/[^\w]/g, '') !== pageWords[j]) continue outer;
-                }
-                rsvpEpubPageWordStart = i;
-                break;
-            }
-        }
-        if (rsvpActive) rsvpHighlightInEpub(rsvpIndex);
-    }
 
     // Iframe reports highlighted word is off the visible page — flip now
     if (e.data.type === 'rsvp-need-flip' && rsvpActive && !rsvpEpubNavigating) {
@@ -95,7 +43,6 @@ window.addEventListener('message', e => {
     }
 
     if (e.data.type === 'rsvp-epub-click' && rsvpActive) {
-        // ── Pillar 1: Chapter mapping via rendition location ──
         const loc  = rendition?.currentLocation();
         const href = (loc?.start?.href || '').split('#')[0];
         const chIdx = rsvpChapterBoundaries.findIndex(b => {
@@ -105,37 +52,8 @@ window.addEventListener('message', e => {
         if (chIdx < 0) return;
 
         const parentChapterStart = rsvpChapterBoundaries[chIdx].startWordIdx;
-        const parentChapterEnd   = chIdx + 1 < rsvpChapterBoundaries.length
-            ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
-            : rsvpWordsArray.length;
-
-        // ── Pillar 2: Proportional anchoring ──
-        const chapterRatio    = e.data.li / (e.data.totalChapterWords || 1);
-        const estimatedGlobalIdx = parentChapterStart + Math.floor(chapterRatio * (parentChapterEnd - parentChapterStart));
-
-        // ── Pillar 3: Fingerprint search ±100 words within chapter bounds ──
-        const fp  = e.data.fingerprint || [];
-        const lo  = Math.max(parentChapterStart, estimatedGlobalIdx - 100);
-        const hi  = Math.min(parentChapterEnd - 1, estimatedGlobalIdx + 100);
-        const clean = s => (s || '').toLowerCase().replace(/[^\w]/g, '');
-
-        let bestScore    = -1;
-        let bestMatchIdx = estimatedGlobalIdx;
-
-        for (let i = lo; i <= hi; i++) {
-            // fp[2] is the clicked word; align it to position i
-            let score = 0;
-            for (let f = 0; f < fp.length; f++) {
-                if (!fp[f]) continue;
-                const globalPos = i + (f - 2);
-                if (globalPos < 0 || globalPos >= rsvpWordsArray.length) continue;
-                if (clean(rsvpWordsArray[globalPos]?.word) === fp[f]) score++;
-            }
-            if (score > bestScore) { bestScore = score; bestMatchIdx = i; }
-            if (score === 5) break;
-        }
-
-        rsvpJumpToGlobalWord(bestMatchIdx);
+        const exactGlobalIdx = Math.min(parentChapterStart + e.data.li, rsvpWordsArray.length - 1);
+        rsvpJumpToGlobalWord(exactGlobalIdx);
     }
 });
 
@@ -227,50 +145,82 @@ async function rsvpExtractAllChapters() {
         if (useToc && !label) continue;
 
         try {
-            const section = epubBook.spine.get(i);
-            const doc     = await section.load(epubBook.load.bind(epubBook));
-            const text    = rsvpExtractText(doc);
+            const section   = epubBook.spine.get(i);
+            const doc       = await section.load(epubBook.load.bind(epubBook));
+            const sentences = rsvpDomExtract(doc);
             section.unload();
-            if (text.trim().length < 100) continue;
+            const wordCount = sentences.reduce((n, s) => n + s.words.length, 0);
+            if (wordCount < 20) continue;
 
             chapters.push({
                 title:     label || `Section ${chapters.length + 1}`,
                 spineHref: item.href || '',
-                sentences: rsvpSplitSentences(text.trim()),
+                sentences,
             });
         } catch {}
     }
     return chapters;
 }
 
-// ── Extract text, preserving paragraph breaks ──
-function rsvpExtractText(doc) {
-    if (!doc) return '';
-    const body = doc.body || doc;
-    ['script','style','nav','aside','figure','figcaption'].forEach(tag => {
-        body.querySelectorAll?.(tag).forEach(el => el.remove());
-    });
-    return (body.innerText || body.textContent || '')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-}
+// ── DOM-walking extractor — mirrors processNode in the iframe exactly ──
+// Produces sentences with pre-split word arrays so rsvpBuildFullBook never re-tokenises.
+function rsvpDomExtract(doc) {
+    if (!doc) return [];
+    const SKIP  = new Set(['SCRIPT','STYLE','NAV','ASIDE','FIGURE','FIGCAPTION']);
+    const BLOCK = new Set(['P','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE']);
 
-// ── Split into sentences; last sentence of each paragraph gets 400ms pause ──
-function rsvpSplitSentences(text) {
-    const sentences  = [];
-    const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
-    paragraphs.forEach(para => {
-        const raw      = para.match(/[^.!?…]+[.!?…]+["']?\s*/g) || [para];
-        const paraSnts = raw.map(s => s.trim()).filter(s => s.length > 0);
-        paraSnts.forEach((sText, i) => {
-            sentences.push({
-                index: sentences.length,
-                text:  sText,
-                pause: i === paraSnts.length - 1 ? 400 : 150,
-            });
-        });
-    });
+    const words    = [];          // flat token list — index matches iframe data-li
+    const paraEnds = new Set();   // word indices where a block element ends
+
+    function walk(node) {
+        if (!node) return;
+        const tag = node.tagName;
+        if (tag && SKIP.has(tag)) return;
+
+        if (node.nodeType === 3) {
+            const text = node.textContent;
+            if (!text.trim()) return;
+            const tokens = text.split(/(\s+)/);
+            let hasWord = false;
+            for (const t of tokens) { if (t && !/^\s+$/.test(t)) { hasWord = true; break; } }
+            if (!hasWord) return;
+            for (const tok of tokens) {
+                if (!tok || /^\s+$/.test(tok)) continue;
+                words.push(tok);
+            }
+            return;
+        }
+
+        if (node.nodeType === 1) {
+            const isBlock = BLOCK.has(tag);
+            const before  = words.length;
+            for (const child of [...node.childNodes]) walk(child);
+            if (isBlock && words.length > before) paraEnds.add(words.length - 1);
+        }
+    }
+
+    walk(doc.body || doc);
+    if (words.length === 0) return [];
+
+    // Group into sentence objects for Gemini scoring
+    const sentences = [];
+    let segStart    = 0;
+
+    const flush = (end, pause) => {
+        const w = words.slice(segStart, end + 1);
+        if (w.length > 0) sentences.push({ text: w.join(' '), words: w, pause });
+        segStart = end + 1;
+    };
+
+    for (let i = 0; i < words.length; i++) {
+        if (paraEnds.has(i)) {
+            flush(i, 400);
+        } else if (/[.!?…]["']?$/.test(words[i])) {
+            flush(i, 150);
+        }
+    }
+    if (segStart < words.length) flush(words.length - 1, 400);
+
     return sentences;
 }
 
@@ -354,12 +304,11 @@ function rsvpBuildFullBook(chapters, allScores) {
         });
         ch.sentences.forEach((sent, si) => {
             const complexity = allScores[scoreOffset + si] ?? 1.0;
-            const words      = sent.text.split(/\s+/);
-            words.forEach((word, wi) => {
+            sent.words.forEach((word, wi) => {
                 rsvpWordsArray.push({
                     word,
                     complexity,
-                    pause_after_ms: wi === words.length - 1 ? sent.pause : 0,
+                    pause_after_ms: wi === sent.words.length - 1 ? sent.pause : 0,
                     sentence_text:  sent.text,
                 });
             });
@@ -434,9 +383,7 @@ function exitRsvpMode() {
 }
 
 function rsvpOnEpubRelocated() {
-    rsvpEpubNavigating    = false;
-    rsvpEpubPageWordStart = 0;
-    rsvpEpubPageWordCount = 0;
+    rsvpEpubNavigating = false;
     setTimeout(() => {
         if (rsvpActive) rsvpSendToEpub({ type: 'rsvp-activate' });
     }, 180);
@@ -452,18 +399,15 @@ function rsvpSendToEpub(msg) {
 
 function rsvpHighlightInEpub(globalIdx) {
     if (rsvpEpubNavigating) return;
-    const li = globalIdx - rsvpEpubPageWordStart;
-    if (rsvpEpubPageWordCount > 0 && li >= rsvpEpubPageWordCount) {
-        rsvpEpubNavigating = true;
-        rendition?.next?.();
-        return;
+    // Find the chapter start for globalIdx so li is chapter-local (matches iframe data-li)
+    let chStart = 0;
+    for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+        if (rsvpChapterBoundaries[i].startWordIdx <= globalIdx) {
+            chStart = rsvpChapterBoundaries[i].startWordIdx;
+            break;
+        }
     }
-    if (li < 0) {
-        rsvpEpubNavigating = true;
-        rendition?.prev?.();
-        return;
-    }
-    rsvpSendToEpub({ type: 'rsvp-hl', li });
+    rsvpSendToEpub({ type: 'rsvp-hl', li: globalIdx - chStart });
 }
 
 function rsvpJumpToGlobalWord(globalIdx) {
