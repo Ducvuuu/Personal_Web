@@ -139,14 +139,19 @@ function bookCardHTML(book) {
     }
 
     return `
-        <button class="group text-left" data-book-id="${escHtml(book.id)}" aria-label="Open ${escHtml(book.title)}">
-            <div class="w-full book-card mb-3">
-                <div class="book-cover aspect-[2/3] bg-warm-800 relative">${coverHtml}</div>
+        <div class="group text-left cursor-pointer relative" data-book-id="${escHtml(book.id)}" aria-label="Open ${escHtml(book.title)}">
+            <div class="w-full book-card mb-3 relative">
+                <div class="book-cover aspect-[2/3] bg-warm-800 relative">
+                    ${coverHtml}
+                </div>
+                <button data-delete-id="${escHtml(book.id)}" data-title="${escHtml(book.title)}" class="absolute top-2 right-2 w-7 h-7 bg-white/90 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 shadow-sm z-20" aria-label="Delete book" title="Delete book">
+                    <i class="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>
+                </button>
             </div>
             <h4 class="font-bold text-warm-900 text-sm leading-tight mb-0.5 group-hover:text-orange-600 transition-colors line-clamp-2">${escHtml(book.title)}</h4>
             <p class="text-xs text-warm-500 mb-1">${escHtml(book.author || 'Unknown')}</p>
             ${statusHtml}
-        </button>`;
+        </div>`;
 }
 
 function uploadCardHTML() {
@@ -161,6 +166,13 @@ function uploadCardHTML() {
 
 // ── DELEGATED CLICK HANDLER for book cards ──
 document.addEventListener('click', e => {
+    const deleteBtn = e.target.closest('[data-delete-id]');
+    if (deleteBtn) {
+        e.stopPropagation();
+        showDeleteConfirm(deleteBtn.dataset.deleteId, deleteBtn.dataset.title);
+        return;
+    }
+
     const card = e.target.closest('[data-book-id]');
     if (card) { openBook(card.dataset.bookId); return; }
 
@@ -313,6 +325,51 @@ function setUploadState(title, text, pct) {
     document.getElementById('upload-progress-bar').style.width = `${pct}%`;
     document.getElementById('upload-progress-bar').setAttribute('aria-valuenow', pct);
     document.getElementById('upload-progress-label').textContent = `${pct}%`;
+}
+
+// ── DELETE BOOK ──
+function showDeleteConfirm(bookId, bookTitle) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm';
+    overlay.innerHTML = `
+        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-8 w-full max-w-sm mx-4 text-center">
+            <div class="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-200">
+                <i class="fa-solid fa-trash-can text-red-500 text-lg" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-heavy text-xl text-warm-900 mb-2 leading-tight">Delete Book?</h3>
+            <p class="font-mono text-xs text-warm-500 mb-6">Are you sure you want to remove "<span class="font-bold">${escHtml(bookTitle)}</span>" from your library? This cannot be undone.</p>
+            <div class="flex gap-3">
+                <button id="btn-cancel-delete" class="flex-1 py-3 rounded-xl font-mono text-xs font-bold text-warm-600 bg-warm-200 hover:bg-warm-300 transition-colors">Cancel</button>
+                <button id="btn-confirm-delete" class="flex-1 py-3 rounded-xl font-mono text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-sm">Delete</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-delete').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+    });
+
+    overlay.querySelector('#btn-confirm-delete').addEventListener('click', async () => {
+        const btn = overlay.querySelector('#btn-confirm-delete');
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            try { await storage.ref(`library/books/${bookId}.epub`).delete(); } catch(e) {}
+            try { await storage.ref(`library/covers/${bookId}.jpg`).delete(); } catch(e) {}
+
+            await db.collection('library').doc(bookId).delete();
+
+            allBooks = allBooks.filter(b => b.id !== bookId);
+            renderBookshelf();
+            renderCurrentlyReading();
+        } catch (err) {
+            console.error('Error deleting book:', err);
+            alert('Failed to delete book: ' + err.message);
+        } finally {
+            if (document.body.contains(overlay)) document.body.removeChild(overlay);
+        }
+    });
 }
 
 function showCategoryPicker(title, author) {

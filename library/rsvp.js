@@ -26,6 +26,7 @@ let rsvpMode              = 3;
 let rsvpBaseWpm           = RSVP_MODES[3].wpm;
 let rsvpTimer             = null;
 let rsvpCancelled         = false;
+let rsvpPausedCfi         = null;
 
 // ── Epub iframe sync state ──
 let rsvpEpubPageWordStart = 0;
@@ -43,18 +44,34 @@ window.addEventListener('message', e => {
         const rawWords  = e.data.words || [];
         const pageWords = rawWords.map(w => w.toLowerCase().replace(/[^\w]/g, '')).filter(Boolean);
         if (pageWords.length >= 2 && rsvpWordsArray.length > 0) {
-            // Search the full current chapter, not just a narrow window around rsvpIndex
+            // FIX: Get actual location from epub.js, not the static rsvpIndex
             let chIdx = -1;
-            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
-                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) { chIdx = i; break; }
+            const loc = rendition?.currentLocation();
+            const href = loc?.start?.href || '';
+
+            if (href) {
+                chIdx = rsvpChapterBoundaries.findIndex(b =>
+                    href === b.spineHref || href.endsWith(b.spineHref) || b.spineHref.endsWith(href.split('/').pop())
+                );
             }
+
+            // Fallback to rsvpIndex only if rendition isn't ready
+            if (chIdx < 0) {
+                for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+                    if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) { chIdx = i; break; }
+                }
+            }
+
             const searchStart = chIdx >= 0
                 ? rsvpChapterBoundaries[chIdx].startWordIdx
                 : Math.max(0, rsvpIndex - 500);
+
             const chEnd = chIdx >= 0 && chIdx + 1 < rsvpChapterBoundaries.length
                 ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
                 : rsvpWordsArray.length;
-            const searchEnd  = Math.min(chEnd - 1, rsvpIndex + 1500);
+
+            // FIX: Search the entire chapter bounds, not a narrow window around rsvpIndex
+            const searchEnd  = chEnd - 1;
             const matchLen   = Math.min(10, pageWords.length);
 
             outer: for (let i = searchStart; i <= searchEnd; i++) {
@@ -435,8 +452,14 @@ function rsvpJumpToGlobalWord(globalIdx) {
     rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
     rsvpUpdateProgress();
     rsvpHighlightInEpub(rsvpIndex);
-    if (rsvpIsPlaying) { clearTimeout(rsvpTimer); rsvpLoop(); }
-    else rsvpShowContext();
+    if (rsvpIsPlaying) {
+        clearTimeout(rsvpTimer);
+        rsvpLoop();
+    } else {
+        // Update anchor so snap-back targets the clicked location, not the old pause point
+        rsvpPausedCfi = rendition?.currentLocation()?.start?.cfi || null;
+        rsvpShowContext();
+    }
 }
 
 // ── Player engine ──
@@ -462,10 +485,20 @@ function rsvpTogglePlay() {
     if (rsvpIndex >= rsvpWordsArray.length) rsvpIndex = 0;
     rsvpIsPlaying = !rsvpIsPlaying;
     rsvpUpdatePlayUI();
+
     if (rsvpIsPlaying) {
         document.getElementById('rsvp-context').style.opacity = '0';
-        rsvpLoop();
+        // Snap epub back to where we paused before resuming playback
+        if (rsvpPausedCfi && rendition) {
+            rendition.display(rsvpPausedCfi).then(() => {
+                rsvpLoop();
+            });
+        } else {
+            rsvpLoop();
+        }
     } else {
+        // Save exact page position so snap-back knows where to return
+        rsvpPausedCfi = rendition?.currentLocation()?.start?.cfi || null;
         clearTimeout(rsvpTimer);
         rsvpShowContext();
     }

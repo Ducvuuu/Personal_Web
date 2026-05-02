@@ -228,13 +228,52 @@ async function saveProgress(location) {
     });
 }
 
-function seekProgress(e) {
-    if (!epubBook || !epubBook.locations || !epubBook.locations.length()) return;
-    const track = document.getElementById('progress-track');
-    const pct   = e.offsetX / track.offsetWidth;
-    const cfi   = epubBook.locations.cfiFromPercentage(pct);
-    if (cfi) rendition.display(cfi);
+// ── PROGRESS BAR DRAGGING ──
+const progressTrack = document.getElementById('progress-track');
+const progressFill  = document.getElementById('progress-fill');
+let isDraggingProgress = false;
+
+function getDragPct(e) {
+    const rect    = progressTrack.getBoundingClientRect();
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
 }
+
+function startProgressDrag(e) {
+    isDraggingProgress = true;
+    progressFill.style.transition = 'none';
+    const pct = getDragPct(e);
+    progressFill.style.width = `${pct * 100}%`;
+}
+
+function doProgressDrag(e) {
+    if (!isDraggingProgress) return;
+    e.preventDefault();
+    const pct = getDragPct(e);
+    progressFill.style.width = `${pct * 100}%`;
+    document.getElementById('pct-label').textContent = `${Math.round(pct * 100)}%`;
+}
+
+function endProgressDrag(e) {
+    if (!isDraggingProgress) return;
+    isDraggingProgress = false;
+    progressFill.style.transition = '';
+
+    const pct = getDragPct(e);
+    if (epubBook && epubBook.locations && epubBook.locations.length()) {
+        const cfi = epubBook.locations.cfiFromPercentage(pct);
+        if (cfi) rendition.display(cfi);
+    }
+}
+
+progressTrack.addEventListener('mousedown',  startProgressDrag);
+progressTrack.addEventListener('touchstart', startProgressDrag, { passive: false });
+
+window.addEventListener('mousemove', doProgressDrag);
+window.addEventListener('touchmove', doProgressDrag, { passive: false });
+
+window.addEventListener('mouseup',  endProgressDrag);
+window.addEventListener('touchend', endProgressDrag);
 
 // ── HIGHLIGHTS ──
 function toggleHighlightMode() {
@@ -347,16 +386,6 @@ function registerThemes() {
                 line-height: 1.8 !important;
                 hyphens: auto; -webkit-hyphens: auto;
                 orphans: 3; widows: 3;
-            }
-            p:first-of-type::first-letter {
-                font-family: 'Outfit', sans-serif !important;
-                font-weight: 900 !important;
-                font-size: 4.2em !important;
-                line-height: 0.8 !important;
-                float: left !important;
-                padding-right: 0.12em !important;
-                padding-top: 0.08em !important;
-                color: #d56a31 !important;
             }
             h1, h2, h3, h4 {
                 font-family: 'Outfit', sans-serif !important;
