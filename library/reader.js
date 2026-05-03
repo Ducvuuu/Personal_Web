@@ -258,8 +258,17 @@ async function saveProgress(location) {
     let cfi, pct, chapter;
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
-        cfi     = rendition?.currentLocation()?.start?.cfi;
-        pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
+        const exactFloatPct = rsvpIndex / rsvpWordsArray.length;
+
+        // Use cfiFromPercentage so the saved CFI doesn't reference RSVP <span> tags
+        // that won't exist when the book is reopened without RSVP active.
+        if (epubBook && epubBook.locations && epubBook.locations.length()) {
+            cfi = epubBook.locations.cfiFromPercentage(exactFloatPct);
+        } else {
+            cfi = rendition?.currentLocation()?.start?.cfi;
+        }
+
+        pct     = Math.round(exactFloatPct * 100);
         chapter = document.getElementById('rsvp-chapter-badge').textContent;
     } else if (location?.start) {
         cfi     = location.start.cfi;
