@@ -425,6 +425,7 @@ function enterRsvpMode() {
 function exitRsvpMode() {
     rsvpActive = false;
     rsvpStopPlayer();
+    if (typeof forceSave === 'function') forceSave();
     document.body.classList.remove('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
     btn.classList.remove('rsvp-active');
@@ -565,6 +566,7 @@ function rsvpTogglePlay() {
     } else {
         clearTimeout(rsvpTimer);
         rsvpShowContext();
+        if (typeof forceSave === 'function') forceSave();
     }
 }
 

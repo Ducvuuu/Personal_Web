@@ -227,14 +227,26 @@ function updateProgress(location) {
 
 function scheduleSave(location) {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => saveProgress(location), 2500);
+    saveTimer = setTimeout(() => saveProgress(location), 800);
 }
 
 async function saveProgress(location) {
-    if (!location?.start || !bookId) return;
-    const cfi = location.start.cfi;
-    const pct = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
-    const chapter = document.getElementById('chapter-label').textContent;
+    if (!bookId) return;
+
+    let cfi, pct, chapter;
+
+    if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
+        cfi     = rendition?.currentLocation()?.start?.cfi;
+        pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
+        chapter = document.getElementById('rsvp-chapter-badge').textContent;
+    } else if (location?.start) {
+        cfi     = location.start.cfi;
+        pct     = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
+        chapter = document.getElementById('chapter-label').textContent;
+    }
+
+    if (!cfi) return;
+
     await userLib().doc(bookId).update({
         currentCfi:     cfi,
         percentage:     pct,
@@ -243,6 +255,20 @@ async function saveProgress(location) {
         lastRead:       firebase.firestore.FieldValue.serverTimestamp()
     });
 }
+
+// ── INSTANT SAVE HOOKS ──
+
+function forceSave() {
+    clearTimeout(saveTimer);
+    const loc = rendition?.currentLocation();
+    if (loc) saveProgress(loc);
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        forceSave();
+    }
+});
 
 // ── PROGRESS BAR DRAGGING ──
 const progressTrack = document.getElementById('progress-track');
