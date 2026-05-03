@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Migration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #eaddd7; }
+        .spin { animation: spin 1.5s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+<div id="app" class="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md text-center">
+
+    <!-- AUTH STATE -->
+    <div id="view-auth">
+        <h1 class="text-2xl font-bold mb-2">Journal Migration</h1>
+        <p class="text-sm text-gray-500 mb-6">Sign in to migrate your entries from the shared <code>entries/</code> collection to your personal <code>users/{uid}/entries/</code> subcollection.</p>
+        <input id="email" type="email" placeholder="Email" class="w-full border rounded-xl px-4 py-2.5 mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+        <input id="password" type="password" placeholder="Password" class="w-full border rounded-xl px-4 py-2.5 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            onkeydown="if(event.key==='Enter') signIn()">
+        <p id="auth-error" class="text-xs text-red-500 mb-3 hidden"></p>
+        <button onclick="signIn()" class="w-full bg-gray-900 text-white rounded-xl py-3 font-bold text-sm hover:bg-gray-800 transition">Sign in</button>
+    </div>
+
+    <!-- READY STATE -->
+    <div id="view-ready" class="hidden">
+        <h1 class="text-2xl font-bold mb-2">Ready to migrate</h1>
+        <p class="text-sm text-gray-500 mb-1">Signed in as <strong id="user-email"></strong></p>
+        <p class="text-sm text-gray-500 mb-6">UID: <code id="user-uid" class="text-xs bg-gray-100 px-1 py-0.5 rounded"></code></p>
+        <p class="text-sm text-gray-600 mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
+            This will copy every document from <code>entries/*</code> into <code>users/{uid}/entries/*</code>, then delete the originals.
+            <br><br>
+            Cover images stored in Firebase Storage are <strong>not moved</strong> — their download URLs remain valid indefinitely.
+        </p>
+        <button onclick="startMigration()" class="w-full bg-orange-600 text-white rounded-xl py-3 font-bold text-sm hover:bg-orange-700 transition">Run Migration</button>
+        <a href="index.html" class="block mt-3 text-xs text-gray-400 hover:text-gray-600">Cancel — go back to journal</a>
+    </div>
+
+    <!-- PROGRESS STATE -->
+    <div id="view-progress" class="hidden">
+        <svg class="spin w-10 h-10 text-orange-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <h1 class="text-xl font-bold mb-2">Migrating…</h1>
+        <p id="progress-text" class="text-sm text-gray-500">Starting…</p>
+        <p id="progress-count" class="font-mono text-xs text-gray-400 mt-1"></p>
+    </div>
+
+    <!-- DONE STATE -->
+    <div id="view-done" class="hidden">
+        <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Migration complete</h1>
+        <p id="done-text" class="text-sm text-gray-500 mb-6"></p>
+        <a href="index.html" class="block w-full bg-gray-900 text-white rounded-xl py-3 font-bold text-sm hover:bg-gray-800 transition text-center">Go to journal</a>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="view-error" class="hidden">
+        <h1 class="text-2xl font-bold mb-2 text-red-600">Error</h1>
+        <p id="error-text" class="text-sm text-gray-600 mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-left font-mono text-xs"></p>
+        <button onclick="location.reload()" class="w-full bg-gray-900 text-white rounded-xl py-3 font-bold text-sm hover:bg-gray-800 transition">Retry</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+    authDomain: "personal-web-journal.firebaseapp.com",
+    projectId: "personal-web-journal",
+    storageBucket: "personal-web-journal.firebasestorage.app",
+    messagingSenderId: "980592936593",
+    appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+function show(id) {
+    ['view-auth','view-ready','view-progress','view-done','view-error']
+        .forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+}
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-uid').textContent   = user.uid;
+        show('view-ready');
+    } else {
+        show('view-auth');
+    }
+});
+
+async function signIn() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl    = document.getElementById('auth-error');
+    errEl.classList.add('hidden');
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+    }
+}
+
+async function startMigration() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    show('view-progress');
+    const progressText  = document.getElementById('progress-text');
+    const progressCount = document.getElementById('progress-count');
+
+    try {
+        progressText.textContent = 'Reading existing entries…';
+        const snap = await db.collection('entries').get();
+
+        if (snap.empty) {
+            show('view-done');
+            document.getElementById('done-text').textContent = 'Nothing to migrate — the entries collection was already empty.';
+            return;
+        }
+
+        const total = snap.docs.length;
+        progressText.textContent  = `Migrating ${total} entr${total !== 1 ? 'ies' : 'y'}…`;
+        progressCount.textContent = `0 / ${total}`;
+
+        const dest = db.collection('users').doc(user.uid).collection('entries');
+        let batch = db.batch();
+        let count = 0;
+
+        for (const docSnap of snap.docs) {
+            batch.set(dest.doc(docSnap.id), docSnap.data());
+            count++;
+            progressCount.textContent = `${count} / ${total}`;
+            if (count % 490 === 0) {
+                await batch.commit();
+                batch = db.batch();
+            }
+        }
+        await batch.commit();
+
+        progressText.textContent = 'Removing old documents…';
+        const deleteBatch = db.batch();
+        snap.docs.forEach(d => deleteBatch.delete(d.ref));
+        await deleteBatch.commit();
+
+        show('view-done');
+        document.getElementById('done-text').textContent =
+            `${total} entr${total !== 1 ? 'ies' : 'y'} migrated successfully. Your journal is now under users/${user.uid}/entries/.`;
+
+    } catch (err) {
+        show('view-error');
+        document.getElementById('error-text').textContent = err.message || String(err);
+    }
+}
+</script>
+</body>
+</html>
