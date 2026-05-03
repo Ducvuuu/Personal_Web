@@ -419,15 +419,34 @@ function rsvpSendToEpub(msg) {
 
 function rsvpHighlightInEpub(globalIdx) {
     if (rsvpEpubNavigating) return;
-    // Find the chapter start for globalIdx so li is chapter-local (matches iframe data-li)
-    let chStart = 0;
+
+    // Find the chapter containing globalIdx
+    let chIdx = 0;
     for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
         if (rsvpChapterBoundaries[i].startWordIdx <= globalIdx) {
-            chStart = rsvpChapterBoundaries[i].startWordIdx;
+            chIdx = i;
             break;
         }
     }
-    rsvpSendToEpub({ type: 'rsvp-hl', li: globalIdx - chStart });
+    const chapter = rsvpChapterBoundaries[chIdx];
+
+    // Cross-chapter sync: if playback has entered a new chapter, navigate to it directly
+    // instead of sending li=0 to the old chapter (which would flip backward)
+    const loc = rendition?.currentLocation();
+    if (loc && loc.start && loc.start.href) {
+        const currentHref = loc.start.href.split('#')[0];
+        const targetHref  = (chapter.spineHref || '').split('#')[0];
+        const isSameChapter = currentHref === targetHref ||
+                              currentHref.endsWith(targetHref) ||
+                              targetHref.endsWith(currentHref.split('/').pop());
+        if (!isSameChapter) {
+            rsvpEpubNavigating = true;
+            rendition.display(chapter.spineHref);
+            return; // rsvpOnEpubRelocated will resume highlighting after navigation settles
+        }
+    }
+
+    rsvpSendToEpub({ type: 'rsvp-hl', li: globalIdx - chapter.startWordIdx });
 }
 
 function rsvpJumpToGlobalWord(globalIdx) {

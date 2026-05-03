@@ -490,8 +490,14 @@ function registerThemes() {
             var rect = target.getBoundingClientRect();
             var vH = window.innerHeight || document.documentElement.clientHeight;
             var vW = window.innerWidth  || document.documentElement.clientWidth;
-            if (rect.bottom < 0 || rect.top > vH || rect.right < 0 || rect.left > vW) {
-                window.parent.postMessage({ type: 'rsvp-need-flip', forward: rect.top >= 0 }, '*');
+            // Math.round prevents subpixel drift; >= vW catches exact column boundaries
+            var isOffLeft  = Math.round(rect.right)  <= 0;
+            var isOffRight = Math.round(rect.left)   >= vW;
+            var isOffTop   = Math.round(rect.bottom) <= 0;
+            var isOffBottom = Math.round(rect.top)   >= vH;
+            if (isOffLeft || isOffRight || isOffTop || isOffBottom) {
+                var isForward = isOffRight || isOffBottom;
+                window.parent.postMessage({ type: 'rsvp-need-flip', forward: isForward }, '*');
             }
         } else {
             window.parent.postMessage({ type: 'rsvp-need-flip', forward: true }, '*');
