@@ -346,14 +346,22 @@
         const db   = firebase.firestore();
 
         // ── AUTH STATE ──
+        let currentUid = null;
+
+        function userEntries() {
+            return db.collection('users').doc(currentUid).collection('entries');
+        }
+
         auth.onAuthStateChanged(user => {
             if (user) {
+                currentUid = user.uid;
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('main-journal').classList.remove('hidden');
                 document.getElementById('logout-btn').classList.remove('hidden');
                 document.getElementById('logout-btn').style.display = 'flex';
                 loadEntries();
             } else {
+                currentUid = null;
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('main-journal').classList.add('hidden');
                 document.getElementById('logout-btn').classList.add('hidden');
@@ -664,7 +672,7 @@
         // ── FIRESTORE FETCH ──
         async function loadEntries() {
             try {
-                const snapshot = await db.collection('entries').orderBy('createdAt', 'desc').get();
+                const snapshot = await userEntries().orderBy('createdAt', 'desc').get();
                 const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allDrafts  = all.filter(e => e.status === 'draft');
                 allEntries = all.filter(e => e.status !== 'draft');
@@ -734,7 +742,7 @@
         async function deleteDraft(id) {
             if (!confirm('Delete this draft? This cannot be undone.')) return;
             try {
-                await db.collection('entries').doc(id).delete();
+                await userEntries().doc(id).delete();
                 allDrafts = allDrafts.filter(d => d.id !== id);
                 renderDrafts();
             } catch (err) {
