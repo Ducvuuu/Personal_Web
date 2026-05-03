@@ -225,6 +225,28 @@ function updateProgress(location) {
         href ? href.split('/').pop().replace(/\.(html|xhtml)$/, '').replace(/-/g, ' ').toUpperCase() : '—';
 }
 
+// ── SAVING & UI STATUS ──
+let saveStatusTimer = null;
+
+function showSaveStatus(state) {
+    const el = document.getElementById('save-status');
+    if (!el) return;
+    clearTimeout(saveStatusTimer);
+
+    if (state === 'saving') {
+        el.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving…';
+        el.className = 'opacity-100 transition-opacity duration-300 font-outfit text-[11px] flex items-center justify-center gap-1 mt-0.5 text-warm-500';
+    } else if (state === 'saved') {
+        el.innerHTML = '<i class="fa-solid fa-check"></i> Saved';
+        el.className = 'opacity-100 transition-opacity duration-300 font-outfit text-[11px] flex items-center justify-center gap-1 mt-0.5 text-green-600';
+        saveStatusTimer = setTimeout(() => el.classList.replace('opacity-100', 'opacity-0'), 2000);
+    } else if (state === 'error') {
+        el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Not saved';
+        el.className = 'opacity-100 transition-opacity duration-300 font-outfit text-[11px] flex items-center justify-center gap-1 mt-0.5 text-red-500';
+        saveStatusTimer = setTimeout(() => el.classList.replace('opacity-100', 'opacity-0'), 3000);
+    }
+}
+
 function scheduleSave(location) {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => saveProgress(location), 800);
@@ -247,13 +269,22 @@ async function saveProgress(location) {
 
     if (!cfi) return;
 
-    await userLib().doc(bookId).update({
-        currentCfi:     cfi,
-        percentage:     pct,
-        currentChapter: chapter,
-        status:         pct >= 99 ? 'finished' : 'reading',
-        lastRead:       firebase.firestore.FieldValue.serverTimestamp()
-    });
+    showSaveStatus('saving');
+
+    try {
+        await userLib().doc(bookId).update({
+            currentCfi:     cfi,
+            percentage:     pct,
+            currentChapter: chapter,
+            status:         pct >= 99 ? 'finished' : 'reading',
+            lastRead:       firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showSaveStatus('saved');
+    } catch (err) {
+        console.error('Save failed:', err);
+        showSaveStatus('error');
+    }
 }
 
 // ── INSTANT SAVE HOOKS ──
