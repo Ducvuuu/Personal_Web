@@ -32,32 +32,53 @@ let rsvpPausedCfi         = null;
 let rsvpEpubNavigating    = false;
 let rsvpNavSafetyTimer    = null;   // releases rsvpEpubNavigating if 'relocated' never fires
 
+// ── Page-word anchor state ──
+let rsvpPageStartGlobal   = -1;     // global index of first visible word on current page
+let rsvpPageEndGlobal     = -1;     // global index of last visible word on current page
+let rsvpWaitingForPage    = false;  // loop paused waiting for next page to settle
+
 // ── Listen for messages from epub iframe ──
 window.addEventListener('message', e => {
     if (!e.data?.type) return;
 
-    // Iframe reports highlighted word is off the visible page — flip now
-    if (e.data.type === 'rsvp-need-flip' && rsvpActive && !rsvpEpubNavigating) {
-        rsvpEpubNavigating = true;
-        clearTimeout(rsvpNavSafetyTimer);
-        // Safety: if epub.js never fires 'relocated' (last chapter, error), release the lock
-        rsvpNavSafetyTimer = setTimeout(() => { rsvpEpubNavigating = false; }, 3000);
-        if (e.data.forward) rendition?.next?.();
-        else rendition?.prev?.();
+    // Iframe reports visible word range for the current page
+    if (e.data.type === 'rsvp-page-words' && rsvpActive) {
+        if (e.data.start !== -1 && e.data.end !== -1) {
+            const loc   = rendition?.currentLocation();
+            const href  = (loc?.start?.href || '').split('#')[0];
+            const chIdx = rsvpChapterBoundaries.findIndex(b => {
+                const bHref = (b.spineHref || '').split('#')[0];
+                return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
+            });
+            const chStart = chIdx >= 0 ? rsvpChapterBoundaries[chIdx].startWordIdx : 0;
+            rsvpPageStartGlobal = chStart + e.data.start;
+            rsvpPageEndGlobal   = chStart + e.data.end;
+        } else {
+            // Image-only page — no words. Skip forward if waiting.
+            rsvpPageStartGlobal = -1;
+            rsvpPageEndGlobal   = -1;
+            if (rsvpWaitingForPage && rsvpIsPlaying) {
+                rendition?.next?.();
+                return; // stay waiting; rsvpOnEpubRelocated will re-send rsvp-get-page
+            }
+        }
+        // Resume loop if it was paused waiting for this page
+        if (rsvpWaitingForPage) {
+            rsvpWaitingForPage = false;
+            if (rsvpIsPlaying) rsvpLoop();
+        }
     }
 
     if (e.data.type === 'rsvp-epub-click' && rsvpActive) {
-        const loc  = rendition?.currentLocation();
-        const href = (loc?.start?.href || '').split('#')[0];
+        const loc   = rendition?.currentLocation();
+        const href  = (loc?.start?.href || '').split('#')[0];
         const chIdx = rsvpChapterBoundaries.findIndex(b => {
             const bHref = (b.spineHref || '').split('#')[0];
             return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
         });
         if (chIdx < 0) return;
-
         const parentChapterStart = rsvpChapterBoundaries[chIdx].startWordIdx;
-        const exactGlobalIdx = Math.min(parentChapterStart + e.data.li, rsvpWordsArray.length - 1);
-        rsvpJumpToGlobalWord(exactGlobalIdx);
+        rsvpJumpToGlobalWord(Math.min(parentChapterStart + e.data.li, rsvpWordsArray.length - 1));
     }
 });
 
@@ -373,6 +394,11 @@ function rsvpCurrentChapterTitle() {
 // ── Mode enter / exit ──
 function enterRsvpMode() {
     rsvpActive = true;
+    // Reset page anchors so loop doesn't act on stale state from a previous session
+    rsvpPageStartGlobal = -1;
+    rsvpPageEndGlobal   = -1;
+    rsvpWaitingForPage  = false;
+
     document.body.classList.add('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
     btn.classList.add('rsvp-active');
@@ -385,7 +411,8 @@ function enterRsvpMode() {
             const v = document.getElementById('viewer');
             try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
         }
-        rsvpSendToEpub({ type: 'rsvp-activate' });
+        // rsvp-get-page wraps words AND seeds initial page anchors in one shot
+        rsvpSendToEpub({ type: 'rsvp-get-page' });
     }, 280);
 }
 
@@ -407,10 +434,11 @@ function exitRsvpMode() {
 }
 
 function rsvpOnEpubRelocated() {
-    clearTimeout(rsvpNavSafetyTimer);
+    clearTimeout(rsvpNavSafetyTimer);   // PR #13: prevent stuck rsvpEpubNavigating
     rsvpEpubNavigating = false;
     setTimeout(() => {
-        if (rsvpActive) rsvpSendToEpub({ type: 'rsvp-activate' });
+        // Request visible word range; iframe wraps words then reports back via rsvp-page-words
+        if (rsvpActive) rsvpSendToEpub({ type: 'rsvp-get-page' });
     }, 180);
 }
 
@@ -460,6 +488,11 @@ function rsvpJumpToGlobalWord(globalIdx) {
     rsvpIndex = Math.max(0, Math.min(globalIdx, rsvpWordsArray.length - 1));
     rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
     rsvpUpdateProgress();
+    // Clear stale page anchor — the old page boundary would cause an instant wrong flip.
+    // rsvpOnEpubRelocated (or the next rsvp-get-page) will refresh it after navigation settles.
+    rsvpPageEndGlobal  = -1;
+    rsvpPageStartGlobal = -1;
+    rsvpWaitingForPage  = false;
     rsvpHighlightInEpub(rsvpIndex);
     if (rsvpIsPlaying) {
         clearTimeout(rsvpTimer);
@@ -499,10 +532,14 @@ function rsvpTogglePlay() {
         document.getElementById('rsvp-context').style.opacity = '0';
         // Snap epub back to where we paused before resuming playback
         if (rsvpPausedCfi && rendition) {
-            rendition.display(rsvpPausedCfi).then(() => {
-                rsvpLoop();
-            });
+            // display() triggers rsvpOnEpubRelocated → fresh rsvp-get-page → loop resumes via message
+            rsvpWaitingForPage  = true;
+            rsvpPageEndGlobal   = -1;
+            rendition.display(rsvpPausedCfi);
         } else {
+            // No saved position — clear any stale waiting state before resuming directly
+            rsvpWaitingForPage  = false;
+            rsvpPageEndGlobal   = -1;
             rsvpLoop();
         }
     } else {
@@ -520,6 +557,16 @@ function rsvpLoop() {
         if (rsvpIndex >= rsvpWordsArray.length) rsvpSetWord('Done.');
         return;
     }
+
+    // ── Page-word anchor check ──
+    // If we've played past the last visible word on this page, flip and pause the loop.
+    // Guard rsvpEpubNavigating to avoid double-flip during cross-chapter navigation.
+    if (rsvpPageEndGlobal !== -1 && rsvpIndex > rsvpPageEndGlobal && !rsvpEpubNavigating) {
+        rsvpWaitingForPage = true;
+        rendition?.next?.();
+        return; // rsvp-page-words message will resume the loop once the new page settles
+    }
+
     const wd = rsvpWordsArray[rsvpIndex];
     rsvpSetWord(wd.word);
     rsvpUpdateProgress();

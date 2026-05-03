@@ -494,31 +494,34 @@ function registerThemes() {
         for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
         if (li < 0) return;
         var target = document.querySelector('.rsvp-w[data-li="' + li + '"]');
-        if (target) {
-            var rect = target.getBoundingClientRect();
-            // Guard: 0x0 rect means display:none — flipping won't help, avoid backward-loop
-            if (rect.width === 0 && rect.height === 0) return;
-            target.classList.add('rsvp-current');
-            var vH = window.innerHeight || document.documentElement.clientHeight;
-            var vW = window.innerWidth  || document.documentElement.clientWidth;
-            // Math.round prevents subpixel drift; >= vW catches exact column boundaries
-            var isOffLeft   = Math.round(rect.right)  <= 0;
-            var isOffRight  = Math.round(rect.left)   >= vW;
-            var isOffTop    = Math.round(rect.bottom) <= 0;
-            var isOffBottom = Math.round(rect.top)    >= vH;
-            if (isOffLeft || isOffRight || isOffTop || isOffBottom) {
-                var isForward = isOffRight || isOffBottom;
-                window.parent.postMessage({ type: 'rsvp-need-flip', forward: isForward }, '*');
+        if (target) target.classList.add('rsvp-current');
+        // Page flipping is now handled entirely in rsvp.js via page-word anchors.
+    }
+
+    function reportVisibleWords() {
+        var words = document.querySelectorAll('.rsvp-w');
+        var vW = window.innerWidth || document.documentElement.clientWidth;
+        var start = -1, end = -1;
+        for (var i = 0; i < words.length; i++) {
+            var rect = words[i].getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) continue; // skip display:none
+            var isVisible = (Math.round(rect.right) > 0 && Math.round(rect.left) < vW);
+            if (isVisible) {
+                var li = parseInt(words[i].getAttribute('data-li'));
+                if (start === -1) start = li;
+                end = li;
+            } else if (start !== -1) {
+                break; // exited visible column — stop scanning
             }
         }
-        // No else: if target missing, words aren't wrapped yet (page still loading).
-        // Silently skip — the next rsvp-hl tick will retry once wrapWords() has run.
+        window.parent.postMessage({ type: 'rsvp-page-words', start: start, end: end }, '*');
     }
 
     window.addEventListener('message', function(e) {
         if (!e.data || !e.data.type) return;
-        if (e.data.type === 'rsvp-activate') wrapWords();
-        if (e.data.type === 'rsvp-hl')       { wrapWords(); highlight(e.data.li); }
+        if (e.data.type === 'rsvp-activate')  wrapWords();
+        if (e.data.type === 'rsvp-hl')        { wrapWords(); highlight(e.data.li); }
+        if (e.data.type === 'rsvp-get-page')  { wrapWords(); reportVisibleWords(); }
     });
 
     document.addEventListener('click', function(e) {
