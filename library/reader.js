@@ -258,17 +258,14 @@ async function saveProgress(location) {
     let cfi, pct, chapter;
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
-        const exactFloatPct = rsvpIndex / rsvpWordsArray.length;
+        const rawCfi = rendition?.currentLocation()?.start?.cfi;
 
-        // Use cfiFromPercentage so the saved CFI doesn't reference RSVP <span> tags
-        // that won't exist when the book is reopened without RSVP active.
-        if (epubBook && epubBook.locations && epubBook.locations.length()) {
-            cfi = epubBook.locations.cfiFromPercentage(exactFloatPct);
-        } else {
-            cfi = rendition?.currentLocation()?.start?.cfi;
-        }
+        // RSVP injects <span class="rsvp-w"> nodes, adding one extra CFI path segment.
+        // Strip the span step + text-offset (/N[id]?/N:N) so the saved CFI points to
+        // the clean parent block element (e.g. the paragraph) which exists without RSVP.
+        cfi = rawCfi ? rawCfi.replace(/\/\d+(\[[^\]]*\])?\/\d+:\d+\)$/, ')') : null;
 
-        pct     = Math.round(exactFloatPct * 100);
+        pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
         chapter = document.getElementById('rsvp-chapter-badge').textContent;
     } else if (location?.start) {
         cfi     = location.start.cfi;
