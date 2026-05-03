@@ -233,7 +233,6 @@ async function handleFileUpload(file) {
 
     let title  = file.name.replace(/\.epub$/i, '');
     let author = 'Unknown Author';
-    let coverBlob = null;
 
     const timeout = ms => new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms));
     try {
@@ -242,17 +241,20 @@ async function handleFileUpload(file) {
         const meta = await Promise.race([book.loaded.metadata, timeout(8000)]);
         if (meta.title)   title  = meta.title;
         if (meta.creator) author = meta.creator;
-        try {
-            const blobUrl = await Promise.race([book.coverUrl(), timeout(5000)]);
-            if (blobUrl) {
-                const res = await fetch(blobUrl);
-                coverBlob = await res.blob();
-            }
-        } catch { /* cover extraction timed out — continue without */ }
         book.destroy();
     } catch { /* metadata extraction timed out or failed — continue with filename */ }
 
-    setUploadState('Uploading…', `"${title}"`, 20);
+    // Pause spinner and ask for details BEFORE uploading — lets user cancel with no storage leak
+    modal.classList.add('hidden');
+    const details = await showBookDetailsModal(title, author);
+
+    if (!details) {
+        document.getElementById('file-input').value = '';
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    setUploadState('Uploading…', `"${details.title}"`, 20);
 
     const bookId  = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const epubRef = storage.ref(`library/books/${bookId}.epub`);
@@ -262,8 +264,7 @@ async function handleFileUpload(file) {
         task.on('state_changed',
             snap => {
                 const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 60) + 20;
-                setUploadState('Uploading book…',
-                    `${Math.round(snap.bytesTransferred / 1024)} KB`, pct);
+                setUploadState('Uploading book…', `${Math.round(snap.bytesTransferred / 1024)} KB`, pct);
             },
             reject,
             resolve
@@ -272,26 +273,24 @@ async function handleFileUpload(file) {
 
     const fileUrl = await epubRef.getDownloadURL();
 
-    setUploadState('Uploading cover…', 'Processing cover image', 85);
     let coverUrl = null;
-    if (coverBlob) {
+    if (details.coverFile) {
+        setUploadState('Uploading cover…', 'Saving your custom cover', 85);
         try {
-            const coverRef = storage.ref(`library/covers/${bookId}.jpg`);
-            await coverRef.put(coverBlob, { contentType: coverBlob.type || 'image/jpeg' });
+            const ext      = details.coverFile.name.split('.').pop() || 'jpg';
+            const coverRef = storage.ref(`library/covers/${bookId}.${ext}`);
+            await coverRef.put(details.coverFile, { contentType: details.coverFile.type });
             coverUrl = await coverRef.getDownloadURL();
         } catch { /* cover upload failed — continue without */ }
     }
 
-    modal.classList.add('hidden');
-
-    const category = await showCategoryPicker(title, author);
-
-    modal.classList.remove('hidden');
     setUploadState('Saving to library…', 'Almost there', 95);
 
     try {
         await db.collection('library').doc(bookId).set({
-            title, author, category,
+            title:    details.title,
+            author:   details.author,
+            category: details.category,
             fileUrl, coverUrl,
             status: 'unread',
             percentage: 0,
@@ -316,6 +315,7 @@ async function handleFileUpload(file) {
         modal.classList.add('hidden');
         document.getElementById('upload-icon').className = 'fa-solid fa-circle-notch spin-slow text-warm-400 text-xl';
         setUploadState('Adding to library…', 'Reading book metadata', 5);
+        document.getElementById('file-input').value = '';
     }
 }
 
@@ -372,37 +372,63 @@ function showDeleteConfirm(bookId, bookTitle) {
     });
 }
 
-function showCategoryPicker(title, author) {
+function showBookDetailsModal(defaultTitle, defaultAuthor) {
     return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-label', 'Choose a category');
+        overlay.setAttribute('aria-label', 'Book details');
         overlay.innerHTML = `
-            <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-8 w-full max-w-sm mx-4">
-                <h3 class="font-heavy text-xl text-warm-900 mb-1 leading-tight">${escHtml(title)}</h3>
-                <p class="font-mono text-xs text-warm-400 mb-6">${escHtml(author)}</p>
-                <label for="cat-select" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">Category</label>
-                <select id="cat-select" class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400 mb-6">
+            <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-8 w-full max-w-sm mx-4 max-h-[90vh] overflow-y-auto">
+                <h3 class="font-heavy text-xl text-warm-900 mb-5 leading-tight text-center">Book Details</h3>
+
+                <label for="meta-title" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1">Title</label>
+                <input type="text" id="meta-title" value="${escHtml(defaultTitle)}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400 mb-3">
+
+                <label for="meta-author" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1">Author</label>
+                <input type="text" id="meta-author" value="${escHtml(defaultAuthor)}" class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400 mb-3">
+
+                <label for="meta-cat" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1">Category</label>
+                <select id="meta-cat" class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400 mb-4">
                     <option value="fiction">Fiction</option>
                     <option value="non-fiction">Non-Fiction</option>
                     <option value="essays">Essays</option>
                     <option value="manuscripts">Manuscripts</option>
                 </select>
-                <button id="cat-confirm"
-                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-plus text-xs text-warm-400" aria-hidden="true"></i> Add to Library
-                </button>
+
+                <label for="meta-cover" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1">Cover Image (Optional, max 2MB)</label>
+                <input type="file" id="meta-cover" accept="image/*" class="w-full text-xs text-warm-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-warm-200 file:text-warm-700 hover:file:bg-warm-300 mb-6 cursor-pointer outline-none transition-colors">
+
+                <div class="flex gap-3">
+                    <button id="meta-cancel" class="flex-1 py-3 rounded-xl font-mono text-xs font-bold text-warm-600 bg-warm-200 hover:bg-warm-300 transition-colors">Cancel</button>
+                    <button id="meta-confirm" class="flex-1 bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check text-xs text-warm-400" aria-hidden="true"></i> Save
+                    </button>
+                </div>
             </div>`;
         document.body.appendChild(overlay);
-        overlay.querySelector('#cat-confirm').addEventListener('click', () => {
-            const cat = overlay.querySelector('#cat-select').value;
+
+        overlay.querySelector('#meta-cancel').addEventListener('click', () => {
             document.body.removeChild(overlay);
-            resolve(cat);
+            resolve(null);
         });
-        // Auto-focus the select for keyboard users
-        setTimeout(() => overlay.querySelector('#cat-select')?.focus(), 50);
+
+        overlay.querySelector('#meta-confirm').addEventListener('click', () => {
+            const coverFile = overlay.querySelector('#meta-cover').files[0] || null;
+            if (coverFile && coverFile.size > 2 * 1024 * 1024) {
+                alert('Cover image must be under 2MB.');
+                return;
+            }
+            const title    = overlay.querySelector('#meta-title').value.trim()  || defaultTitle;
+            const author   = overlay.querySelector('#meta-author').value.trim() || defaultAuthor;
+            const category = overlay.querySelector('#meta-cat').value;
+            document.body.removeChild(overlay);
+            resolve({ title, author, category, coverFile });
+        });
+
+        // Auto-focus title so user can correct it immediately
+        setTimeout(() => overlay.querySelector('#meta-title')?.focus(), 50);
     });
 }
 
