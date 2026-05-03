@@ -297,10 +297,15 @@
         const storage = firebase.storage();
 
         // ── STATE ──
+        let currentUid    = null;
         let currentImageValue = '';
         let currentMode = 'simple';
         const editId = new URLSearchParams(window.location.search).get('id');
         let draftId  = new URLSearchParams(window.location.search).get('draft');
+
+        function userEntries() {
+            return db.collection('users').doc(currentUid).collection('entries');
+        }
 
         // Ensure Enter in contenteditable produces <p> not <div>
         try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch(e) {}
@@ -308,6 +313,7 @@
         // ── AUTH STATE ──
         auth.onAuthStateChanged(user => {
             if (user) {
+                currentUid = user.uid;
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('editor-container').classList.remove('hidden');
                 const nav = document.getElementById('editor-nav');
@@ -319,6 +325,7 @@
                 if (editId)       loadEntryForEdit(editId);
                 else if (draftId) loadDraftForEdit(draftId);
             } else {
+                currentUid = null;
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
                 document.getElementById('editor-nav').classList.add('hidden');
@@ -328,7 +335,7 @@
 
         async function loadEntryForEdit(id) {
             try {
-                const doc = await db.collection('entries').doc(id).get();
+                const doc = await userEntries().doc(id).get();
                 if (!doc.exists) return;
                 const e = doc.data();
                 document.getElementById('entry-title').value    = e.title        || '';
@@ -356,7 +363,7 @@
 
         async function loadDraftForEdit(id) {
             try {
-                const doc = await db.collection('entries').doc(id).get();
+                const doc = await userEntries().doc(id).get();
                 if (!doc.exists) return;
                 const e = doc.data();
                 document.getElementById('entry-title').value     = e.title          || '';
@@ -629,10 +636,10 @@
                 };
 
                 if (draftId) {
-                    await db.collection('entries').doc(draftId).update(data);
+                    await userEntries().doc(draftId).update(data);
                 } else {
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    const docRef = await db.collection('entries').add(data);
+                    const docRef = await userEntries().add(data);
                     draftId = docRef.id;
                     history.replaceState(null, '', `?draft=${draftId}`);
                 }
@@ -653,7 +660,7 @@
         async function discardEntry() {
             if (draftId) {
                 if (!confirm('Delete this draft? This cannot be undone.')) return;
-                try { await db.collection('entries').doc(draftId).delete(); } catch (e) {}
+                try { await userEntries().doc(draftId).delete(); } catch (e) {}
             }
             window.location.href = './';
         }
@@ -691,14 +698,14 @@
                     status:         'published'
                 };
                 if (editId) {
-                    await db.collection('entries').doc(editId).update(data);
+                    await userEntries().doc(editId).update(data);
                     window.location.href = `entry.html?id=${editId}`;
                 } else if (draftId) {
-                    await db.collection('entries').doc(draftId).update(data);
+                    await userEntries().doc(draftId).update(data);
                     window.location.href = './';
                 } else {
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await db.collection('entries').add(data);
+                    await userEntries().add(data);
                     window.location.href = './';
                 }
             } catch (err) {

@@ -32,9 +32,9 @@
         <p class="text-sm text-gray-500 mb-1">Signed in as <strong id="user-email"></strong></p>
         <p class="text-sm text-gray-500 mb-6">UID: <code id="user-uid" class="text-xs bg-gray-100 px-1 py-0.5 rounded"></code></p>
         <p class="text-sm text-gray-600 mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-            This will copy every document from <code>library/*</code> into <code>users/{uid}/library/*</code>, then delete the originals.
+            This will copy every document from <code>library/*</code> and <code>entries/*</code> into <code>users/{uid}/library/*</code> and <code>users/{uid}/entries/*</code>, then delete the originals.
             <br><br>
-            Existing Storage files (epub + covers) are <strong>not moved</strong> — their download URLs remain valid indefinitely.
+            Existing Storage files (epub + covers + images) are <strong>not moved</strong> — their download URLs remain valid indefinitely.
         </p>
         <button onclick="startMigration()" id="migrate-btn" class="w-full bg-orange-600 text-white rounded-xl py-3 font-bold text-sm hover:bg-orange-700 transition">Run Migration</button>
         <a href="index.html" class="block mt-3 text-xs text-gray-400 hover:text-gray-600">Cancel — go back to library</a>
@@ -115,6 +115,36 @@ async function signIn() {
     }
 }
 
+async function migrateCollection(srcName, destName, uid, progressText, progressCount) {
+    const snap = await db.collection(srcName).get();
+    if (snap.empty) return 0;
+
+    const total = snap.docs.length;
+    const dest  = db.collection('users').doc(uid).collection(destName);
+    let batch = db.batch();
+    let count = 0;
+
+    progressText.textContent  = `Migrating ${total} ${destName}…`;
+    progressCount.textContent = `0 / ${total}`;
+
+    for (const docSnap of snap.docs) {
+        batch.set(dest.doc(docSnap.id), docSnap.data());
+        count++;
+        progressCount.textContent = `${count} / ${total}`;
+        if (count % 490 === 0) {
+            await batch.commit();
+            batch = db.batch();
+        }
+    }
+    await batch.commit();
+
+    const deleteBatch = db.batch();
+    snap.docs.forEach(d => deleteBatch.delete(d.ref));
+    await deleteBatch.commit();
+
+    return total;
+}
+
 async function startMigration() {
     const user = auth.currentUser;
     if (!user) return;
@@ -124,44 +154,21 @@ async function startMigration() {
     const progressCount = document.getElementById('progress-count');
 
     try {
-        progressText.textContent = 'Reading existing books…';
-        const snap = await db.collection('library').get();
+        const books   = await migrateCollection('library', 'library', user.uid, progressText, progressCount);
+        const entries = await migrateCollection('entries', 'entries', user.uid, progressText, progressCount);
 
-        if (snap.empty) {
+        if (books === 0 && entries === 0) {
             show('view-done');
-            document.getElementById('done-text').textContent = 'Nothing to migrate — the library collection was already empty.';
+            document.getElementById('done-text').textContent = 'Nothing to migrate — both collections were already empty.';
             return;
         }
 
-        const total = snap.docs.length;
-        progressText.textContent  = `Migrating ${total} book${total !== 1 ? 's' : ''}…`;
-        progressCount.textContent = `0 / ${total}`;
-
-        const dest = db.collection('users').doc(user.uid).collection('library');
-        const batch = db.batch();
-        let count = 0;
-
-        for (const docSnap of snap.docs) {
-            batch.set(dest.doc(docSnap.id), docSnap.data());
-            count++;
-            progressCount.textContent = `${count} / ${total}`;
-
-            // Firestore batches are limited to 500 writes; flush and start a new one
-            if (count % 490 === 0) {
-                await batch.commit();
-                batch = db.batch();
-            }
-        }
-        await batch.commit();
-
-        progressText.textContent = 'Removing old documents…';
-        const deleteBatch = db.batch();
-        snap.docs.forEach(d => deleteBatch.delete(d.ref));
-        await deleteBatch.commit();
-
         show('view-done');
+        const parts = [];
+        if (books   > 0) parts.push(`${books} book${books !== 1 ? 's' : ''}`);
+        if (entries > 0) parts.push(`${entries} journal entr${entries !== 1 ? 'ies' : 'y'}`);
         document.getElementById('done-text').textContent =
-            `${total} book${total !== 1 ? 's' : ''} migrated successfully. Your library is now under users/${user.uid}/library/.`;
+            `${parts.join(' and ')} migrated successfully. Data is now under users/${user.uid}/.`;
 
     } catch (err) {
         show('view-error');

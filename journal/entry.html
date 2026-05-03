@@ -313,16 +313,23 @@
         const db   = firebase.firestore();
 
         const entryId = new URLSearchParams(window.location.search).get('id');
+        let currentUid = null;
+
+        function userEntries() {
+            return db.collection('users').doc(currentUid).collection('entries');
+        }
 
         // ── AUTH ──
         auth.onAuthStateChanged(user => {
             if (user) {
+                currentUid = user.uid;
                 document.getElementById('auth-gate').classList.add('hidden');
                 document.getElementById('main-entry').classList.remove('hidden');
                 document.getElementById('chrome-bar').classList.remove('hidden');
                 document.getElementById('chrome-bar').style.display = 'flex';
                 loadEntry();
             } else {
+                currentUid = null;
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('main-entry').classList.add('hidden');
                 document.getElementById('chrome-bar').classList.add('hidden');
@@ -353,7 +360,7 @@
         async function loadEntry() {
             if (!entryId) { showError(); return; }
             try {
-                const doc = await db.collection('entries').doc(entryId).get();
+                const doc = await userEntries().doc(entryId).get();
                 if (!doc.exists) { showError(); return; }
                 renderEntry(doc.data());
             } catch (err) {
@@ -428,7 +435,7 @@
             btn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i>';
             btn.disabled  = true;
             try {
-                await db.collection('entries').doc(entryId).delete();
+                await userEntries().doc(entryId).delete();
                 window.location.href = './';
             } catch (err) {
                 alert('Delete failed: ' + err.message);
