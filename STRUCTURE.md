@@ -45,8 +45,8 @@ auth, its own Firebase project, and does not share styles with `home/` or `about
 | File | Role |
 |---|---|
 | `index.html` | Markup for the library home. Book grid, upload modal, currently-reading hero, auth gate, drag-and-drop overlay. No inline scripts. |
-| `index.js` | All logic for `index.html`. Firebase init + auth, loading and rendering books, filter tabs, epub upload pipeline (metadata extraction, Storage upload, cover upload, Firestore write), category picker modal, `escHtml()` XSS helper. |
-| `reader.html` | Markup for the epub reader. Top nav, TOC panel, settings panel, RSVP player panel, RSVP prep modal, epub viewer area, bottom progress bar. No inline scripts. |
+| `index.js` | All logic for `index.html`. Firebase init + auth, loading and rendering books, filter tabs, epub upload pipeline (metadata extraction, Storage upload, cover upload, Firestore write), book details modal (title, author, category, manual cover upload — shown before any Firebase write to prevent orphaned files), `escHtml()` XSS helper. |
+| `reader.html` | Markup for the epub reader. Top nav, TOC panel, settings panel, RSVP player panel (floating + draggable on desktop, full-width slide-in on mobile), RSVP prep modal, epub viewer area, bottom progress bar. No inline scripts. |
 | `reader.js` | All reader logic. Firebase init + auth, epub.js initialisation, theme/font/font-size settings, page navigation, reading progress tracking + Firestore save, highlights, TOC generation. Exposes globals (`rendition`, `epubBook`, `bookDoc`, `bookId`, `db`) that `rsvp.js` reads. |
 | `rsvp.js` | Self-contained RSVP engine. Depends on `db`, `bookId`, `bookDoc`, `rendition`, `epubBook` from `reader.js`. Handles text extraction, Gemini scoring (`gemini-2.5-flash-lite`), Firestore score cache, flat word-array construction, playback loop, epub iframe sync via `postMessage`. See `RSVP.md` for the full technical reference. |
 | `RSVP.md` | Technical reference: architecture, Gemini prompt format, Firestore cache schema, word-array shape, playback timing, epub postMessage protocol, ORP algorithm, cost model. Update this when changing the RSVP architecture. |
