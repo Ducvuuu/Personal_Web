@@ -34,10 +34,6 @@
     <style>
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: #eaddd7;
-            background-image: linear-gradient(rgba(234,221,215,0.85), rgba(234,221,215,0.85)), url('https://i.imgur.com/87WD9ee.jpeg');
-            background-attachment: fixed;
-            background-size: cover;
         }
         .book-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .book-card:hover { transform: translateY(-5px); }
@@ -133,7 +129,7 @@
 
         <!-- Full Bleed Cover Video -->
         <div class="relative w-full overflow-hidden" style="height: 480px;">
-            <video autoplay loop muted playsinline class="w-full h-full object-cover object-center"
+            <video autoplay loop muted playsinline class="w-full h-full object-cover object-top"
                    onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%)';">
                 <source src="assets/cover.mp4" type="video/mp4">
             </video>
