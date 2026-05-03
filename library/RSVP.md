@@ -1,7 +1,8 @@
 # RSVP Speed-Reading — Technical Reference
 
-> Applies to `library/reader.html`. All RSVP logic lives in the
-> `<!-- ── RSVP INTEGRATION ── -->` `<script>` block near the bottom of that file.
+> RSVP logic lives in `library/rsvp.js`. The injected iframe script lives inside
+> `registerThemes()` in `library/reader.js`. `rsvp.js` depends on globals
+> (`db`, `bookId`, `bookDoc`, `rendition`, `epubBook`) set by `reader.js`.
 
 ---
 
@@ -10,7 +11,7 @@
 1. [What is RSVP?](#1-what-is-rsvp)
 2. [High-Level Architecture](#2-high-level-architecture)
 3. [Session Lifecycle](#3-session-lifecycle)
-4. [Text Extraction & Sentence Splitting](#4-text-extraction--sentence-splitting)
+4. [Text Extraction — Unified DOM Walker](#4-text-extraction--unified-dom-walker)
 5. [Gemini Scoring](#5-gemini-scoring)
 6. [Firestore Cache](#6-firestore-cache)
 7. [The Flat Word Array](#7-the-flat-word-array)
@@ -45,19 +46,21 @@ This implementation adds two enhancements on top of plain word-flashing:
 ┌────────────────────────────────────────────────────────────────────┐
 │  User clicks ⚡ button                                              │
 │                                                                    │
-│  1. rsvpFetchKey()    — load Gemini API key from Firestore         │
-│  2. rsvpExtractAllChapters()  — parse epub spine → sentences       │
+│  1. rsvpFetchKey()            — load Gemini API key from Firestore │
+│  2. rsvpExtractAllChapters()  — DOM-walk epub spine → sentences    │
 │  3. rsvpScoreAllChapters()    — Gemini API (with cache check)      │
 │  4. rsvpBuildFullBook()       — build flat rsvpWordsArray[]        │
-│  5. enterRsvpMode()           — show RSVP player overlay           │
+│  5. enterRsvpMode()           — show RSVP panel, seed page anchors │
 │                                                                    │
 │  Playback: rsvpLoop() ticks every (60000/wpm × complexity) ms      │
-│            each tick calls rsvpHighlightInEpub() via postMessage   │
+│            checks page-word anchor; flips page when index exceeds  │
+│            the last visible word; highlights via postMessage       │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-The epub pane remains visible and **stays in sync** — the word currently being spoken is
-highlighted in the epub iframe in real time, and the epub auto-turns pages as the reader advances.
+The epub pane remains visible and **stays in sync** — the word currently being read is highlighted
+in the epub iframe in real time. Page turns are driven by a memory comparison against
+pre-measured page boundaries, not by DOM polling.
 
 ---
 
@@ -67,14 +70,16 @@ highlighted in the epub iframe in real time, and the epub auto-turns pages as th
 
 ```
 toggleRsvpMode()
-  └─ rsvpFetchKey()           // GET Firestore _config/App.geminiApiKey
-  └─ rsvpShowPrep(…)          // show prep modal with progress bar
+  └─ rsvpFetchKey()              // GET Firestore _config/App.geminiApiKey
+  └─ rsvpShowPrep(…)             // show prep modal with progress bar
   └─ rsvpInitSession()
-       ├─ rsvpExtractAllChapters()   // walk epub spine, extract text
+       ├─ rsvpExtractAllChapters()   // DOM-walk epub spine, extract text
        ├─ rsvpScoreAllChapters()     // Gemini + Firestore cache
        ├─ rsvpBuildFullBook()        // populate rsvpWordsArray
        ├─ rsvpFindGlobalStartWord()  // jump to reader's current page
-       └─ enterRsvpMode()            // show player, activate
+       └─ enterRsvpMode()
+            ├─ resets page-anchor state (rsvpPageEndGlobal = -1, etc.)
+            └─ sends rsvp-get-page  // seeds initial visible-word range
 ```
 
 ### Exit
@@ -83,53 +88,67 @@ toggleRsvpMode()
 exitRsvpMode()
   ├─ rsvpStopPlayer()
   ├─ remove CSS class rsvp-on from <body>
-  └─ postMessage rsvp-hl: -1  // clear epub highlight
+  └─ postMessage rsvp-hl: -1    // clear epub highlight
 ```
 
 ---
 
-## 4. Text Extraction & Sentence Splitting
+## 4. Text Extraction — Unified DOM Walker
+
+### Why a unified walker?
+
+The parent (`rsvp.js`) and the iframe injected script (`reader.js`) must count words
+**identically**. If they diverge, word index 150 in the parent is not the same word as
+`data-li="150"` in the iframe, breaking click-to-jump and highlight sync.
+
+Both use the same recursive DOM-walking algorithm. The parent's version is `rsvpDomExtract(doc)`;
+the iframe's is `processNode(node)`.
 
 ### `rsvpExtractAllChapters()`
 
 Iterates `epubBook.spine.items`. If the epub has a TOC (`nav.toc`), only spine items that
 appear in the TOC are included (front-matter/endnotes are silently skipped). Items with fewer
-than 100 characters of text are also dropped.
+than 20 words are also dropped. Each included item loads the raw XHTML document via
+`section.load()` and passes it to `rsvpDomExtract`.
 
-Each included item produces a **chapter object**:
+### `rsvpDomExtract(doc)` — the unified parser
+
+```
+SKIP = { SCRIPT, STYLE, NAV, ASIDE, FIGURE, FIGCAPTION, HEAD, TITLE, META }
+BLOCK = { P, H1, H2, H3, H4, H5, H6, LI, BLOCKQUOTE }
+
+walk(node):
+  if nodeType === 9 (Document): recurse into childNodes
+  if tagName in SKIP: return
+  if nodeType === 3 (Text): split by /(\s+)/, push non-whitespace tokens to words[]
+  if nodeType === 1 (Element):
+    isBlock = tagName in BLOCK
+    recurse children
+    if isBlock and new words were added: mark last word index in paraEnds
+```
+
+Key robustness details:
+- `tagName` is always `.toUpperCase()` before lookup — EPUB/XHTML returns lowercase tag names.
+- The Document node (nodeType 9) is handled explicitly so no `querySelector('body')` call is
+  needed, avoiding crashes on `XMLDocument` objects from epub.js.
+- All loops use index-based `for`, not spread iterators (`[...node.childNodes]`), which can
+  throw on XML DOMs.
+
+### Output — sentence objects
+
+After collecting the flat `words[]` array, `rsvpDomExtract` groups words into sentence objects
+based on punctuation and block boundaries:
 
 ```js
 {
-  title:     "Chapter 3 — The Storm",   // from TOC, or "Section N"
-  spineHref: "OEBPS/chapter03.xhtml",   // raw epub href
-  sentences: [ /* array of sentence objects, see below */ ]
+  text:  "The ship vanished at dawn.",   // joined word string (for Gemini)
+  words: ["The", "ship", "vanished", "at", "dawn."],  // pre-split tokens
+  pause: 150   // ms of blank-screen pause after last word (400 for block/paragraph end)
 }
 ```
 
-### `rsvpExtractText(doc)`
-
-Strips `<script>`, `<style>`, `<nav>`, `<aside>`, `<figure>`, `<figcaption>` nodes, then
-reads `innerText` / `textContent`. Collapses runs of 3+ newlines to `\n\n` so paragraph
-boundaries are preserved for pause detection.
-
-### `rsvpSplitSentences(text)` → sentence objects
-
-1. Split the chapter text on `\n\n+` → **paragraphs**.
-2. Within each paragraph, split on `[^.!?…]+[.!?…]+["']?\s*` → raw sentence strings.
-3. The **last sentence of every paragraph** gets `pause: 400` (ms); all others get `pause: 150`.
-
-Each sentence object:
-
-```js
-{
-  index: 12,                         // 0-based index within the chapter
-  text:  "The ship vanished at dawn.", // full sentence text
-  pause: 400                          // ms of blank-screen pause after last word
-}
-```
-
-The `pause` value is **structural** — derived from paragraph breaks in the text, not from
-Gemini. This removes an entire output field from the API call, cutting token usage.
+`words` is pre-split so `rsvpBuildFullBook` never re-tokenises — any re-split would risk
+introducing whitespace differences that break parent/iframe index parity.
 
 ---
 
@@ -204,19 +223,12 @@ library/{bookId}/rsvp/scores
 
 ### Cache invalidation
 
-There is no automatic expiry. To force a re-score (e.g. after epub content changes), delete the
-`scores` document in the Firebase console.
+There is no automatic expiry. To force a re-score (e.g. after the epub content changes or
+after a parser update), delete the `scores` document in the Firebase console.
 
-### Reading the cache
-
-```js
-const cacheDoc = await cacheRef.get();
-if (cacheDoc.exists && cacheDoc.data()?.csv) {
-    return cacheDoc.data().csv.split(',').map(Number);
-}
-```
-
-The returned array is the flat list of all scores, indexed by global sentence order.
+> **Note:** Any change to the DOM-walker tokenisation logic (§4) invalidates existing cached
+> scores because the sentence boundaries will shift. Delete all `library/*/rsvp/scores`
+> documents after such a change.
 
 ---
 
@@ -239,8 +251,12 @@ An array where each element represents one word:
 ```
 
 `pause_after_ms` is `0` for every word except the **last word of each sentence**:
-- Last sentence of a paragraph → `400`
-- Any other sentence → `150`
+- Last word of a block/paragraph → `400`
+- Last word of any other sentence → `150`
+
+Words are pushed directly from `sent.words` (the pre-split array from `rsvpDomExtract`).
+Re-splitting `sent.text` is deliberately avoided — it would re-introduce whitespace differences
+and break parent/iframe index parity.
 
 ### `rsvpChapterBoundaries` — chapter index
 
@@ -254,7 +270,8 @@ An array where each element represents one word:
 ```
 
 `startWordIdx` is the index in `rsvpWordsArray` where that chapter's first word lives.
-Used to display the chapter badge and to locate the reader's starting position.
+Used to translate between chapter-local iframe indices (`data-li`) and global word indices,
+to display the chapter badge, and to locate the reader's starting position.
 
 ---
 
@@ -277,59 +294,119 @@ After showing the last word of a sentence, the display blanks for `pause_after_m
 show word → wait delay_ms → blank screen → wait pause_after_ms → advance
 ```
 
-This gives the reader a moment to mentally "reset" between sentences/paragraphs.
-
 ### `rsvpLoop()` — simplified flow
 
 ```
-while playing and words remain:
-    show rsvpWordsArray[rsvpIndex].word
-    update progress bar
-    update status badge (complexity ×)
-    update chapter badge
-    highlight word in epub iframe
-    schedule next tick at delay_ms
-    if last word of sentence:
-        blank screen, wait pause_after_ms
-    rsvpIndex++
+if not playing or past end of book: stop
+
+── PAGE-WORD ANCHOR CHECK ──
+if rsvpPageEndGlobal ≠ -1
+   AND rsvpIndex > rsvpPageEndGlobal
+   AND NOT rsvpEpubNavigating:
+     set rsvpWaitingForPage = true
+     call rendition.next()
+     return   ← loop exits; resumes when rsvp-page-words arrives
+
+show rsvpWordsArray[rsvpIndex].word
+update progress bar, status badge, chapter badge
+highlight word in epub iframe  (rsvpHighlightInEpub)
+schedule next tick at delay_ms
+  if last word of sentence: blank screen, wait pause_after_ms
+  rsvpIndex++
 ```
+
+### Page-word anchor check
+
+The anchor check is the core of the auto-page-turn mechanism (replacing the old reactive
+`rsvp-need-flip` approach):
+
+- `rsvpPageEndGlobal` holds the **global index** of the last visible word on the current epub page.
+- When `rsvpIndex` exceeds it, the loop calls `rendition.next()` and sets `rsvpWaitingForPage = true`.
+- The loop exits. When the new page settles, `rsvpOnEpubRelocated` sends `rsvp-get-page`
+  to the iframe, which responds with `rsvp-page-words`, updating `rsvpPageEndGlobal` and
+  resuming the loop.
+- The `!rsvpEpubNavigating` guard prevents double-flipping during cross-chapter navigation.
+- If `rsvpPageEndGlobal === -1` (anchors not yet known), the check is skipped and the loop plays freely.
 
 ### Jump controls
 
 | Control | Action |
 |---|---|
 | `rsvpJumpSeconds(sec)` | Move ±`sec` seconds worth of words (based on current WPM) |
-| `rsvpJumpToGlobalWord(idx)` | Jump directly to a specific word index (used by epub click) |
+| `rsvpJumpToGlobalWord(idx)` | Jump to a specific global word index; resets page anchors to `-1` so stale boundaries don't trigger an instant wrong flip |
 | `rsvpRestart()` | Reset to word 0, navigate epub to first chapter |
 
 ---
 
 ## 9. Epub Sync (iframe ↔ parent)
 
-The epub content renders in an iframe managed by epub.js. The RSVP overlay and playback engine
-live in the parent window. They communicate via `window.postMessage`.
+The epub content renders in an iframe managed by epub.js. The RSVP engine lives in the parent
+window. They communicate via `window.postMessage`.
 
-### Messages sent by parent → iframe
-
-| `type` | Payload | Purpose |
-|---|---|---|
-| `rsvp-activate` | — | Inject word-highlighting CSS + click listeners into the epub page |
-| `rsvp-hl` | `{ li: number }` | Highlight word at position `li` on the current epub page (`li = -1` clears) |
-
-### Messages sent by iframe → parent
+### Messages: parent → iframe
 
 | `type` | Payload | Purpose |
 |---|---|---|
-| `rsvp-page-words` | `{ words: string[], total: number }` | Sent on epub page load; gives the parent the list of words visible on this page |
-| `rsvp-epub-click` | `{ li: number }` | User clicked word at page-local index `li`; parent converts to global index and jumps |
+| `rsvp-activate` | — | Wrap words in `<span class="rsvp-w" data-li="N">` (idempotent) |
+| `rsvp-hl` | `{ li: number }` | Highlight word at chapter-local index `li` (`li = -1` clears highlight) |
+| `rsvp-get-page` | — | Wrap words (if not already), then report the visible word range via `rsvp-page-words` |
 
-### Page-word anchoring
+### Messages: iframe → parent
 
-When the iframe sends `rsvp-page-words`, the parent scans `rsvpWordsArray` near the current
-`rsvpIndex` to find where the page's first word sits in the global array. This offset
-(`rsvpEpubPageWordStart`) is used to:
-- Convert page-local click indices to global indices.
-- Decide when to call `rendition.next()` / `rendition.prev()` for auto page-turn.
+| `type` | Payload | Purpose |
+|---|---|---|
+| `rsvp-page-words` | `{ start: number, end: number }` | Chapter-local indices of the first and last visible word on the current page. Both are `-1` on an image-only page. |
+| `rsvp-epub-click` | `{ li: number }` | User clicked a word at chapter-local index `li`; parent converts to global and calls `rsvpJumpToGlobalWord` |
+
+### Page-word anchoring flow
+
+```
+enterRsvpMode() / rsvpOnEpubRelocated()
+  └─ sends rsvp-get-page to iframe (after 180ms settle delay)
+
+iframe receives rsvp-get-page:
+  1. wrapWords()              — inject <span data-li="N"> if not done
+  2. reportVisibleWords()     — scan .rsvp-w elements for visible range
+  3. postMessage rsvp-page-words { start, end }  (chapter-local)
+
+parent receives rsvp-page-words:
+  chStart = rsvpChapterBoundaries[chIdx].startWordIdx
+  rsvpPageStartGlobal = chStart + start
+  rsvpPageEndGlobal   = chStart + end
+  if rsvpWaitingForPage: resume rsvpLoop()
+```
+
+### Visibility detection (`reportVisibleWords`)
+
+```js
+for each .rsvp-w span:
+  if rect.width === 0 && rect.height === 0: skip (display:none)
+  isVisible = Math.round(rect.right) > 0 && Math.round(rect.left) < vW
+  if visible: record start (first time) and end (last time)
+  else if already found start: break   // exited visible column
+```
+
+Only horizontal bounds are checked — epub.js uses CSS columns for pagination, so vertical
+overflow does not occur. `Math.round()` prevents subpixel floating-point misses at exact
+column edges.
+
+### Cross-chapter navigation
+
+When `rsvpHighlightInEpub` detects that `rsvpIndex` has entered a new chapter:
+
+1. Sets `rsvpEpubNavigating = true` and starts `rsvpNavSafetyTimer` (3 s watchdog).
+2. Calls `rendition.display(chapter.spineHref)` directly.
+3. On `relocated`, `rsvpOnEpubRelocated` clears the timer, resets `rsvpEpubNavigating`,
+   and sends `rsvp-get-page` for the new chapter's page.
+
+The 3-second watchdog (`rsvpNavSafetyTimer`) ensures `rsvpEpubNavigating` is released
+even if epub.js fails to fire `relocated` (e.g., at the very last chapter).
+
+### Word wrapping in the iframe (`wrapWords` / `processNode`)
+
+The iframe injected script walks `document.body` with the same recursive algorithm as
+`rsvpDomExtract`, assigning each text token a `data-li` index (0-based within the chapter).
+The walk is idempotent — a `wrapped` flag prevents double-wrapping on re-activation.
 
 ---
 
@@ -380,8 +457,23 @@ For the word "vanished" (8 chars): ORP index = `floor(8/2) - 1 = 3`, so pivot = 
 
 ## 12. UI Components
 
+### RSVP panel
+
+The RSVP panel (`#rsvp-panel`) is a **floating, draggable widget on desktop** (≥768 px) and a
+full-width side panel that slides in from the left on mobile.
+
+- On mobile: slides in via `transform: translateX(-100% → 0)`.
+- On desktop: fades in via `opacity: 0 → 1`; `position: fixed` with inline `left`/`top` set by
+  the drag handler. Default position: `top: 6rem, left: 6rem`.
+- The drag handle (`#rsvp-drag-handle`) is visible only on desktop. Dragging disables
+  `pointer-events` on the epub iframe to prevent mouse events being swallowed.
+
+### Element reference
+
 | Element ID | Description |
 |---|---|
+| `rsvp-panel` | The floating RSVP player container |
+| `rsvp-drag-handle` | Pill-shaped drag handle at top of panel (desktop only) |
 | `rsvp-prep-modal` | Full-screen overlay shown during the scoring phase |
 | `rsvp-prep-title` | Primary status text (e.g. "Scoring chapters…") |
 | `rsvp-prep-sub` | Secondary text (e.g. "Chapter 3 of 12") |
@@ -403,21 +495,36 @@ For the word "vanished" (8 chars): ORP index = `floor(8/2) - 1 = 3`, so pivot = 
 
 ## 13. State Variables Reference
 
+### Core playback state
+
 | Variable | Type | Description |
 |---|---|---|
 | `rsvpGeminiKey` | `string\|null` | Gemini API key, loaded from Firestore on first use |
 | `rsvpActive` | `boolean` | Whether RSVP mode is currently on |
 | `rsvpIsPlaying` | `boolean` | Whether the playback timer is running |
 | `rsvpWordsArray` | `object[]` | Flat array of every word in the book (see §7) |
-| `rsvpChapterBoundaries` | `object[]` | Chapter start indices + titles (see §7) |
+| `rsvpChapterBoundaries` | `object[]` | Chapter start indices + titles + hrefs (see §7) |
 | `rsvpIndex` | `number` | Current position in `rsvpWordsArray` |
 | `rsvpMode` | `1–5` | Active speed mode key |
 | `rsvpBaseWpm` | `number` | WPM for current mode |
 | `rsvpTimer` | `TimeoutID` | Handle for the active `setTimeout` |
 | `rsvpCancelled` | `boolean` | Set to `true` when user cancels the prep modal |
-| `rsvpEpubPageWordStart` | `number` | Global index of the first word on the current epub page |
-| `rsvpEpubPageWordCount` | `number` | Total words on the current epub page |
-| `rsvpEpubNavigating` | `boolean` | Prevents double page-turns during navigation |
+| `rsvpPausedCfi` | `string\|null` | CFI of the epub location saved on pause; used to snap back to the right page on resume |
+
+### Epub navigation state
+
+| Variable | Type | Description |
+|---|---|---|
+| `rsvpEpubNavigating` | `boolean` | `true` while epub.js is processing a `rendition.display()` or `rendition.next()` call; prevents double-navigation |
+| `rsvpNavSafetyTimer` | `TimeoutID\|null` | 3-second watchdog that releases `rsvpEpubNavigating` if the epub `relocated` event never fires |
+
+### Page-word anchor state
+
+| Variable | Type | Description |
+|---|---|---|
+| `rsvpPageStartGlobal` | `number` | Global index of the first visible word on the current epub page (`-1` = unknown) |
+| `rsvpPageEndGlobal` | `number` | Global index of the last visible word on the current epub page (`-1` = unknown; loop anchor check is skipped) |
+| `rsvpWaitingForPage` | `boolean` | `true` when the loop has triggered a page flip and is suspended waiting for `rsvp-page-words` to confirm the new page |
 
 ---
 
