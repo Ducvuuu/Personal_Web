@@ -30,6 +30,7 @@ let rsvpPausedCfi         = null;
 
 // ── Epub iframe sync state ──
 let rsvpEpubNavigating    = false;
+let rsvpNavSafetyTimer    = null;   // releases rsvpEpubNavigating if 'relocated' never fires
 
 // ── Listen for messages from epub iframe ──
 window.addEventListener('message', e => {
@@ -38,6 +39,9 @@ window.addEventListener('message', e => {
     // Iframe reports highlighted word is off the visible page — flip now
     if (e.data.type === 'rsvp-need-flip' && rsvpActive && !rsvpEpubNavigating) {
         rsvpEpubNavigating = true;
+        clearTimeout(rsvpNavSafetyTimer);
+        // Safety: if epub.js never fires 'relocated' (last chapter, error), release the lock
+        rsvpNavSafetyTimer = setTimeout(() => { rsvpEpubNavigating = false; }, 3000);
         if (e.data.forward) rendition?.next?.();
         else rendition?.prev?.();
     }
@@ -403,6 +407,7 @@ function exitRsvpMode() {
 }
 
 function rsvpOnEpubRelocated() {
+    clearTimeout(rsvpNavSafetyTimer);
     rsvpEpubNavigating = false;
     setTimeout(() => {
         if (rsvpActive) rsvpSendToEpub({ type: 'rsvp-activate' });
@@ -441,6 +446,8 @@ function rsvpHighlightInEpub(globalIdx) {
                               targetHref.endsWith(currentHref.split('/').pop());
         if (!isSameChapter) {
             rsvpEpubNavigating = true;
+            clearTimeout(rsvpNavSafetyTimer);
+            rsvpNavSafetyTimer = setTimeout(() => { rsvpEpubNavigating = false; }, 3000);
             rendition.display(chapter.spineHref);
             return; // rsvpOnEpubRelocated will resume highlighting after navigation settles
         }

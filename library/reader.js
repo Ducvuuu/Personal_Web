@@ -495,22 +495,24 @@ function registerThemes() {
         if (li < 0) return;
         var target = document.querySelector('.rsvp-w[data-li="' + li + '"]');
         if (target) {
-            target.classList.add('rsvp-current');
             var rect = target.getBoundingClientRect();
+            // Guard: 0x0 rect means display:none — flipping won't help, avoid backward-loop
+            if (rect.width === 0 && rect.height === 0) return;
+            target.classList.add('rsvp-current');
             var vH = window.innerHeight || document.documentElement.clientHeight;
             var vW = window.innerWidth  || document.documentElement.clientWidth;
             // Math.round prevents subpixel drift; >= vW catches exact column boundaries
-            var isOffLeft  = Math.round(rect.right)  <= 0;
-            var isOffRight = Math.round(rect.left)   >= vW;
-            var isOffTop   = Math.round(rect.bottom) <= 0;
-            var isOffBottom = Math.round(rect.top)   >= vH;
+            var isOffLeft   = Math.round(rect.right)  <= 0;
+            var isOffRight  = Math.round(rect.left)   >= vW;
+            var isOffTop    = Math.round(rect.bottom) <= 0;
+            var isOffBottom = Math.round(rect.top)    >= vH;
             if (isOffLeft || isOffRight || isOffTop || isOffBottom) {
                 var isForward = isOffRight || isOffBottom;
                 window.parent.postMessage({ type: 'rsvp-need-flip', forward: isForward }, '*');
             }
-        } else {
-            window.parent.postMessage({ type: 'rsvp-need-flip', forward: true }, '*');
         }
+        // No else: if target missing, words aren't wrapped yet (page still loading).
+        // Silently skip — the next rsvp-hl tick will retry once wrapWords() has run.
     }
 
     window.addEventListener('message', function(e) {
