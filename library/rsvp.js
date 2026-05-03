@@ -626,3 +626,73 @@ function rsvpShowPrep(title, sub, done, total) {
 }
 
 function rsvpSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Draggable RSVP Panel (Desktop only) ──
+(function () {
+    const panel      = document.getElementById('rsvp-panel');
+    const handle     = document.getElementById('rsvp-drag-handle');
+    const viewerArea = document.getElementById('viewer');
+    if (!handle || !panel) return;
+
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        if (viewerArea) viewerArea.style.pointerEvents = ''; // Restore epub interaction
+    }
+
+    handle.addEventListener('mousedown', e => {
+        if (window.innerWidth < 768) return;
+        isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+
+        // Pin left/top and clear right/bottom so inline positioning takes full control
+        panel.style.left   = `${rect.left}px`;
+        panel.style.top    = `${rect.top}px`;
+        panel.style.right  = 'auto';
+        panel.style.bottom = 'auto';
+
+        document.body.style.userSelect = 'none';
+        if (viewerArea) viewerArea.style.pointerEvents = 'none'; // Prevent iframe swallowing mouse moves
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        e.preventDefault();
+
+        let newX = e.clientX - dragOffsetX;
+        let newY = e.clientY - dragOffsetY;
+
+        // Clamp within viewport
+        const maxX = window.innerWidth  - panel.offsetWidth;
+        const maxY = window.innerHeight - panel.offsetHeight;
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+
+        panel.style.left = `${newX}px`;
+        panel.style.top  = `${newY}px`;
+    });
+
+    window.addEventListener('mouseup', endDrag);
+    // Safety: if mouse is released outside the browser window, clean up on re-entry
+    document.addEventListener('mouseleave', endDrag);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth < 768) {
+            // Return to mobile layout — clear all inline positioning
+            panel.style.left = panel.style.top = panel.style.right = panel.style.bottom = '';
+        } else if (panel.style.left) {
+            // Clamp back into bounds if desktop window shrinks
+            const maxX = window.innerWidth  - panel.offsetWidth;
+            const maxY = window.innerHeight - panel.offsetHeight;
+            panel.style.left = `${Math.max(0, Math.min(parseInt(panel.style.left) || 0, maxX))}px`;
+            panel.style.top  = `${Math.max(0, Math.min(parseInt(panel.style.top)  || 0, maxY))}px`;
+        }
+    });
+}());

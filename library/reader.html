@@ -90,15 +90,16 @@
         @keyframes rsvp-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
         .rsvp-bar-pulse { animation: rsvp-pulse 1.4s ease-in-out infinite; }
 
-        /* ── RSVP PANEL LAYOUT — shift epub right when panel is open ── */
+        /* ── RSVP PANEL LAYOUT — Floating on Desktop ── */
         #rsvp-panel {
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
             transform: translateX(-100%);
         }
         body.rsvp-on #rsvp-panel { transform: translateX(0); }
         @media (min-width: 768px) {
-            body.rsvp-on #reader-area { padding-left: 300px; }
-            body.rsvp-on .nav-arrow.left { left: 316px; }
+            /* Panel floats freely — no epub shift, opacity-only animation */
+            #rsvp-panel { transform: none !important; opacity: 0; pointer-events: none; }
+            body.rsvp-on #rsvp-panel { opacity: 1; pointer-events: auto; }
         }
         body.theme-dark #rsvp-panel { background: #1e1a16 !important; border-color: rgba(74,37,23,0.5) !important; }
         body.theme-dark #rsvp-panel .bg-white { background: #1a1612 !important; }
@@ -266,8 +267,13 @@
         </div>
     </div>
 
-    <!-- ── RSVP PLAYER PANEL (fixed left, alongside epub) ── -->
-    <div id="rsvp-panel" class="fixed top-[52px] bottom-[56px] left-0 z-30 w-full md:w-[300px] flex flex-col border-r border-warm-200 bg-[#fdfaf6] shadow-[2px_0_24px_rgba(74,37,23,0.1)]">
+    <!-- ── RSVP PLAYER PANEL (floating on desktop, full-screen on mobile) ── -->
+    <div id="rsvp-panel" class="fixed top-[52px] bottom-[56px] left-0 z-30 w-full md:w-[320px] md:h-auto md:max-h-[85vh] md:top-24 md:left-24 md:bottom-auto md:rounded-2xl flex flex-col border border-transparent md:border-warm-200 border-r-warm-200 bg-[#fdfaf6] shadow-[2px_0_24px_rgba(74,37,23,0.1)] md:shadow-2xl">
+
+        <!-- Drag Handle (Desktop only) -->
+        <div id="rsvp-drag-handle" class="hidden md:flex items-center justify-center py-3 cursor-grab active:cursor-grabbing border-b border-warm-100 hover:bg-warm-50 transition-colors shrink-0" aria-hidden="true">
+            <div class="w-12 h-1.5 bg-warm-200 rounded-full"></div>
+        </div>
 
         <!-- Word display — click to play/pause -->
         <div id="rsvp-display-area"
