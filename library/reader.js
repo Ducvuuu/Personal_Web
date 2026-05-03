@@ -166,11 +166,20 @@ async function initReader(url) {
         if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevPage(); }
     });
 
+    // ── SWIPE TO TURN PAGES ──
+    // Must use rendition.on() — touch events fire inside the epub iframe and
+    // don't bubble up to the parent window, so viewerEl listeners never trigger.
     let touchStartX = 0;
-    const viewerEl = document.getElementById('viewer');
-    viewerEl.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-    viewerEl.addEventListener('touchend',   e => {
-        const dx = e.changedTouches[0].clientX - touchStartX;
+
+    rendition.on('touchstart', e => {
+        const touch = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
+        if (touch) touchStartX = touch.screenX;
+    });
+
+    rendition.on('touchend', e => {
+        const touch = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
+        if (!touch) return;
+        const dx = touch.screenX - touchStartX;
         if (Math.abs(dx) > 50) dx < 0 ? nextPage() : prevPage();
     });
 }
