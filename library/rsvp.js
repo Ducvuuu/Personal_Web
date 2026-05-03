@@ -451,6 +451,29 @@ function rsvpOnEpubRelocated() {
 // ── Epub iframe communication ──
 function rsvpSendToEpub(msg) {
     try {
+        if (msg.type === 'rsvp-get-page') {
+            const container = document.querySelector('.epub-container');
+            const view = document.querySelector('.epub-view');
+            
+            let sX = container ? container.scrollLeft : 0;
+            let sY = container ? container.scrollTop : 0;
+            
+            // epub.js often uses CSS transforms on .epub-view to turn pages
+            if (view) {
+                const style = window.getComputedStyle(view);
+                if (style.transform && style.transform !== 'none') {
+                    const matrix = new DOMMatrix(style.transform);
+                    sX += Math.abs(matrix.m41); // Horizontal translation
+                    sY += Math.abs(matrix.m42); // Vertical translation
+                }
+            }
+            
+            msg.sX = sX;
+            msg.sY = sY;
+            msg.vW = container ? container.clientWidth : 0;
+            msg.vH = container ? container.clientHeight : 0;
+        }
+
         const contents = rendition?.getContents?.();
         if (contents && contents[0]) contents[0].window.postMessage(msg, '*');
     } catch {}
@@ -553,29 +576,25 @@ function rsvpLoop() {
         return;
     }
 
-    // ── Missing anchor fetch ──
-    // If enterRsvpMode's rsvp-get-page hasn't responded yet, pause and re-request.
+    // ── Missing anchor fetch & Heartbeat ──
     if (rsvpPageEndGlobal === -1 && !rsvpEpubNavigating) {
         rsvpWaitingForPage = true;
         rsvpSendToEpub({ type: 'rsvp-get-page' });
+        
+        // Heartbeat: If iframe drops the message, ask again gently.
+        clearTimeout(rsvpNavSafetyTimer);
+        rsvpNavSafetyTimer = setTimeout(() => {
+            if (rsvpWaitingForPage && rsvpIsPlaying) rsvpLoop();
+        }, 300);
         return;
     }
 
     // ── Page-word anchor check ──
-    // If we've played past the last visible word on this page, flip and pause the loop.
-    // Guard rsvpEpubNavigating to avoid double-flip during cross-chapter navigation.
     if (rsvpIndex > rsvpPageEndGlobal && !rsvpEpubNavigating) {
         rsvpWaitingForPage = true;
         if (rendition && typeof rendition.next === 'function') rendition.next();
-        // Safety: if epub.js fails to fire 'relocated', unblock the loop after 1.5s
-        clearTimeout(rsvpNavSafetyTimer);
-        rsvpNavSafetyTimer = setTimeout(() => {
-            if (rsvpWaitingForPage) {
-                rsvpWaitingForPage = false;
-                rsvpPageEndGlobal = rsvpIndex + 50;
-                if (rsvpIsPlaying) rsvpLoop();
-            }
-        }, 1500);
+        // The loop exits here. We wait for `rsvpOnEpubRelocated` to trigger `rsvp-get-page`
+        // and for the iframe to reply with `rsvp-page-words` to resume the loop.
         return;
     }
 

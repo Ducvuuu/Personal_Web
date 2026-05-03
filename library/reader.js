@@ -498,23 +498,31 @@ function registerThemes() {
         // Page flipping is now handled entirely in rsvp.js via page-word anchors.
     }
 
-    function reportVisibleWords() {
+    function reportVisibleWords(msg) {
         var words = document.querySelectorAll('.rsvp-w');
-        var vW = window.innerWidth  || document.documentElement.clientWidth;
-        var vH = window.innerHeight || document.documentElement.clientHeight;
         var start = -1, end = -1;
+        
+        // Use parent window coordinates, fallback to local if missing
+        var vpW = msg.vW || window.innerWidth;
+        var vpH = msg.vH || window.innerHeight;
+        var sX  = msg.sX || 0;
+        var sY  = msg.sY || 0;
+
         for (var i = 0; i < words.length; i++) {
             var rect = words[i].getBoundingClientRect();
-            if (rect.width === 0 && rect.height === 0) continue; // skip display:none
-            // Check both axes — some epub stylesheets scroll vertically instead of paginating
-            var isVisible = (Math.round(rect.right) > 0 && Math.round(rect.left) < vW) &&
-                            (Math.round(rect.bottom) > 0 && Math.round(rect.top) < vH);
+            if (rect.width === 0 && rect.height === 0) continue; 
+            
+            // Check if the word falls inside the parent's sliding visibility window
+            var isVisible = (Math.round(rect.right) > sX && Math.round(rect.left) < sX + vpW) &&
+                            (Math.round(rect.bottom) > sY && Math.round(rect.top) < sY + vpH);
+                            
             if (isVisible) {
                 var li = parseInt(words[i].getAttribute('data-li'));
                 if (start === -1) start = li;
                 end = li;
             } else if (start !== -1) {
-                break; // exited visible region — stop scanning
+                // Only break if we've actually moved PAST the visible window
+                if (rect.left >= sX + vpW || rect.top >= sY + vpH) break;
             }
         }
         window.parent.postMessage({ type: 'rsvp-page-words', start: start, end: end }, '*');
@@ -524,7 +532,8 @@ function registerThemes() {
         if (!e.data || !e.data.type) return;
         if (e.data.type === 'rsvp-activate')  wrapWords();
         if (e.data.type === 'rsvp-hl')        { wrapWords(); highlight(e.data.li); }
-        if (e.data.type === 'rsvp-get-page')  { wrapWords(); reportVisibleWords(); }
+        // Note: passing e.data into reportVisibleWords so it gets sX/sY/vW/vH
+        if (e.data.type === 'rsvp-get-page')  { wrapWords(); reportVisibleWords(e.data); }
     });
 
     document.addEventListener('click', function(e) {
