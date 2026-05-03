@@ -500,18 +500,21 @@ function registerThemes() {
 
     function reportVisibleWords() {
         var words = document.querySelectorAll('.rsvp-w');
-        var vW = window.innerWidth || document.documentElement.clientWidth;
+        var vW = window.innerWidth  || document.documentElement.clientWidth;
+        var vH = window.innerHeight || document.documentElement.clientHeight;
         var start = -1, end = -1;
         for (var i = 0; i < words.length; i++) {
             var rect = words[i].getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0) continue; // skip display:none
-            var isVisible = (Math.round(rect.right) > 0 && Math.round(rect.left) < vW);
+            // Check both axes — some epub stylesheets scroll vertically instead of paginating
+            var isVisible = (Math.round(rect.right) > 0 && Math.round(rect.left) < vW) &&
+                            (Math.round(rect.bottom) > 0 && Math.round(rect.top) < vH);
             if (isVisible) {
                 var li = parseInt(words[i].getAttribute('data-li'));
                 if (start === -1) start = li;
                 end = li;
             } else if (start !== -1) {
-                break; // exited visible column — stop scanning
+                break; // exited visible region — stop scanning
             }
         }
         window.parent.postMessage({ type: 'rsvp-page-words', start: start, end: end }, '*');
