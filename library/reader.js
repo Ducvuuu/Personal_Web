@@ -14,6 +14,7 @@ const storage = firebase.storage();
 
 // ── STATE ──
 const bookId      = new URLSearchParams(window.location.search).get('id');
+let currentUid    = null;
 let rendition     = null;
 let bookDoc       = null;
 let epubBook      = null;
@@ -26,13 +27,19 @@ let currentFont   = localStorage.getItem('lib_font')   || 'serif';
 // ── AUTH ──
 auth.onAuthStateChanged(user => {
     if (user) {
+        currentUid = user.uid;
         document.getElementById('auth-gate').classList.add('hidden');
         if (!bookId) { window.location.href = 'index.html'; return; }
         initBook();
     } else {
+        currentUid = null;
         document.getElementById('auth-gate').classList.remove('hidden');
     }
 });
+
+function userLib() {
+    return db.collection('users').doc(currentUid).collection('library');
+}
 
 async function login() {
     const email    = document.getElementById('login-email').value.trim();
@@ -58,7 +65,7 @@ async function login() {
 async function initBook() {
     showLoading('Opening book…');
     try {
-        const snap = await db.collection('library').doc(bookId).get();
+        const snap = await userLib().doc(bookId).get();
         if (!snap.exists) { window.location.href = 'index.html'; return; }
         bookDoc = { id: snap.id, ...snap.data() };
 
@@ -228,7 +235,7 @@ async function saveProgress(location) {
     const cfi = location.start.cfi;
     const pct = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
     const chapter = document.getElementById('chapter-label').textContent;
-    await db.collection('library').doc(bookId).update({
+    await userLib().doc(bookId).update({
         currentCfi:     cfi,
         percentage:     pct,
         currentChapter: chapter,
@@ -310,7 +317,7 @@ async function addHighlight(cfi) {
     paintHighlight(cfi);
     const highlights = [...(bookDoc.highlights || []), { cfi, createdAt: new Date().toISOString() }];
     bookDoc.highlights = highlights;
-    await db.collection('library').doc(bookId).update({ highlights });
+    await userLib().doc(bookId).update({ highlights });
 }
 
 // ── TOC ──

@@ -15,10 +15,12 @@ const storage = firebase.storage();
 // ── STATE ──
 let allBooks     = [];
 let activeFilter = 'all';
+let currentUid   = null;
 
 // ── AUTH ──
 auth.onAuthStateChanged(user => {
     if (user) {
+        currentUid = user.uid;
         document.getElementById('auth-gate').classList.add('hidden');
         document.getElementById('main-library').classList.remove('hidden');
         const lb = document.getElementById('logout-btn');
@@ -26,11 +28,16 @@ auth.onAuthStateChanged(user => {
         lb.style.display = 'flex';
         loadBooks();
     } else {
+        currentUid = null;
         document.getElementById('auth-gate').classList.remove('hidden');
         document.getElementById('main-library').classList.add('hidden');
         document.getElementById('logout-btn').classList.add('hidden');
     }
 });
+
+function userLib() {
+    return db.collection('users').doc(currentUid).collection('library');
+}
 
 async function login() {
     const email    = document.getElementById('login-email').value.trim();
@@ -56,7 +63,7 @@ function logout() { auth.signOut(); }
 
 // ── LOAD BOOKS ──
 async function loadBooks() {
-    const snap = await db.collection('library').orderBy('uploadedAt', 'desc').get();
+    const snap = await userLib().orderBy('uploadedAt', 'desc').get();
     allBooks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderCurrentlyReading();
     renderBookshelf();
@@ -257,7 +264,7 @@ async function handleFileUpload(file) {
     setUploadState('Uploading…', `"${details.title}"`, 20);
 
     const bookId  = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const epubRef = storage.ref(`library/books/${bookId}.epub`);
+    const epubRef = storage.ref(`library/${currentUid}/books/${bookId}.epub`);
     const task    = epubRef.put(file);
 
     await new Promise((resolve, reject) => {
@@ -278,7 +285,7 @@ async function handleFileUpload(file) {
         setUploadState('Uploading cover…', 'Saving your custom cover', 85);
         try {
             const ext      = details.coverFile.name.split('.').pop() || 'jpg';
-            const coverRef = storage.ref(`library/covers/${bookId}.${ext}`);
+            const coverRef = storage.ref(`library/${currentUid}/covers/${bookId}.${ext}`);
             await coverRef.put(details.coverFile, { contentType: details.coverFile.type });
             coverUrl = await coverRef.getDownloadURL();
         } catch { /* cover upload failed — continue without */ }
@@ -287,7 +294,7 @@ async function handleFileUpload(file) {
     setUploadState('Saving to library…', 'Almost there', 95);
 
     try {
-        await db.collection('library').doc(bookId).set({
+        await userLib().doc(bookId).set({
             title:    details.title,
             author:   details.author,
             category: details.category,
@@ -355,10 +362,10 @@ function showDeleteConfirm(bookId, bookTitle) {
         btn.disabled = true;
 
         try {
-            try { await storage.ref(`library/books/${bookId}.epub`).delete(); } catch(e) {}
-            try { await storage.ref(`library/covers/${bookId}.jpg`).delete(); } catch(e) {}
+            try { await storage.ref(`library/${currentUid}/books/${bookId}.epub`).delete(); } catch(e) {}
+            try { await storage.ref(`library/${currentUid}/covers/${bookId}.jpg`).delete(); } catch(e) {}
 
-            await db.collection('library').doc(bookId).delete();
+            await userLib().doc(bookId).delete();
 
             allBooks = allBooks.filter(b => b.id !== bookId);
             renderBookshelf();
