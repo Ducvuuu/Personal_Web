@@ -54,9 +54,16 @@ window.addEventListener('message', e => {
             const chStart = chIdx >= 0 ? rsvpChapterBoundaries[chIdx].startWordIdx : 0;
             rsvpPageStartGlobal = chStart + e.data.start;
             rsvpPageEndGlobal   = chStart + e.data.end;
-            // Auto-sync: if user manually navigated while paused, align index to visible page
-            if (rsvpIsPlaying && (rsvpIndex < rsvpPageStartGlobal || rsvpIndex > rsvpPageEndGlobal)) {
+            // Auto-sync: always align to the visible page, even when paused
+            if (rsvpIndex < rsvpPageStartGlobal || rsvpIndex > rsvpPageEndGlobal) {
                 rsvpIndex = rsvpPageStartGlobal;
+
+                // Update UI immediately when paused so display doesn't lag behind
+                if (!rsvpIsPlaying && rsvpActive) {
+                    rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
+                    rsvpUpdateProgress();
+                    rsvpShowContext();
+                }
             }
         } else {
             // Image-only page — no words. Skip forward if waiting.
@@ -380,11 +387,9 @@ function rsvpFindGlobalStartWord(loc) {
         return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
     });
     if (chIdx < 0) return 0;
-    const chStart = rsvpChapterBoundaries[chIdx].startWordIdx;
-    const chEnd   = chIdx + 1 < rsvpChapterBoundaries.length
-        ? rsvpChapterBoundaries[chIdx + 1].startWordIdx
-        : rsvpWordsArray.length;
-    return chStart + Math.floor((loc.start.percentage || 0) * (chEnd - chStart));
+    // loc.start.percentage is a global book percentage (0-1), so map it
+    // directly against the global word array — not against the chapter slice.
+    return Math.floor((loc.start.percentage || 0) * rsvpWordsArray.length);
 }
 
 // ── Return the chapter title for the current rsvpIndex ──
