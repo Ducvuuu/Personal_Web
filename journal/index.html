@@ -525,6 +525,14 @@
                             <p class="font-bold text-warm-900"><i class="fa-solid fa-location-dot text-orange-500 mr-1.5 w-3"></i> ${displayLoc}</p>
                             <p class="text-warm-600"><i class="fa-regular fa-clock text-warm-400 mr-1.5 w-3"></i> ${displayDate}</p>
                             ${weather ? `<p class="text-warm-600"><i class="fa-solid fa-cloud text-warm-400 mr-1.5 w-3"></i> ${weather}</p>` : ''}
+                            ${entry.isPublic ? `
+                            <p class="text-orange-500 mt-1.5 flex items-center gap-1.5">
+                                <i class="fa-solid fa-globe mr-1 w-3" aria-hidden="true"></i>
+                                <span class="font-bold">Public</span>
+                                <button class="copy-share-btn font-mono text-[9px] normal-case text-warm-400 hover:text-orange-600 border border-warm-200 hover:border-orange-300 bg-white hover:bg-orange-50 px-2 py-0.5 rounded-lg ml-1 transition-colors" data-entry-id="${entry.id}" onclick="event.stopPropagation(); copyShareLink('${entry.id}')" aria-label="Copy shareable link">
+                                    <i class="fa-solid fa-link mr-1" aria-hidden="true"></i>Copy link
+                                </button>
+                            </p>` : ''}
                         </div>
 
                         ${entry.title ? `<h3 class="font-heavy text-lg text-warm-900 mb-3 leading-tight">${entry.title}</h3>` : ''}
@@ -747,6 +755,23 @@
                 renderDrafts();
             } catch (err) {
                 console.error('Failed to delete draft:', err);
+            }
+        }
+
+        // ── SHARE LINK ──
+        async function copyShareLink(entryId) {
+            const base = location.href.replace(/[^/]*$/, '');
+            const url  = `${base}entry.html?uid=${currentUid}&id=${entryId}`;
+            const btn  = document.querySelector(`.copy-share-btn[data-entry-id="${entryId}"]`);
+            try {
+                await navigator.clipboard.writeText(url);
+                if (btn) {
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-check mr-1" aria-hidden="true"></i>Copied!';
+                    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+                }
+            } catch {
+                prompt('Copy this link:', url);
             }
         }
 

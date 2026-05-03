@@ -257,9 +257,20 @@
 
     <!-- Action Bar — fixed bottom -->
     <div class="fixed bottom-0 left-0 right-0 z-40 bg-warm-100/80 backdrop-blur-md px-8 py-5 border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4 hidden" id="editor-actions">
-        <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Ready to seal.
-        </p>
+        <div class="flex flex-col gap-2">
+            <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Ready to seal.
+            </p>
+            <label for="public-toggle" class="flex items-center gap-2 cursor-pointer select-none w-fit">
+                <div class="relative">
+                    <input type="checkbox" id="public-toggle" class="sr-only" onchange="updatePublicLabel()">
+                    <div id="public-track" class="w-9 h-5 bg-warm-300 rounded-full transition-colors duration-200"></div>
+                    <div id="public-thumb" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"></div>
+                </div>
+                <i id="public-icon" class="fa-solid fa-lock text-warm-400 text-xs" aria-hidden="true"></i>
+                <span id="public-label" class="font-mono text-xs text-warm-500">Private</span>
+            </label>
+        </div>
         <div class="flex gap-3 w-full sm:w-auto">
             <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
                 Discard
@@ -300,6 +311,16 @@
         let currentUid    = null;
         let currentImageValue = '';
         let currentMode = 'simple';
+
+        function updatePublicLabel() {
+            const checked = document.getElementById('public-toggle').checked;
+            document.getElementById('public-track').className =
+                `w-9 h-5 ${checked ? 'bg-orange-500' : 'bg-warm-300'} rounded-full transition-colors duration-200`;
+            document.getElementById('public-thumb').style.transform = checked ? 'translateX(1rem)' : '';
+            document.getElementById('public-label').textContent = checked ? 'Public' : 'Private';
+            document.getElementById('public-icon').className =
+                `fa-solid ${checked ? 'fa-globe text-orange-500' : 'fa-lock text-warm-400'} text-xs`;
+        }
         const editId = new URLSearchParams(window.location.search).get('id');
         let draftId  = new URLSearchParams(window.location.search).get('draft');
 
@@ -351,6 +372,8 @@
                     showImagePreview(e.image);
                     setUploadStatus('done', '✓ Existing image');
                 }
+                document.getElementById('public-toggle').checked = !!e.isPublic;
+                updatePublicLabel();
                 // Update UI labels for edit mode
                 document.querySelector('h1.font-heavy') && (document.querySelector('h1.font-heavy').textContent = 'Edit Entry');
                 const saveBtn = document.getElementById('save-btn');
@@ -379,6 +402,8 @@
                     showImagePreview(e.image);
                     setUploadStatus('done', '✓ Existing image');
                 }
+                document.getElementById('public-toggle').checked = !!e.isPublic;
+                updatePublicLabel();
                 toggleEditor('code'); // drafts are stored as HTML, open in Code mode
                 document.getElementById('save-status').innerHTML =
                     '<i class="fa-regular fa-floppy-disk text-warm-400"></i> Draft loaded — keep writing.';
@@ -632,7 +657,8 @@
                     image:          currentImageValue,
                     title:          title,
                     content:        content,
-                    status:         'draft'
+                    status:         'draft',
+                    isPublic:       document.getElementById('public-toggle').checked
                 };
 
                 if (draftId) {
@@ -695,7 +721,8 @@
                     image:          imageFilename,
                     title:          title,
                     content:        content,
-                    status:         'published'
+                    status:         'published',
+                    isPublic:       document.getElementById('public-toggle').checked
                 };
                 if (editId) {
                     await userEntries().doc(editId).update(data);
