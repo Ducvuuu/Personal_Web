@@ -260,7 +260,7 @@
                         <div class="flex-1">
                             <h1 id="entry-title" class="font-heavy text-4xl md:text-5xl lg:text-6xl text-white tracking-tight leading-tight" style="text-shadow: 0 2px 16px rgba(74,37,23,0.5);"></h1>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl shrink-0 w-full md:w-auto relative shadow-lg">
+                        <div id="receipt-card" class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl shrink-0 w-full md:w-auto relative shadow-lg">
                             <div class="absolute -left-1.5 -top-1.5 w-3 h-3 bg-orange-400 rounded-full border-2 border-white shadow-sm"></div>
                             <div id="entry-receipt" class="font-mono text-[11px] text-white uppercase leading-relaxed whitespace-nowrap"></div>
                         </div>
@@ -312,29 +312,68 @@
         const auth = firebase.auth();
         const db   = firebase.firestore();
 
-        const entryId = new URLSearchParams(window.location.search).get('id');
-        let currentUid = null;
+        const params  = new URLSearchParams(window.location.search);
+        const urlUid  = params.get('uid');
+        const entryId = params.get('id');
+        let currentUid    = null;
+        let entryRendered = false;
 
         function userEntries() {
             return db.collection('users').doc(currentUid).collection('entries');
         }
 
+        function showAuthGate() {
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('main-entry').classList.add('hidden');
+            document.getElementById('chrome-bar').classList.add('hidden');
+        }
+
+        function showChromeBar() {
+            const bar = document.getElementById('chrome-bar');
+            bar.classList.remove('hidden');
+            bar.style.display = 'flex';
+        }
+
         // ── AUTH ──
+        // Fires with user=null first if no cached session, then again with user if logged in.
+        // entryRendered guards against double-renders when public load beats auth resolution.
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUid = user.uid;
-                document.getElementById('auth-gate').classList.add('hidden');
-                document.getElementById('main-entry').classList.remove('hidden');
-                document.getElementById('chrome-bar').classList.remove('hidden');
-                document.getElementById('chrome-bar').style.display = 'flex';
-                loadEntry();
+                if (!entryRendered) {
+                    document.getElementById('auth-gate').classList.add('hidden');
+                    document.getElementById('main-entry').classList.remove('hidden');
+                    loadEntry();
+                } else if (currentUid === urlUid) {
+                    showChromeBar();
+                }
             } else {
                 currentUid = null;
-                document.getElementById('auth-gate').classList.remove('hidden');
-                document.getElementById('main-entry').classList.add('hidden');
-                document.getElementById('chrome-bar').classList.add('hidden');
+                if (!entryRendered) {
+                    if (urlUid && entryId) {
+                        tryPublicLoad();
+                    } else {
+                        showAuthGate();
+                    }
+                }
             }
         });
+
+        async function tryPublicLoad() {
+            try {
+                const doc = await db.collection('users').doc(urlUid).collection('entries').doc(entryId).get();
+                if (doc.exists && doc.data().isPublic) {
+                    entryRendered = true;
+                    document.getElementById('auth-gate').classList.add('hidden');
+                    document.getElementById('main-entry').classList.remove('hidden');
+                    renderEntry(doc.data(), true);
+                } else {
+                    showAuthGate();
+                }
+            } catch (err) {
+                showAuthGate();
+            }
+        }
 
         async function login() {
             const email    = document.getElementById('login-email').value.trim();
@@ -358,23 +397,24 @@
 
         // ── LOAD ENTRY ──
         async function loadEntry() {
-            if (!entryId) { showError(); return; }
+            const uid = urlUid || currentUid;
+            if (!entryId || !uid) { showError(); return; }
             try {
-                const doc = await userEntries().doc(entryId).get();
+                const doc = await db.collection('users').doc(uid).collection('entries').doc(entryId).get();
                 if (!doc.exists) { showError(); return; }
-                renderEntry(doc.data());
+                entryRendered = true;
+                renderEntry(doc.data(), false);
+                showChromeBar();
             } catch (err) {
                 showError();
             }
         }
 
-        function renderEntry(e) {
+        function renderEntry(e, isPublicView) {
             if (e.title) document.title = `${e.title} — Field Notes`;
 
-            // Chrome bar title
             document.getElementById('chrome-title').textContent = e.title || '';
 
-            // Cover image — hero is always shown; just reveal the <img> when there's a photo
             const imageSrc = e.image
                 ? (e.image.startsWith('http') ? e.image : `assets/${e.image}`)
                 : null;
@@ -384,22 +424,24 @@
                 img.classList.remove('hidden');
             }
 
-            // Title
             document.getElementById('entry-title').textContent = e.title || '(Untitled)';
 
-            // Receipt
-            const displayLoc  = e.locationDetail || e.location || '—';
-            const displayDate = formatDate(e.date);
-            const weather     = formatWeather(e.weather);
-            document.getElementById('entry-receipt').innerHTML = `
-                <p class="font-bold text-white mb-1.5"><i class="fa-solid fa-location-dot text-orange-300 mr-2 w-3"></i> ${displayLoc.toUpperCase()}</p>
-                <p class="text-white/80 mb-1"><i class="fa-regular fa-clock text-white/50 mr-2 w-3"></i> ${displayDate}</p>
-                ${weather ? `<p class="text-white/80"><i class="fa-solid fa-cloud text-white/50 mr-2 w-3"></i> ${weather}</p>` : ''}
-            `;
+            if (isPublicView) {
+                document.getElementById('receipt-card').classList.add('hidden');
+            } else {
+                const displayLoc  = e.locationDetail || e.location || '—';
+                const displayDate = formatDate(e.date);
+                const weather     = formatWeather(e.weather);
+                document.getElementById('entry-receipt').innerHTML = `
+                    <p class="font-bold text-white mb-1.5"><i class="fa-solid fa-location-dot text-orange-300 mr-2 w-3"></i> ${displayLoc.toUpperCase()}</p>
+                    <p class="text-white/80 mb-1"><i class="fa-regular fa-clock text-white/50 mr-2 w-3"></i> ${displayDate}</p>
+                    ${weather ? `<p class="text-white/80"><i class="fa-solid fa-cloud text-white/50 mr-2 w-3"></i> ${weather}</p>` : ''}
+                `;
+                document.getElementById('edit-btn').onclick   = () => goToEdit();
+                document.getElementById('delete-btn').onclick = () => deleteEntry();
+            }
 
-            // Body — set innerHTML then re-execute any <script> tags, since browsers
-            // block scripts injected via innerHTML. Also patch DOMContentLoaded so
-            // scripts that wrap init in that listener still run correctly.
+            // Body — re-execute any <script> tags since browsers block scripts injected via innerHTML.
             const bodyEl = document.getElementById('entry-body');
             bodyEl.innerHTML = e.content || '';
 
@@ -415,10 +457,6 @@
                 old.parentNode.replaceChild(s, old);
             });
             document.addEventListener = origAddEventListener;
-
-            // Wire chrome bar buttons
-            document.getElementById('edit-btn').onclick   = () => goToEdit();
-            document.getElementById('delete-btn').onclick = () => deleteEntry();
 
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('entry-content').classList.remove('hidden');
