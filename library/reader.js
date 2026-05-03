@@ -571,6 +571,11 @@ function changeFontSize(delta) {
     localStorage.setItem('lib_fontSize', fontSize);
     document.getElementById('font-size-display').textContent = `${fontSize}px`;
     rendition.themes.fontSize(`${fontSize}px`);
+    // Layout changed — invalidate anchor so RSVP recalculates the visible word range
+    if (typeof rsvpActive !== 'undefined' && rsvpActive) {
+        rsvpPageEndGlobal = -1;
+        setTimeout(() => rsvpSendToEpub({ type: 'rsvp-get-page' }), 300);
+    }
 }
 
 function setFont(font) {
@@ -581,6 +586,11 @@ function setFont(font) {
         : "'Outfit', system-ui, sans-serif";
     rendition.themes.override('font-family', family);
     updateFontButtons();
+    // Layout changed — invalidate anchor so RSVP recalculates the visible word range
+    if (typeof rsvpActive !== 'undefined' && rsvpActive) {
+        rsvpPageEndGlobal = -1;
+        setTimeout(() => rsvpSendToEpub({ type: 'rsvp-get-page' }), 300);
+    }
 }
 
 function updateFontButtons() {

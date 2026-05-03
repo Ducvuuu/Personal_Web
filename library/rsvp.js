@@ -488,17 +488,14 @@ function rsvpJumpToGlobalWord(globalIdx) {
     rsvpIndex = Math.max(0, Math.min(globalIdx, rsvpWordsArray.length - 1));
     rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
     rsvpUpdateProgress();
-    // Clear stale page anchor — the old page boundary would cause an instant wrong flip.
-    // rsvpOnEpubRelocated (or the next rsvp-get-page) will refresh it after navigation settles.
-    rsvpPageEndGlobal  = -1;
-    rsvpPageStartGlobal = -1;
+    // The clicked word is on the current visible page, so the anchor is still valid — don't clear it.
     rsvpWaitingForPage  = false;
     rsvpHighlightInEpub(rsvpIndex);
     if (rsvpIsPlaying) {
         clearTimeout(rsvpTimer);
         rsvpLoop();
     } else {
-        // Update anchor so snap-back targets the clicked location, not the old pause point
+        // Update snap-back target to the clicked location, not the old pause point
         rsvpPausedCfi = rendition?.currentLocation()?.start?.cfi || null;
         rsvpShowContext();
     }
@@ -530,16 +527,22 @@ function rsvpTogglePlay() {
 
     if (rsvpIsPlaying) {
         document.getElementById('rsvp-context').style.opacity = '0';
-        // Snap epub back to where we paused before resuming playback
+
         if (rsvpPausedCfi && rendition) {
-            // display() triggers rsvpOnEpubRelocated → fresh rsvp-get-page → loop resumes via message
-            rsvpWaitingForPage  = true;
-            rsvpPageEndGlobal   = -1;
-            rendition.display(rsvpPausedCfi);
+            // Only snap back if the user actually navigated away while paused
+            const currentCfi = rendition.currentLocation()?.start?.cfi;
+            if (currentCfi !== rsvpPausedCfi) {
+                rsvpWaitingForPage  = true;
+                rsvpPageEndGlobal   = -1;
+                rendition.display(rsvpPausedCfi);
+            } else {
+                // Already at the right place — anchor is still valid, just resume
+                rsvpWaitingForPage  = false;
+                rsvpLoop();
+            }
         } else {
-            // No saved position — clear any stale waiting state before resuming directly
+            // First play or resuming without a saved position — retain anchor set by enterRsvpMode()
             rsvpWaitingForPage  = false;
-            rsvpPageEndGlobal   = -1;
             rsvpLoop();
         }
     } else {
