@@ -44,6 +44,7 @@ window.addEventListener('message', e => {
     // Iframe reports visible word range for the current page
     if (e.data.type === 'rsvp-page-words' && rsvpActive) {
         if (e.data.start !== -1 && e.data.end !== -1) {
+            // Translate local iframe indices to global word-array positions
             const loc   = rendition?.currentLocation();
             const href  = (loc?.start?.href || '').split('#')[0];
             const chIdx = rsvpChapterBoundaries.findIndex(b => {
@@ -53,6 +54,10 @@ window.addEventListener('message', e => {
             const chStart = chIdx >= 0 ? rsvpChapterBoundaries[chIdx].startWordIdx : 0;
             rsvpPageStartGlobal = chStart + e.data.start;
             rsvpPageEndGlobal   = chStart + e.data.end;
+            // Auto-sync: if user manually navigated while paused, align index to visible page
+            if (rsvpIsPlaying && (rsvpIndex < rsvpPageStartGlobal || rsvpIndex > rsvpPageEndGlobal)) {
+                rsvpIndex = rsvpPageStartGlobal;
+            }
         } else {
             // Image-only page — no words. Skip forward if waiting.
             rsvpPageStartGlobal = -1;
@@ -528,27 +533,13 @@ function rsvpTogglePlay() {
 
     if (rsvpIsPlaying) {
         document.getElementById('rsvp-context').style.opacity = '0';
-
-        if (rsvpPausedCfi && rendition) {
-            // Only snap back if the user actually navigated away while paused
-            const currentCfi = rendition.currentLocation()?.start?.cfi;
-            if (currentCfi !== rsvpPausedCfi) {
-                rsvpWaitingForPage  = true;
-                rsvpPageEndGlobal   = -1;
-                rendition.display(rsvpPausedCfi);
-            } else {
-                // Already at the right place — anchor is still valid, just resume
-                rsvpWaitingForPage  = false;
-                rsvpLoop();
-            }
-        } else {
-            // First play or resuming without a saved position — retain anchor set by enterRsvpMode()
-            rsvpWaitingForPage  = false;
-            rsvpLoop();
-        }
+        // Always trust what the iframe is currently showing. The message listener
+        // auto-syncs rsvpIndex if the user navigated away while paused.
+        rsvpWaitingForPage = true;
+        rsvpPageEndGlobal  = -1;
+        rsvpSendToEpub({ type: 'rsvp-get-page' });
+        // rsvpLoop() is called by the rsvp-page-words message handler, not here.
     } else {
-        // Save exact page position so snap-back knows where to return
-        rsvpPausedCfi = rendition?.currentLocation()?.start?.cfi || null;
         clearTimeout(rsvpTimer);
         rsvpShowContext();
     }
