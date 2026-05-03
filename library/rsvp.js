@@ -423,9 +423,11 @@ function enterRsvpMode() {
 }
 
 function exitRsvpMode() {
-    rsvpActive = false;
     rsvpStopPlayer();
+    // forceSave MUST run before rsvpActive = false so saveProgress enters
+    // the RSVP branch and applies the regex CFI fix, not the clean-DOM path.
     if (typeof forceSave === 'function') forceSave();
+    rsvpActive = false;
     document.body.classList.remove('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
     btn.classList.remove('rsvp-active');
