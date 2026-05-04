@@ -127,10 +127,12 @@
 
         <div id="site-nav"></div>
 
-        <!-- Full Bleed Cover Image -->
-        <div class="relative w-full overflow-hidden" style="height: 560px;">
-            <img src="assets/cover.webp" alt="" class="w-full h-full object-cover object-center"
-                 onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%)';">
+        <!-- Full Bleed Cover Video -->
+        <div class="relative w-full overflow-hidden">
+            <video autoplay loop muted playsinline class="w-full h-auto block"
+                   onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%)';">
+                <source src="assets/cover.mp4" type="video/mp4">
+            </video>
             <div class="absolute inset-x-0 bottom-0 h-40" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
         </div>
 
