@@ -36,6 +36,7 @@ let rsvpNavSafetyTimer    = null;   // releases rsvpEpubNavigating if 'relocated
 let rsvpPageStartGlobal   = -1;     // global index of first visible word on current page
 let rsvpPageEndGlobal     = -1;     // global index of last visible word on current page
 let rsvpWaitingForPage    = false;  // loop paused waiting for next page to settle
+let rsvpManualJump        = false;  // true when user clicked a jump button, not a manual epub scroll
 
 // ── Listen for messages from epub iframe ──
 window.addEventListener('message', e => {
@@ -56,14 +57,29 @@ window.addEventListener('message', e => {
             rsvpPageEndGlobal   = chStart + e.data.end;
             // Auto-sync: always align to the visible page, even when paused
             if (rsvpIndex < rsvpPageStartGlobal || rsvpIndex > rsvpPageEndGlobal) {
-                rsvpIndex = rsvpPageStartGlobal;
+                if (rsvpManualJump) {
+                    // User clicked a jump button — don't snap back. Instead flip the EPUB
+                    // toward rsvpIndex one page at a time until the page catches up.
+                    rsvpWaitingForPage = true;
+                    if (rendition) {
+                        if (rsvpIndex > rsvpPageEndGlobal) rendition.next();
+                        else rendition.prev();
+                    }
+                    return; // wait for rsvpOnEpubRelocated → rsvp-get-page → rsvp-page-words
+                } else {
+                    // User scrolled the EPUB manually — snap the RSVP index to match.
+                    rsvpIndex = rsvpPageStartGlobal;
 
-                // Update UI immediately when paused so display doesn't lag behind
-                if (!rsvpIsPlaying && rsvpActive) {
-                    rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
-                    rsvpUpdateProgress();
-                    rsvpShowContext();
+                    // Update UI immediately when paused so display doesn't lag behind
+                    if (!rsvpIsPlaying && rsvpActive) {
+                        rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
+                        rsvpUpdateProgress();
+                        rsvpShowContext();
+                    }
                 }
+            } else {
+                // Correct page reached — clear the jump flag.
+                rsvpManualJump = false;
             }
         } else {
             // Image-only page — no words. Skip forward if waiting.
@@ -409,6 +425,7 @@ function enterRsvpMode() {
     rsvpPageStartGlobal = -1;
     rsvpPageEndGlobal   = -1;
     rsvpWaitingForPage  = false;
+    rsvpManualJump      = false;
 
     document.body.classList.add('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
@@ -647,6 +664,7 @@ function rsvpRestart() {
 function rsvpJumpSeconds(sec) {
     const wps  = rsvpBaseWpm / 60;
     rsvpIndex  = Math.max(0, Math.min(rsvpIndex + Math.round(wps * sec), rsvpWordsArray.length - 1));
+    rsvpManualJump = true; // tell auto-sync to flip EPUB pages toward us, not snap us back
     if (!rsvpIsPlaying) {
         rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || '');
         rsvpHighlightInEpub(rsvpIndex);
