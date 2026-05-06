@@ -258,15 +258,13 @@ async function saveProgress(location) {
     let cfi, pct, chapter;
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
-        const rawCfi = rendition?.currentLocation()?.start?.cfi;
-
-        // RSVP injects <span class="rsvp-w"> nodes, adding one extra CFI path segment.
-        // Strip the span step + text-offset (/N[id]?/N:N) so the saved CFI points to
-        // the clean parent block element (e.g. the paragraph) which exists without RSVP.
-        cfi = rawCfi ? rawCfi.replace(/\/\d+(\[[^\]]*\])?\/\d+:\d+\)$/, ')') : null;
-
-        pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
-        chapter = document.getElementById('rsvp-chapter-badge').textContent;
+        if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
+            cfi     = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
+            pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
+            chapter = document.getElementById('rsvp-chapter-badge').textContent;
+        } else {
+            return; // locations not yet generated — skip save, wait for next trigger
+        }
     } else if (location?.start) {
         cfi     = location.start.cfi;
         pct     = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
@@ -488,14 +486,14 @@ function registerThemes() {
         const rsvpStyle = doc.createElement('style');
         rsvpStyle.textContent = `
             .rsvp-w {
-                cursor: pointer;
                 border-radius: 2px;
                 padding: 0 1px;
                 transition: background 0.08s;
                 display: inline;
             }
-            .rsvp-w:hover { background: rgba(251,176,64,0.28); }
-            .rsvp-current {
+            body.rsvp-is-active .rsvp-w { cursor: pointer; }
+            body.rsvp-is-active .rsvp-w:hover { background: rgba(251,176,64,0.28); }
+            body.rsvp-is-active .rsvp-current {
                 background: #fef08a !important;
                 color: #8f4228 !important;
                 font-weight: 700 !important;
@@ -559,6 +557,22 @@ function registerThemes() {
         if (document.body) processNode(document.body);
     }
 
+    function unwrapWords() {
+        if (!wrapped) return;
+        var spans = document.querySelectorAll('.rsvp-w');
+        for (var i = 0; i < spans.length; i++) {
+            var span = spans[i];
+            var parent = span.parentNode;
+            if (!parent) continue;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+        }
+        if (document.body) document.body.normalize();
+        wrapped = false;
+    }
+
     function highlight(li) {
         var els = document.querySelectorAll('.rsvp-current');
         for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
@@ -600,13 +614,21 @@ function registerThemes() {
 
     window.addEventListener('message', function(e) {
         if (!e.data || !e.data.type) return;
-        if (e.data.type === 'rsvp-activate')  wrapWords();
+        if (e.data.type === 'rsvp-activate')  { wrapWords(); document.body.classList.add('rsvp-is-active'); }
         if (e.data.type === 'rsvp-hl')        { wrapWords(); highlight(e.data.li); }
-        // Note: passing e.data into reportVisibleWords so it gets sX/sY/vW/vH
-        if (e.data.type === 'rsvp-get-page')  { wrapWords(); reportVisibleWords(e.data); }
+        if (e.data.type === 'rsvp-get-page')  { wrapWords(); document.body.classList.add('rsvp-is-active'); reportVisibleWords(e.data); }
+        if (e.data.type === 'rsvp-state') {
+            if (e.data.active) {
+                document.body.classList.add('rsvp-is-active');
+            } else {
+                document.body.classList.remove('rsvp-is-active');
+                unwrapWords();
+            }
+        }
     });
 
     document.addEventListener('click', function(e) {
+        if (!document.body.classList.contains('rsvp-is-active')) return;
         var el = e.target;
         while (el && el !== document.body) {
             if (el.classList && el.classList.contains('rsvp-w')) {

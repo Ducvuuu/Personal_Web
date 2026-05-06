@@ -441,13 +441,14 @@ function enterRsvpMode() {
         }
         // rsvp-get-page wraps words AND seeds initial page anchors in one shot
         rsvpSendToEpub({ type: 'rsvp-get-page' });
+        rsvpSendToEpub({ type: 'rsvp-state', active: true });
     }, 280);
 }
 
 function exitRsvpMode() {
     rsvpStopPlayer();
     // forceSave MUST run before rsvpActive = false so saveProgress enters
-    // the RSVP branch and applies the regex CFI fix, not the clean-DOM path.
+    // the RSVP branch and uses cfiFromPercentage for a span-independent CFI.
     if (typeof forceSave === 'function') forceSave();
     rsvpActive = false;
     document.body.classList.remove('rsvp-on');
@@ -456,6 +457,7 @@ function exitRsvpMode() {
     btn.title = 'RSVP speed reading';
     btn.setAttribute('aria-pressed', 'false');
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
+    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active class + unwraps spans
     setTimeout(() => {
         if (rendition) {
             const v = document.getElementById('viewer');
