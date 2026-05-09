@@ -270,6 +270,15 @@
                 <i id="public-icon" class="fa-solid fa-lock text-warm-400 text-xs" aria-hidden="true"></i>
                 <span id="public-label" class="font-mono text-xs text-warm-500">Private</span>
             </label>
+            <label for="featured-toggle" class="flex items-center gap-2 cursor-pointer select-none w-fit">
+                <div class="relative">
+                    <input type="checkbox" id="featured-toggle" class="sr-only" onchange="updateFeaturedLabel()">
+                    <div id="featured-track" class="w-9 h-5 bg-warm-300 rounded-full transition-colors duration-200"></div>
+                    <div id="featured-thumb" class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"></div>
+                </div>
+                <i id="featured-icon" class="fa-solid fa-eye-slash text-warm-400 text-xs" aria-hidden="true"></i>
+                <span id="featured-label" class="font-mono text-xs text-warm-500">Not on writing page</span>
+            </label>
         </div>
         <div class="flex gap-3 w-full sm:w-auto">
             <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
@@ -317,9 +326,29 @@
             document.getElementById('public-track').className =
                 `w-9 h-5 ${checked ? 'bg-orange-500' : 'bg-warm-300'} rounded-full transition-colors duration-200`;
             document.getElementById('public-thumb').style.transform = checked ? 'translateX(1rem)' : '';
-            document.getElementById('public-label').textContent = checked ? 'Public' : 'Private';
+            document.getElementById('public-label').textContent = checked ? 'Shareable' : 'Private';
             document.getElementById('public-icon').className =
-                `fa-solid ${checked ? 'fa-globe text-orange-500' : 'fa-lock text-warm-400'} text-xs`;
+                `fa-solid ${checked ? 'fa-link text-orange-500' : 'fa-lock text-warm-400'} text-xs`;
+            // If shareable is turned off, featured-on-site must also turn off
+            if (!checked) {
+                document.getElementById('featured-toggle').checked = false;
+                updateFeaturedLabel(false);
+            }
+        }
+
+        function updateFeaturedLabel(skipPublicSync) {
+            const checked = document.getElementById('featured-toggle').checked;
+            document.getElementById('featured-track').className =
+                `w-9 h-5 ${checked ? 'bg-teal-500' : 'bg-warm-300'} rounded-full transition-colors duration-200`;
+            document.getElementById('featured-thumb').style.transform = checked ? 'translateX(1rem)' : '';
+            document.getElementById('featured-label').textContent = checked ? 'On writing page' : 'Not on writing page';
+            document.getElementById('featured-icon').className =
+                `fa-solid ${checked ? 'fa-eye text-teal-500' : 'fa-eye-slash text-warm-400'} text-xs`;
+            // Featured entries must also be shareable so the "Read note" link works
+            if (checked && !skipPublicSync) {
+                document.getElementById('public-toggle').checked = true;
+                updatePublicLabel();
+            }
         }
         const editId = new URLSearchParams(window.location.search).get('id');
         let draftId  = new URLSearchParams(window.location.search).get('draft');
@@ -374,6 +403,8 @@
                 }
                 document.getElementById('public-toggle').checked = !!e.isPublic;
                 updatePublicLabel();
+                document.getElementById('featured-toggle').checked = !!e.featuredOnSite;
+                updateFeaturedLabel(true);
                 // Update UI labels for edit mode
                 document.querySelector('h1.font-heavy') && (document.querySelector('h1.font-heavy').textContent = 'Edit Entry');
                 const saveBtn = document.getElementById('save-btn');
@@ -404,6 +435,8 @@
                 }
                 document.getElementById('public-toggle').checked = !!e.isPublic;
                 updatePublicLabel();
+                document.getElementById('featured-toggle').checked = !!e.featuredOnSite;
+                updateFeaturedLabel(true);
                 toggleEditor('code'); // drafts are stored as HTML, open in Code mode
                 document.getElementById('save-status').innerHTML =
                     '<i class="fa-regular fa-floppy-disk text-warm-400"></i> Draft loaded — keep writing.';
@@ -658,7 +691,8 @@
                     title:          title,
                     content:        content,
                     status:         'draft',
-                    isPublic:       document.getElementById('public-toggle').checked
+                    isPublic:       document.getElementById('public-toggle').checked,
+                    featuredOnSite: document.getElementById('featured-toggle').checked
                 };
 
                 if (draftId) {
@@ -722,7 +756,8 @@
                     title:          title,
                     content:        content,
                     status:         'published',
-                    isPublic:       document.getElementById('public-toggle').checked
+                    isPublic:       document.getElementById('public-toggle').checked,
+                    featuredOnSite: document.getElementById('featured-toggle').checked
                 };
                 if (editId) {
                     await userEntries().doc(editId).update(data);
