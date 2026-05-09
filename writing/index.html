@@ -253,23 +253,32 @@
         async function loadDrawerEntries() {
             const grid = document.getElementById('drawer-grid');
             try {
+                // Query on isPublic — the field existing Firestore rules already permit reading.
+                // Filter featuredOnSite and status in JS so we never need a new rule or composite index.
                 const snapshot = await db
                     .collection('users').doc(OWNER_UID).collection('entries')
-                    .where('featuredOnSite', '==', true)
+                    .where('isPublic', '==', true)
                     .get();
 
-                const entries = snapshot.docs.filter(doc => doc.data().status === 'published');
+                const entries = snapshot.docs.filter(doc => {
+                    const d = doc.data();
+                    return d.featuredOnSite === true && d.status === 'published';
+                });
 
-                // Sort most recent first by date field (ISO string, sorts lexicographically correctly)
+                // Sort most recent first
                 entries.sort((a, b) => {
                     const da = new Date(a.data().date || 0);
                     const db2 = new Date(b.data().date || 0);
                     return db2 - da;
                 });
 
+                if (entries.length === 0) {
+                    console.info('Drawer: no featured entries yet. Mark entries as "Feature on writing page" in write.html.');
+                }
+
                 grid.innerHTML = entries.map(doc => buildDrawerCard(doc)).join('') + MORE_NOTES_CARD;
             } catch (err) {
-                console.error('Drawer fetch failed:', err);
+                console.error('Drawer fetch failed — check Firestore rules allow unauthenticated reads where isPublic==true:', err);
                 grid.innerHTML = MORE_NOTES_CARD;
             }
         }
