@@ -207,6 +207,15 @@
         </div>
     </div>
 
+    <!-- ── PUBLIC VIEW TOP BAR (shown only on public share links) ── -->
+    <div id="public-bar" class="hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-warm-200 shadow-sm px-6 py-3 flex items-center">
+        <a href="../writing/"
+            class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl font-mono text-sm font-bold text-warm-700 hover:text-orange-600 hover:bg-warm-50 border border-warm-200 shadow-sm transition-colors group">
+            <i class="fa-solid fa-arrow-left transform group-hover:-translate-x-1 transition-transform" aria-hidden="true"></i>
+            Writing
+        </a>
+    </div>
+
     <!-- ── FIXED TOP CHROME BAR ── -->
     <div id="chrome-bar" class="hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-warm-200 shadow-sm px-6 py-3 flex justify-between items-center gap-4">
         <button type="button" onclick="window.location.href='index.html'"
@@ -334,6 +343,12 @@
             bar.style.display = 'flex';
         }
 
+        function showPublicBar() {
+            const bar = document.getElementById('public-bar');
+            bar.classList.remove('hidden');
+            bar.style.display = 'flex';
+        }
+
         // ── AUTH ──
         // Fires with user=null first if no cached session, then again with user if logged in.
         // entryRendered guards against double-renders when public load beats auth resolution.
@@ -428,6 +443,7 @@
 
             if (isPublicView) {
                 document.getElementById('receipt-card').classList.add('hidden');
+                showPublicBar();
             } else {
                 const displayLoc  = e.locationDetail || e.location || '—';
                 const displayDate = formatDate(e.date);
