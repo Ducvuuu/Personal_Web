@@ -446,10 +446,12 @@ function enterRsvpMode() {
 }
 
 function exitRsvpMode() {
-    rsvpStopPlayer();
-    // forceSave MUST run before rsvpActive = false so saveProgress enters
-    // the RSVP branch and uses cfiFromPercentage for a span-independent CFI.
+    rsvpStopPlayer(); // clears rsvpTimer, rsvpNavSafetyTimer, resets all async state
+
+    // forceSave MUST run before rsvpActive = false: saveProgress reads the RSVP
+    // chapter badge and uses rendition.currentLocation() for the CFI.
     if (typeof forceSave === 'function') forceSave();
+
     rsvpActive = false;
     document.body.classList.remove('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
@@ -457,11 +459,27 @@ function exitRsvpMode() {
     btn.title = 'RSVP speed reading';
     btn.setAttribute('aria-pressed', 'false');
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
-    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active class + unwraps spans
+    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
+
     setTimeout(() => {
-        if (rendition) {
-            const v = document.getElementById('viewer');
-            try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
+        if (!rendition) return;
+        const v = document.getElementById('viewer');
+        try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
+
+        // Sync the epub view to the RSVP exit position. Use cfiFromPercentage so the
+        // CFI is based on the locations index, not the span-wrapped DOM structure.
+        if (rsvpWordsArray.length > 0 && epubBook?.locations?.length?.() > 0) {
+            let exitCfi;
+            try {
+                exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
+            } catch {}
+            if (exitCfi && typeof exitCfi === 'string' && exitCfi.startsWith('epubcfi(')) {
+                try {
+                    rendition.display(exitCfi);
+                } catch (err) {
+                    console.warn('RSVP exit sync failed:', err);
+                }
+            }
         }
     }, 280);
 }
@@ -649,6 +667,12 @@ function rsvpLoop() {
 function rsvpStopPlayer() {
     rsvpIsPlaying = false;
     clearTimeout(rsvpTimer);
+    rsvpTimer = null;
+    // Clear the navigation safety timer so it cannot re-enter rsvpLoop() after exit.
+    clearTimeout(rsvpNavSafetyTimer);
+    rsvpNavSafetyTimer = null;
+    rsvpEpubNavigating = false;
+    rsvpWaitingForPage = false;
     rsvpUpdatePlayUI();
 }
 

@@ -259,9 +259,19 @@ async function saveProgress(location) {
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
         if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
-            cfi     = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
             pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
             chapter = document.getElementById('rsvp-chapter-badge').textContent;
+            // epub.js paginated-mode CFIs point to block-level boundaries (paragraphs,
+            // chapter starts) — not inside the inline <span class="rsvp-w"> elements —
+            // so this CFI is stable and can be reloaded after the spans are removed.
+            const rsvpLoc = rendition?.currentLocation();
+            if (rsvpLoc?.start?.cfi && typeof rsvpLoc.start.cfi === 'string') {
+                cfi = rsvpLoc.start.cfi;
+            } else {
+                // Fallback: percentage-derived CFI snaps to ~1 600-char chunks but
+                // is always structure-independent.
+                try { cfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length); } catch {}
+            }
         } else {
             return; // locations not yet generated — skip save, wait for next trigger
         }
