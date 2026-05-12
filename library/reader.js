@@ -259,19 +259,14 @@ async function saveProgress(location) {
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
         if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
+            // Priority: event CFI → current rendition CFI → percentage fallback (lossy, snaps to 1600-char chunks)
+            try {
+                cfi = location?.start?.cfi
+                    || rendition?.currentLocation()?.start?.cfi
+                    || epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
+            } catch {}
             pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
             chapter = document.getElementById('rsvp-chapter-badge').textContent;
-            // epub.js paginated-mode CFIs point to block-level boundaries (paragraphs,
-            // chapter starts) — not inside the inline <span class="rsvp-w"> elements —
-            // so this CFI is stable and can be reloaded after the spans are removed.
-            const rsvpLoc = rendition?.currentLocation();
-            if (rsvpLoc?.start?.cfi && typeof rsvpLoc.start.cfi === 'string') {
-                cfi = rsvpLoc.start.cfi;
-            } else {
-                // Fallback: percentage-derived CFI snaps to ~1 600-char chunks but
-                // is always structure-independent.
-                try { cfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length); } catch {}
-            }
         } else {
             return; // locations not yet generated — skip save, wait for next trigger
         }
@@ -569,18 +564,12 @@ function registerThemes() {
 
     function unwrapWords() {
         if (!wrapped) return;
-        var spans = document.querySelectorAll('.rsvp-w');
-        for (var i = 0; i < spans.length; i++) {
-            var span = spans[i];
-            var parent = span.parentNode;
-            if (!parent) continue;
-            while (span.firstChild) {
-                parent.insertBefore(span.firstChild, span);
-            }
-            parent.removeChild(span);
-        }
-        if (document.body) document.body.normalize();
-        wrapped = false;
+        // Removing thousands of spans synchronously causes layout thrash that freezes
+        // the main thread. Spans are visually inert without body.rsvp-is-active,
+        // so just clear the active highlight and leave them in the DOM.
+        var els = document.querySelectorAll('.rsvp-current');
+        for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
+        // wrapped stays true — re-entering RSVP on the same page skips re-parsing.
     }
 
     function highlight(li) {
