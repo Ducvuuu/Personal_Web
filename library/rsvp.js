@@ -435,53 +435,32 @@ function enterRsvpMode() {
     rsvpSetMode(rsvpMode);
 
     setTimeout(() => {
-        if (rendition) {
-            const v = document.getElementById('viewer');
-            try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
-        }
-        // rsvp-get-page wraps words AND seeds initial page anchors in one shot
         rsvpSendToEpub({ type: 'rsvp-get-page' });
         rsvpSendToEpub({ type: 'rsvp-state', active: true });
-    }, 280);
+    }, 150);
 }
 
 function exitRsvpMode() {
-    rsvpStopPlayer(); // clears rsvpTimer, rsvpNavSafetyTimer, resets all async state
+    rsvpStopPlayer();
 
-    // forceSave MUST run before rsvpActive = false: saveProgress reads the RSVP
-    // chapter badge and uses rendition.currentLocation() for the CFI.
-    if (typeof forceSave === 'function') forceSave();
-
+    // rsvpActive = false before the save so saveProgress takes the normal location.start.cfi
+    // path — not the RSVP percentage path — giving a precise CFI on a clean DOM.
     rsvpActive = false;
     document.body.classList.remove('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
     btn.classList.remove('rsvp-active');
     btn.title = 'RSVP speed reading';
     btn.setAttribute('aria-pressed', 'false');
+
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
-    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
+    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // triggers unwrapWords() in iframe
 
+    // Wait for unwrapWords() to finish restoring the pristine DOM before saving.
+    // Calling rendition.resize() here was the forced-sync-layout trigger for the freeze,
+    // so it is intentionally absent.
     setTimeout(() => {
-        if (!rendition) return;
-        const v = document.getElementById('viewer');
-        try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
-
-        // Sync the epub view to the RSVP exit position. Use cfiFromPercentage so the
-        // CFI is based on the locations index, not the span-wrapped DOM structure.
-        if (rsvpWordsArray.length > 0 && epubBook?.locations?.length?.() > 0) {
-            let exitCfi;
-            try {
-                exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
-            } catch {}
-            if (exitCfi && typeof exitCfi === 'string' && exitCfi.startsWith('epubcfi(')) {
-                try {
-                    rendition.display(exitCfi);
-                } catch (err) {
-                    console.warn('RSVP exit sync failed:', err);
-                }
-            }
-        }
-    }, 280);
+        if (typeof forceSave === 'function') forceSave();
+    }, 300);
 }
 
 function rsvpOnEpubRelocated() {
