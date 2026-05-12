@@ -564,12 +564,18 @@ function registerThemes() {
 
     function unwrapWords() {
         if (!wrapped) return;
-        // Removing thousands of spans synchronously causes layout thrash that freezes
-        // the main thread. Spans are visually inert without body.rsvp-is-active,
-        // so just clear the active highlight and leave them in the DOM.
-        var els = document.querySelectorAll('.rsvp-current');
-        for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
-        // wrapped stays true — re-entering RSVP on the same page skips re-parsing.
+        var spans = document.querySelectorAll('.rsvp-w');
+        for (var i = 0; i < spans.length; i++) {
+            var span = spans[i];
+            var parent = span.parentNode;
+            if (!parent) continue;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+        }
+        if (document.body) document.body.normalize();
+        wrapped = false;
     }
 
     function highlight(li) {
