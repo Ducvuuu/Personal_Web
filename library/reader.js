@@ -492,7 +492,6 @@ function registerThemes() {
         rsvpStyle.textContent = `
             .rsvp-w {
                 border-radius: 2px;
-                padding: 0 1px;
                 transition: background 0.08s;
                 display: inline;
             }
