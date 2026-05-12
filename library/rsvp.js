@@ -109,6 +109,13 @@ window.addEventListener('message', e => {
         const parentChapterStart = rsvpChapterBoundaries[chIdx].startWordIdx;
         rsvpJumpToGlobalWord(Math.min(parentChapterStart + e.data.li, rsvpWordsArray.length - 1));
     }
+
+    // Iframe signals that async unwrapWords() has fully completed and DOM is pristine.
+    // Save only when RSVP is inactive — this fires after exitRsvpMode() has already
+    // set rsvpActive = false, so saveProgress takes the clean location.start.cfi path.
+    if (e.data.type === 'rsvp-unwrap-done' && !rsvpActive) {
+        if (typeof forceSave === 'function') forceSave();
+    }
 });
 
 // ── Fetch Gemini key from Firestore ──
@@ -453,14 +460,10 @@ function exitRsvpMode() {
     btn.setAttribute('aria-pressed', 'false');
 
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
-    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // triggers unwrapWords() in iframe
-
-    // Wait for unwrapWords() to finish restoring the pristine DOM before saving.
-    // Calling rendition.resize() here was the forced-sync-layout trigger for the freeze,
-    // so it is intentionally absent.
-    setTimeout(() => {
-        if (typeof forceSave === 'function') forceSave();
-    }, 300);
+    // rsvp-state:false triggers async unwrapWords() in the iframe. When all chunks
+    // finish, the iframe posts rsvp-unwrap-done and the message listener above calls
+    // forceSave() on the now-pristine DOM.
+    rsvpSendToEpub({ type: 'rsvp-state', active: false });
 }
 
 function rsvpOnEpubRelocated() {
