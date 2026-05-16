@@ -443,7 +443,9 @@ function rsvpApplyMiniPage() {
     const screenH  = window.innerHeight;
     const Ym       = rect.top;
     const contentH = screenH - 52 - 56; // viewport minus top-nav and bottom-nav
-    const S        = H / contentH;
+    // Cap at 0.45 so the full page is always visible as a miniature regardless of screen size.
+    // Without the cap, large phones produce S ≈ 0.7+ which barely scales the epub.
+    const S        = Math.min(H / contentH, 0.45);
     if (S >= 0.95) return; // degenerate: mini-page is nearly full content height
 
     // Vertical origin: the point on the reader-area's Y axis that, after scaling,
