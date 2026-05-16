@@ -425,6 +425,49 @@ function rsvpCurrentChapterTitle() {
     return title;
 }
 
+// ── Mini-page transform (mobile only) ──
+// Scales #reader-area so the full epub page fits inside the transparent #rsvp-mini-page
+// cutout window. Called after the panel slide-in animation completes.
+// To revert this feature: remove rsvpApplyMiniPage + rsvpClearMiniPage calls from
+// enterRsvpMode / exitRsvpMode and delete these two functions.
+function rsvpApplyMiniPage() {
+    if (window.innerWidth >= 768) return;
+    const miniPage   = document.getElementById('rsvp-mini-page');
+    const readerArea = document.getElementById('reader-area');
+    if (!miniPage || !readerArea) return;
+
+    const rect = miniPage.getBoundingClientRect();
+    const H    = rect.height;
+    if (H < 10) return; // not enough space — skip
+
+    const screenH  = window.innerHeight;
+    const Ym       = rect.top;
+    const contentH = screenH - 52 - 56; // viewport minus top-nav and bottom-nav
+    const S        = H / contentH;
+    if (S >= 0.95) return; // degenerate: mini-page is nearly full content height
+
+    // Vertical origin: the point on the reader-area's Y axis that, after scaling,
+    // lands at the top of the mini-page window (Ym).
+    // Derived from: Yo + (52 - Yo) * S = Ym  →  Yo = (Ym - 52*S) / (1 - S)
+    const Yo = (Ym - 52 * S) / (1 - S);
+    const Xo = window.innerWidth / 2; // center horizontally
+
+    // Apply without transition to avoid transform-origin animating from its default center
+    readerArea.style.transition      = 'none';
+    readerArea.style.transformOrigin = `${Xo}px ${Yo.toFixed(2)}px`;
+    readerArea.style.transform       = `scale(${S.toFixed(4)})`;
+    readerArea.style.pointerEvents   = 'none';
+}
+
+function rsvpClearMiniPage() {
+    const readerArea = document.getElementById('reader-area');
+    if (!readerArea) return;
+    readerArea.style.transition      = 'none';
+    readerArea.style.transform       = '';
+    readerArea.style.transformOrigin = '';
+    readerArea.style.pointerEvents   = '';
+}
+
 // ── Mode enter / exit ──
 function enterRsvpMode() {
     rsvpActive = true;
@@ -441,6 +484,17 @@ function enterRsvpMode() {
     btn.setAttribute('aria-pressed', 'true');
     rsvpSetMode(rsvpMode);
 
+    // Apply mini-page transform after the panel slide-in animation finishes (mobile only)
+    if (window.innerWidth < 768) {
+        const panel = document.getElementById('rsvp-panel');
+        const onEnd = e => {
+            if (e.propertyName !== 'transform') return;
+            panel.removeEventListener('transitionend', onEnd);
+            rsvpApplyMiniPage();
+        };
+        panel.addEventListener('transitionend', onEnd);
+    }
+
     setTimeout(() => {
         rsvpSendToEpub({ type: 'rsvp-get-page' });
         rsvpSendToEpub({ type: 'rsvp-state', active: true });
@@ -449,6 +503,7 @@ function enterRsvpMode() {
 
 function exitRsvpMode() {
     rsvpStopPlayer();
+    rsvpClearMiniPage();
 
     // rsvpActive = false before the save so saveProgress takes the normal location.start.cfi
     // path — not the RSVP percentage path — giving a precise CFI on a clean DOM.
