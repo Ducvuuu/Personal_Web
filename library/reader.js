@@ -285,10 +285,6 @@ async function saveProgress(location) {
         cfi     = location.start.cfi;
         pct     = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
         chapter = document.getElementById('chapter-label').textContent;
-        // In normal mode, estimate rsvpIndex from location if words are loaded
-        if (typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
-            rsvpIndex = rsvpFindGlobalStartWord(location);
-        }
     }
 
     if (!cfi) return;
@@ -304,8 +300,8 @@ async function saveProgress(location) {
             lastRead:       firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Save precise word index if available
-        if (typeof rsvpIndex === 'number' && !isNaN(rsvpIndex) && typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
+        // Save precise word index if available in RSVP mode
+        if (typeof rsvpActive !== 'undefined' && rsvpActive && typeof rsvpIndex === 'number' && !isNaN(rsvpIndex) && typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
             updateData.rsvpIndex = rsvpIndex;
         }
 
