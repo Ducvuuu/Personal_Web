@@ -161,7 +161,38 @@ async function rsvpInitSession() {
 
     const loc = rendition?.currentLocation();
     rsvpBuildFullBook(chapters, allScores);
-    rsvpIndex = rsvpFindGlobalStartWord(loc);
+
+    // Smart index restoration:
+    // If we have a saved rsvpIndex in bookDoc, and its chapter matches the current page's chapter, restore it directly for word-level precision.
+    let restored = false;
+    if (bookDoc && typeof bookDoc.rsvpIndex === 'number' && bookDoc.rsvpIndex >= 0 && bookDoc.rsvpIndex < rsvpWordsArray.length) {
+        let savedChIdx = 0;
+        for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+            if (rsvpChapterBoundaries[i].startWordIdx <= bookDoc.rsvpIndex) {
+                savedChIdx = i;
+                break;
+            }
+        }
+        const savedChapter = rsvpChapterBoundaries[savedChIdx];
+        
+        const locHref = (loc?.start?.href || '').split('#')[0];
+        const savedHref = (savedChapter?.spineHref || '').split('#')[0];
+        const chaptersMatch = locHref && (
+            locHref === savedHref || 
+            locHref.endsWith(savedHref) || 
+            savedHref.endsWith(locHref.split('/').pop())
+        );
+
+        if (chaptersMatch) {
+            rsvpIndex = bookDoc.rsvpIndex;
+            restored = true;
+        }
+    }
+
+    if (!restored) {
+        rsvpIndex = rsvpFindGlobalStartWord(loc);
+    }
+
     rsvpSetWord(rsvpWordsArray[rsvpIndex]?.word || 'Ready.');
     rsvpUpdateProgress();
 
@@ -403,9 +434,14 @@ function rsvpFindGlobalStartWord(loc) {
         return href && (href === bHref || href.endsWith(bHref) || bHref.endsWith(href.split('/').pop()));
     });
     if (chIdx < 0) return 0;
-    // loc.start.percentage is a global book percentage (0-1), so map it
-    // directly against the global word array — not against the chapter slice.
-    return Math.floor((loc.start.percentage || 0) * rsvpWordsArray.length);
+
+    // If locations are generated and we have a valid percentage, use it to estimate
+    if (epubBook && epubBook.locations && epubBook.locations.length() > 0 && typeof loc.start.percentage === 'number' && loc.start.percentage > 0) {
+        return Math.floor(loc.start.percentage * rsvpWordsArray.length);
+    }
+
+    // Otherwise, fallback to the start of the current chapter
+    return rsvpChapterBoundaries[chIdx].startWordIdx;
 }
 
 // ── Return the chapter title for the current rsvpIndex ──
@@ -468,12 +504,27 @@ function exitRsvpMode() {
 
         // Sync the epub view to the RSVP exit position. Use cfiFromPercentage so the
         // CFI is based on the locations index, not the span-wrapped DOM structure.
-        if (rsvpWordsArray.length > 0 && epubBook?.locations?.length?.() > 0) {
-            let exitCfi;
-            try {
-                exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
-            } catch {}
-            if (exitCfi && typeof exitCfi === 'string' && exitCfi.startsWith('epubcfi(')) {
+        if (rsvpWordsArray.length > 0) {
+            let exitCfi = null;
+            if (epubBook?.locations?.length?.() > 0) {
+                try {
+                    exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
+                } catch {}
+            }
+            
+            // Fallback: display the start of the chapter containing rsvpIndex
+            if (!exitCfi) {
+                let chIdx = 0;
+                for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+                    if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
+                        chIdx = i;
+                        break;
+                    }
+                }
+                exitCfi = rsvpChapterBoundaries[chIdx]?.spineHref || null;
+            }
+
+            if (exitCfi) {
                 try {
                     rendition.display(exitCfi);
                 } catch (err) {

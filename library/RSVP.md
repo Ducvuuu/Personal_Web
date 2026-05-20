@@ -74,7 +74,7 @@ toggleRsvpMode()
   └─ rsvpShowPrep(…)             // show prep modal with progress bar
   └─ rsvpInitSession()
        ├─ rsvpExtractAllChapters()   // DOM-walk epub spine, extract text
-       ├─ rsvpScoreAllChapters()     // Gemini + Firestore cache
+       ├─ rsvpScoreAllChapters()     // Gemini + Storage cache
        ├─ rsvpBuildFullBook()        // populate rsvpWordsArray
        ├─ rsvpFindGlobalStartWord()  // jump to reader's current page
        └─ enterRsvpMode()
@@ -203,32 +203,30 @@ bar in the prep modal updates after each chapter.
 
 ---
 
-## 6. Firestore Cache
+## 6. Firebase Storage Cache
 
-All scores for a book are stored in a **single Firestore document** the first time RSVP runs.
+All scores for a book are stored in a **single flat CSV file inside Firebase Storage** the first time RSVP runs.
 Subsequent sessions for the same book skip the Gemini API entirely.
 
-### Document path
+### Storage path
 
 ```
-library/{bookId}/rsvp/scores
+library/rsvp/{bookId}.csv
 ```
 
-### Document fields
+### Format
 
-| Field | Type | Description |
-|---|---|---|
-| `csv` | `string` | All sentence scores for the entire book, comma-separated. Order matches the order sentences were extracted from the spine. Example: `"0.8,1.2,1.0,0.9,1.4,…"` |
-| `scoredAt` | `Timestamp` | Server timestamp of when scoring was performed |
+A single plain text file containing comma-separated complexity scores (floats) for the entire book.
+Example: `0.8,1.2,1.0,0.9,1.4,…`
 
 ### Cache invalidation
 
 There is no automatic expiry. To force a re-score (e.g. after the epub content changes or
-after a parser update), delete the `scores` document in the Firebase console.
+after a parser update), delete the `{bookId}.csv` file in the `library/rsvp/` directory via the Firebase Storage console.
 
 > **Note:** Any change to the DOM-walker tokenisation logic (§4) invalidates existing cached
-> scores because the sentence boundaries will shift. Delete all `library/*/rsvp/scores`
-> documents after such a change.
+> scores because the sentence boundaries will shift. Delete the corresponding `.csv` files
+> in Storage after such a change.
 
 ---
 

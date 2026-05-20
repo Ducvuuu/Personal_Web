@@ -23,6 +23,7 @@ let saveTimer     = null;
 let fontSize      = parseInt(localStorage.getItem('lib_fontSize') || '18');
 let currentTheme  = localStorage.getItem('lib_theme')  || 'sepia';
 let currentFont   = localStorage.getItem('lib_font')   || 'serif';
+let lastCleanCfi  = null;
 
 // ── AUTH ──
 auth.onAuthStateChanged(user => {
@@ -149,6 +150,9 @@ async function initReader(url) {
 
     // ── EVENTS ──
     rendition.on('relocated', location => {
+        if (location?.start?.cfi) {
+            lastCleanCfi = location.start.cfi;
+        }
         updateProgress(location);
         scheduleSave(location);
         if (rsvpActive) rsvpOnEpubRelocated();
@@ -258,27 +262,33 @@ async function saveProgress(location) {
     let cfi, pct, chapter;
 
     if (typeof rsvpActive !== 'undefined' && rsvpActive && rsvpWordsArray && rsvpWordsArray.length > 0) {
-        if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
-            pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
-            chapter = document.getElementById('rsvp-chapter-badge').textContent;
-            // epub.js paginated-mode CFIs point to block-level boundaries (paragraphs,
-            // chapter starts) — not inside the inline <span class="rsvp-w"> elements —
-            // so this CFI is stable and can be reloaded after the spans are removed.
-            const rsvpLoc = rendition?.currentLocation();
-            if (rsvpLoc?.start?.cfi && typeof rsvpLoc.start.cfi === 'string') {
-                cfi = rsvpLoc.start.cfi;
-            } else {
-                // Fallback: percentage-derived CFI snaps to ~1 600-char chunks but
-                // is always structure-independent.
-                try { cfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length); } catch {}
-            }
+        pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
+        chapter = document.getElementById('rsvp-chapter-badge').textContent;
+
+        // Use the last known clean CFI (set before wrapping occurs) to prevent dynamic span pollution
+        if (typeof lastCleanCfi !== 'undefined' && lastCleanCfi) {
+            cfi = lastCleanCfi;
+        } else if (location?.start?.cfi) {
+            cfi = location.start.cfi;
         } else {
-            return; // locations not yet generated — skip save, wait for next trigger
+            // Fallback: get the chapter boundary spineHref
+            let chIdx = 0;
+            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
+                    chIdx = i;
+                    break;
+                }
+            }
+            cfi = rsvpChapterBoundaries[chIdx]?.spineHref || (bookDoc?.currentCfi || null);
         }
     } else if (location?.start) {
         cfi     = location.start.cfi;
         pct     = bookPct(cfi) ?? Math.round((location.start.percentage || 0) * 100);
         chapter = document.getElementById('chapter-label').textContent;
+        // In normal mode, estimate rsvpIndex from location if words are loaded
+        if (typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
+            rsvpIndex = rsvpFindGlobalStartWord(location);
+        }
     }
 
     if (!cfi) return;
@@ -286,13 +296,24 @@ async function saveProgress(location) {
     showSaveStatus('saving');
 
     try {
-        await userLib().doc(bookId).update({
+        const updateData = {
             currentCfi:     cfi,
             percentage:     pct,
             currentChapter: chapter,
             status:         pct >= 99 ? 'finished' : 'reading',
             lastRead:       firebase.firestore.FieldValue.serverTimestamp()
-        });
+        };
+
+        // Save precise word index if available
+        if (typeof rsvpIndex === 'number' && !isNaN(rsvpIndex) && typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
+            updateData.rsvpIndex = rsvpIndex;
+        }
+
+        await userLib().doc(bookId).update(updateData);
+
+        if (bookDoc) {
+            Object.assign(bookDoc, updateData);
+        }
 
         showSaveStatus('saved');
     } catch (err) {
