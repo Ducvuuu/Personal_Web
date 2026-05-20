@@ -484,6 +484,9 @@ function enterRsvpMode() {
 function exitRsvpMode() {
     rsvpStopPlayer(); // clears rsvpTimer, rsvpNavSafetyTimer, resets all async state
 
+    // 1. Enable exit-shielding to block normal-mode relocated save triggers
+    rsvpExiting = true;
+
     // forceSave MUST run before rsvpActive = false: saveProgress reads the RSVP
     // chapter badge and uses rendition.currentLocation() for the CFI.
     if (typeof forceSave === 'function') forceSave();
@@ -498,7 +501,7 @@ function exitRsvpMode() {
     rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
 
     setTimeout(() => {
-        if (!rendition) return;
+        if (!rendition) { rsvpExiting = false; return; }
         const v = document.getElementById('viewer');
         try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
 
@@ -532,6 +535,11 @@ function exitRsvpMode() {
                 }
             }
         }
+
+        // 3. Clear the exit shield after programmatic transition settles (800ms)
+        setTimeout(() => {
+            rsvpExiting = false;
+        }, 800);
     }, 280);
 }
 

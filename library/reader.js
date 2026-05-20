@@ -24,6 +24,9 @@ let fontSize      = parseInt(localStorage.getItem('lib_fontSize') || '18');
 let currentTheme  = localStorage.getItem('lib_theme')  || 'sepia';
 let currentFont   = localStorage.getItem('lib_font')   || 'serif';
 let lastCleanCfi  = null;
+let isInitialDisplay = true;
+let rsvpExiting      = false;
+
 
 // ── AUTH ──
 auth.onAuthStateChanged(user => {
@@ -73,6 +76,19 @@ async function initBook() {
         document.getElementById('nav-title').textContent  = bookDoc.title;
         document.getElementById('nav-author').textContent = bookDoc.author || '';
         document.title = `Reading: ${bookDoc.title}`;
+
+        // Seed progress bar immediately to prevent blanking or "0%" / "…" blinking
+        if (typeof bookDoc.percentage === 'number') {
+            document.getElementById('pct-label').textContent = `${bookDoc.percentage}%`;
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) {
+                progressFill.style.width = `${bookDoc.percentage}%`;
+                progressFill.setAttribute('aria-valuenow', bookDoc.percentage);
+            }
+        }
+        if (bookDoc.currentChapter) {
+            document.getElementById('chapter-label').textContent = bookDoc.currentChapter;
+        }
 
         await initReader(bookDoc.fileUrl);
     } catch (err) {
@@ -154,6 +170,18 @@ async function initReader(url) {
             lastCleanCfi = location.start.cfi;
         }
         updateProgress(location);
+        
+        // 1. Skip saving on the initial load programmatic display
+        if (isInitialDisplay) {
+            isInitialDisplay = false;
+            return;
+        }
+        
+        // 2. Skip saving on programmatic exit-sync relocations
+        if (rsvpExiting) {
+            return;
+        }
+        
         scheduleSave(location);
         if (rsvpActive) rsvpOnEpubRelocated();
     });
@@ -209,12 +237,19 @@ function bookPct(cfi) {
 function updateProgress(location) {
     if (!location || !location.start) return;
     const cfi = location.start.cfi;
-    const pct = bookPct(cfi);
+    let pct = bookPct(cfi);
+
+    // Fallback to cached bookDoc percentage if locations are not yet loaded
+    if (pct === null && bookDoc && typeof bookDoc.percentage === 'number') {
+        pct = bookDoc.percentage;
+    }
 
     document.getElementById('pct-label').textContent     = pct !== null ? `${pct}%` : '…';
     const progressFill = document.getElementById('progress-fill');
-    progressFill.style.width = pct !== null ? `${pct}%` : '0%';
-    progressFill.setAttribute('aria-valuenow', pct !== null ? pct : 0);
+    if (progressFill) {
+        progressFill.style.width = pct !== null ? `${pct}%` : '0%';
+        progressFill.setAttribute('aria-valuenow', pct !== null ? pct : 0);
+    }
 
     if (epubBook && epubBook.locations && epubBook.locations.length()) {
         const locIdx = epubBook.locations.locationFromCfi(cfi);
@@ -265,8 +300,19 @@ async function saveProgress(location) {
         pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
         chapter = document.getElementById('rsvp-chapter-badge').textContent;
 
-        // Use the last known clean CFI (set before wrapping occurs) to prevent dynamic span pollution
-        if (typeof lastCleanCfi !== 'undefined' && lastCleanCfi) {
+        // Calculate a highly precise, clean CFI to the exact word position using epub.js locations
+        let preciseCfi = null;
+        if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
+            try {
+                preciseCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
+            } catch (err) {
+                console.warn('Failed to calculate precise CFI from percentage:', err);
+            }
+        }
+
+        if (preciseCfi) {
+            cfi = preciseCfi;
+        } else if (typeof lastCleanCfi !== 'undefined' && lastCleanCfi) {
             cfi = lastCleanCfi;
         } else if (location?.start?.cfi) {
             cfi = location.start.cfi;
