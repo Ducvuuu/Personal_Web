@@ -154,6 +154,11 @@ async function initReader(url) {
 
     showLoading(null);
 
+    // Disable the programmatic loading shield after 4 seconds to let layout/locations settle
+    setTimeout(() => {
+        isInitialDisplay = false;
+    }, 4000);
+
     // ── BACKGROUND TASKS ──
     epubBook.locations.generate(1600).then(() => {
         const loc = rendition.currentLocation();
@@ -171,9 +176,8 @@ async function initReader(url) {
         }
         updateProgress(location);
         
-        // 1. Skip saving on the initial load programmatic display
+        // 1. Skip saving on the initial load programmatic display/layout shifts
         if (isInitialDisplay) {
-            isInitialDisplay = false;
             return;
         }
         
@@ -291,6 +295,33 @@ function scheduleSave(location) {
     saveTimer = setTimeout(() => saveProgress(location), 800);
 }
 
+// ── EXACT WORD ELEMENT MAPPING ──
+function getCleanParagraphCfi(spineHref, localWordIdx) {
+    try {
+        const contents = rendition?.getContents?.();
+        if (!contents) return null;
+        
+        for (const content of contents) {
+            const doc = content.document;
+            if (!doc) continue;
+            
+            const wordEl = doc.querySelector(`.rsvp-w[data-li="${localWordIdx}"]`);
+            if (wordEl) {
+                const parentBlock = wordEl.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote') || wordEl.parentNode;
+                if (!parentBlock) continue;
+                
+                const section = epubBook.spine.get(spineHref);
+                if (section && typeof section.cfiFromElement === 'function') {
+                    return section.cfiFromElement(parentBlock);
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('Failed to generate clean paragraph CFI:', err);
+    }
+    return null;
+}
+
 async function saveProgress(location) {
     if (!bookId) return;
 
@@ -300,15 +331,19 @@ async function saveProgress(location) {
         pct     = Math.round((rsvpIndex / rsvpWordsArray.length) * 100);
         chapter = document.getElementById('rsvp-chapter-badge').textContent;
 
-        // Calculate a highly precise, clean CFI to the exact word position using epub.js locations
-        let preciseCfi = null;
-        if (epubBook && epubBook.locations && epubBook.locations.length() > 0) {
-            try {
-                preciseCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
-            } catch (err) {
-                console.warn('Failed to calculate precise CFI from percentage:', err);
+        // Resolve the exact chapter boundaries
+        let chIdx = 0;
+        for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+            if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
+                chIdx = i;
+                break;
             }
         }
+        const activeChapter = rsvpChapterBoundaries[chIdx];
+        const localWordIdx  = rsvpIndex - activeChapter.startWordIdx;
+
+        // 1. Try to calculate precise paragraph-level CFI to the exact word position
+        let preciseCfi = getCleanParagraphCfi(activeChapter.spineHref, localWordIdx);
 
         if (preciseCfi) {
             cfi = preciseCfi;
@@ -318,14 +353,7 @@ async function saveProgress(location) {
             cfi = location.start.cfi;
         } else {
             // Fallback: get the chapter boundary spineHref
-            let chIdx = 0;
-            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
-                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
-                    chIdx = i;
-                    break;
-                }
-            }
-            cfi = rsvpChapterBoundaries[chIdx]?.spineHref || (bookDoc?.currentCfi || null);
+            cfi = activeChapter?.spineHref || (bookDoc?.currentCfi || null);
         }
     } else if (location?.start) {
         cfi     = location.start.cfi;

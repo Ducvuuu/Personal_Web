@@ -505,26 +505,34 @@ function exitRsvpMode() {
         const v = document.getElementById('viewer');
         try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
 
-        // Sync the epub view to the RSVP exit position. Use cfiFromPercentage so the
-        // CFI is based on the locations index, not the span-wrapped DOM structure.
+        // Sync the epub view to the precise RSVP paragraph exit position
         if (rsvpWordsArray.length > 0) {
+            let chIdx = 0;
+            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
+                    chIdx = i;
+                    break;
+                }
+            }
+            const activeChapter = rsvpChapterBoundaries[chIdx];
+            const localWordIdx  = rsvpIndex - activeChapter.startWordIdx;
+
+            // Try to get precise paragraph-level CFI
             let exitCfi = null;
-            if (epubBook?.locations?.length?.() > 0) {
+            if (typeof getCleanParagraphCfi === 'function') {
+                exitCfi = getCleanParagraphCfi(activeChapter.spineHref, localWordIdx);
+            }
+            
+            // Fallback 1: locations percentage-based CFI
+            if (!exitCfi && epubBook?.locations?.length?.() > 0) {
                 try {
                     exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
                 } catch {}
             }
             
-            // Fallback: display the start of the chapter containing rsvpIndex
+            // Fallback 2: start of chapter
             if (!exitCfi) {
-                let chIdx = 0;
-                for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
-                    if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
-                        chIdx = i;
-                        break;
-                    }
-                }
-                exitCfi = rsvpChapterBoundaries[chIdx]?.spineHref || null;
+                exitCfi = activeChapter?.spineHref || null;
             }
 
             if (exitCfi) {
@@ -536,10 +544,10 @@ function exitRsvpMode() {
             }
         }
 
-        // 3. Clear the exit shield after programmatic transition settles (800ms)
+        // 3. Clear the exit shield after programmatic transition settles completely (2500ms)
         setTimeout(() => {
             rsvpExiting = false;
-        }, 800);
+        }, 2500);
     }, 280);
 }
 
