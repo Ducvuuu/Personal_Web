@@ -154,16 +154,41 @@ async function initReader(url) {
 
     showLoading(null);
 
-    // Disable the programmatic loading shield after 4 seconds to let layout/locations settle
-    setTimeout(() => {
-        isInitialDisplay = false;
-    }, 4000);
+    // Safety fallback: always disable shield after 10 seconds even if locations stall
+    let shieldTimer = setTimeout(() => { isInitialDisplay = false; }, 10000);
 
     // ── BACKGROUND TASKS ──
     epubBook.locations.generate(1600).then(() => {
+        clearTimeout(shieldTimer);
         const loc = rendition.currentLocation();
         if (loc) updateProgress(loc);
-    }).catch(() => {});
+
+        // Verify the displayed position matches the saved percentage.
+        // rendition.display(cfi) often lands at the chapter start on cold load
+        // because epub.js can't resolve sub-chapter page positions before the
+        // content is fully laid out and locations are computed.
+        if (bookDoc && typeof bookDoc.percentage === 'number' && bookDoc.percentage > 1) {
+            const currentPct = bookPct(loc?.start?.cfi);
+            if (currentPct !== null && Math.abs(currentPct - bookDoc.percentage) > 2) {
+                const correctCfi = epubBook.locations.cfiFromPercentage(bookDoc.percentage / 100);
+                if (correctCfi) {
+                    rendition.display(correctCfi).then(() => {
+                        const corrLoc = rendition.currentLocation();
+                        if (corrLoc) updateProgress(corrLoc);
+                        setTimeout(() => { isInitialDisplay = false; }, 1000);
+                    }).catch(() => {
+                        isInitialDisplay = false;
+                    });
+                    return;
+                }
+            }
+        }
+
+        isInitialDisplay = false;
+    }).catch(() => {
+        clearTimeout(shieldTimer);
+        setTimeout(() => { isInitialDisplay = false; }, 4000);
+    });
 
     epubBook.loaded.navigation
         .then(nav => buildToc(nav.toc))
