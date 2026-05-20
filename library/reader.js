@@ -154,6 +154,9 @@ async function initReader(url) {
 
     showLoading(null);
 
+    // Snapshot the original CFI before anything can overwrite bookDoc
+    const savedCfi = bookDoc?.currentCfi || null;
+
     // Safety fallback: always disable shield after 10 seconds even if locations stall
     let shieldTimer = setTimeout(() => { isInitialDisplay = false; }, 10000);
 
@@ -163,28 +166,23 @@ async function initReader(url) {
         const loc = rendition.currentLocation();
         if (loc) updateProgress(loc);
 
-        // Verify the displayed position matches the saved percentage.
-        // rendition.display(cfi) often lands at the chapter start on cold load
-        // because epub.js can't resolve sub-chapter page positions before the
-        // content is fully laid out and locations are computed.
-        if (bookDoc && typeof bookDoc.percentage === 'number' && bookDoc.percentage > 1) {
-            const currentPct = bookPct(loc?.start?.cfi);
-            if (currentPct !== null && Math.abs(currentPct - bookDoc.percentage) > 2) {
-                const correctCfi = epubBook.locations.cfiFromPercentage(bookDoc.percentage / 100);
-                if (correctCfi) {
-                    rendition.display(correctCfi).then(() => {
-                        const corrLoc = rendition.currentLocation();
-                        if (corrLoc) updateProgress(corrLoc);
-                        setTimeout(() => { isInitialDisplay = false; }, 1000);
-                    }).catch(() => {
-                        isInitialDisplay = false;
-                    });
-                    return;
-                }
-            }
+        // Re-display the original saved CFI now that layout is fully stable.
+        // The first display(cfi) on cold load often lands on page 1 of the
+        // chapter because epub.js calculates column positions before web fonts
+        // finish loading, causing incorrect pagination. After locations.generate()
+        // completes, fonts are loaded and the layout is stable, so a second
+        // display(cfi) resolves to the correct page.
+        if (savedCfi) {
+            rendition.display(savedCfi).then(() => {
+                const corrLoc = rendition.currentLocation();
+                if (corrLoc) updateProgress(corrLoc);
+                setTimeout(() => { isInitialDisplay = false; }, 1000);
+            }).catch(() => {
+                isInitialDisplay = false;
+            });
+        } else {
+            isInitialDisplay = false;
         }
-
-        isInitialDisplay = false;
     }).catch(() => {
         clearTimeout(shieldTimer);
         setTimeout(() => { isInitialDisplay = false; }, 4000);
@@ -420,6 +418,7 @@ async function saveProgress(location) {
 // ── INSTANT SAVE HOOKS ──
 
 function forceSave() {
+    if (isInitialDisplay) return;   // Don't overwrite Firestore while position is still correcting
     clearTimeout(saveTimer);
     const loc = rendition?.currentLocation();
     if (loc) saveProgress(loc);
