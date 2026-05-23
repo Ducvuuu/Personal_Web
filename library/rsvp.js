@@ -27,6 +27,7 @@ let rsvpBaseWpm           = RSVP_MODES[3].wpm;
 let rsvpTimer             = null;
 let rsvpCancelled         = false;
 let rsvpPausedCfi         = null;
+let rsvpExitCfi           = null;   // set in exitRsvpMode, consumed by rsvp-unwrap-done handler
 
 // ── Epub iframe sync state ──
 let rsvpEpubNavigating    = false;
@@ -112,7 +113,11 @@ window.addEventListener('message', e => {
     }
 
     if (e.data.type === 'rsvp-unwrap-done' && !rsvpActive) {
-        if (typeof forceSave === 'function') forceSave();
+        if (rendition && rsvpExitCfi) {
+            try { rendition.display(rsvpExitCfi); } catch (err) { console.warn('RSVP exit display failed:', err); }
+        }
+        rsvpExitCfi = null;
+        setTimeout(() => { rsvpExiting = false; }, 2500);
     }
 });
 
@@ -582,8 +587,12 @@ function exitRsvpMode() {
         if (!exitCfi) exitCfi = activeChapter?.spineHref || null;
     }
 
+    // Store exitCfi for the rsvp-unwrap-done handler, which fires rendition.display()
+    // only after all iframe chunks finish — not at a fixed 280ms that may fire mid-unwrap.
+    rsvpExitCfi = exitCfi;
+
     // forceSave MUST run before rsvpActive = false: saveProgress reads the RSVP
-    // chapter badge and uses rendition.currentLocation() for the CFI.
+    // chapter badge and calls getCleanParagraphCfi() which needs .rsvp-w spans still live.
     if (typeof forceSave === 'function') forceSave();
 
     rsvpActive = false;
@@ -593,20 +602,9 @@ function exitRsvpMode() {
     btn.title = 'RSVP speed reading';
     btn.setAttribute('aria-pressed', 'false');
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
-    rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
-
-    // Mobile exit-freeze fix: the old block ran rendition.resize() AND rendition.display()
-    // back-to-back, stacking two full epub re-layouts in one synchronous frame right after
-    // the synchronous span unwrap. The viewer size does not change in RSVP mode, so the
-    // resize was redundant — a single display() in its own frame snaps to the exit page.
-    setTimeout(() => {
-        if (!rendition) { rsvpExiting = false; return; }
-        if (exitCfi) {
-            try { rendition.display(exitCfi); } catch (err) { console.warn('RSVP exit sync failed:', err); }
-        }
-        // Clear the exit shield after the programmatic transition settles.
-        setTimeout(() => { rsvpExiting = false; }, 2500);
-    }, 280);
+    // rsvp-state:false triggers chunked unwrapWords() in the iframe; when all chunks
+    // finish the iframe posts rsvp-unwrap-done, which fires rendition.display(rsvpExitCfi).
+    rsvpSendToEpub({ type: 'rsvp-state', active: false });
 }
 
 function rsvpOnEpubRelocated() {
