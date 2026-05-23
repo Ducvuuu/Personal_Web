@@ -28,6 +28,7 @@ let rsvpTimer             = null;
 let rsvpCancelled         = false;
 let rsvpPausedCfi         = null;
 let rsvpExitCfi           = null;   // set in exitRsvpMode, consumed by rsvp-unwrap-done handler
+let rsvpMiniPageHandler   = null;   // pending panel transitionend listener (mobile mini-page)
 
 // ── Epub iframe sync state ──
 let rsvpEpubNavigating    = false;
@@ -475,6 +476,7 @@ function rsvpCurrentChapterTitle() {
 // cutout window in the panel. Applied after the panel slide-in animation finishes.
 // To revert: delete these two functions and their calls in enter/exitRsvpMode.
 function rsvpApplyMiniPage() {
+    if (!rsvpActive) return;            // never re-apply the scale transform after exit
     if (window.innerWidth >= 768) return;
     const miniPage   = document.getElementById('rsvp-mini-page');
     const readerArea = document.getElementById('reader-area');
@@ -537,15 +539,19 @@ function enterRsvpMode() {
     btn.setAttribute('aria-pressed', 'true');
     rsvpSetMode(rsvpMode);
 
-    // Mobile: scale #reader-area into the mini-page window once the panel finishes sliding in
+    // Mobile: scale #reader-area into the mini-page window once the panel finishes sliding in.
+    // The panel slides via transform on mobile, so this transitionend also fires on the
+    // slide-OUT during exit — the handler is removed in exitRsvpMode to stop it re-applying
+    // the scale transform after the user has already left RSVP mode.
     if (window.innerWidth < 768) {
         const panel = document.getElementById('rsvp-panel');
-        const onEnd = e => {
+        rsvpMiniPageHandler = e => {
             if (e.propertyName !== 'transform') return;
-            panel.removeEventListener('transitionend', onEnd);
+            panel.removeEventListener('transitionend', rsvpMiniPageHandler);
+            rsvpMiniPageHandler = null;
             rsvpApplyMiniPage();
         };
-        panel.addEventListener('transitionend', onEnd);
+        panel.addEventListener('transitionend', rsvpMiniPageHandler);
     }
 
     setTimeout(() => {
@@ -557,6 +563,13 @@ function enterRsvpMode() {
 
 function exitRsvpMode() {
     rsvpStopPlayer(); // clears rsvpTimer, rsvpNavSafetyTimer, resets all async state
+
+    // Remove any pending mini-page transitionend listener so the panel slide-OUT
+    // (triggered below by removing rsvp-on) can't re-apply the scale transform after exit.
+    if (rsvpMiniPageHandler) {
+        document.getElementById('rsvp-panel')?.removeEventListener('transitionend', rsvpMiniPageHandler);
+        rsvpMiniPageHandler = null;
+    }
 
     // Clear the mini-page scale transform FIRST, before any epub measurement below.
     // A live transform on #reader-area scales getBoundingClientRect results, which
