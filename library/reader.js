@@ -698,7 +698,6 @@ function registerThemes() {
             if (i < spans.length) {
                 setTimeout(next, 0);
             } else {
-                if (document.body) document.body.normalize();
                 wrapped = false;
                 window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
             }
