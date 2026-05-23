@@ -461,6 +461,48 @@ function rsvpCurrentChapterTitle() {
     return title;
 }
 
+// ── Mini-page transform (mobile only) ──
+// Scales #reader-area so the full epub page fits inside the transparent #rsvp-mini-page
+// cutout window in the panel. Applied after the panel slide-in animation finishes.
+// To revert: delete these two functions and their calls in enter/exitRsvpMode.
+function rsvpApplyMiniPage() {
+    if (window.innerWidth >= 768) return;
+    const miniPage   = document.getElementById('rsvp-mini-page');
+    const readerArea = document.getElementById('reader-area');
+    if (!miniPage || !readerArea) return;
+
+    const rect = miniPage.getBoundingClientRect();
+    const H    = rect.height;
+    if (H < 10) return; // not enough space — skip
+
+    const screenH  = window.innerHeight;
+    const Ym       = rect.top;
+    const contentH = screenH - 52 - 56; // viewport minus top-nav and bottom-nav
+    // Cap at 0.45 so the full page is always visible as a miniature; without the cap,
+    // large phones produce S ≈ 0.7+ which barely scales the epub.
+    const S        = Math.min(H / contentH, 0.45);
+    if (S >= 0.95) return; // degenerate guard
+
+    // Vertical origin so the epub content top (y=52) lands at the mini-page top (Ym):
+    //   Yo + (52 - Yo) * S = Ym  →  Yo = (Ym - 52*S) / (1 - S)
+    const Yo = (Ym - 52 * S) / (1 - S);
+    const Xo = window.innerWidth / 2; // center horizontally
+
+    readerArea.style.transition      = 'none';
+    readerArea.style.transformOrigin = `${Xo}px ${Yo.toFixed(2)}px`;
+    readerArea.style.transform       = `scale(${S.toFixed(4)})`;
+    readerArea.style.pointerEvents   = 'none';
+}
+
+function rsvpClearMiniPage() {
+    const readerArea = document.getElementById('reader-area');
+    if (!readerArea) return;
+    readerArea.style.transition      = 'none';
+    readerArea.style.transform       = '';
+    readerArea.style.transformOrigin = '';
+    readerArea.style.pointerEvents   = '';
+}
+
 // ── Mode enter / exit ──
 function enterRsvpMode() {
     rsvpActive = true;
@@ -486,6 +528,17 @@ function enterRsvpMode() {
     btn.setAttribute('aria-pressed', 'true');
     rsvpSetMode(rsvpMode);
 
+    // Mobile: scale #reader-area into the mini-page window once the panel finishes sliding in
+    if (window.innerWidth < 768) {
+        const panel = document.getElementById('rsvp-panel');
+        const onEnd = e => {
+            if (e.propertyName !== 'transform') return;
+            panel.removeEventListener('transitionend', onEnd);
+            rsvpApplyMiniPage();
+        };
+        panel.addEventListener('transitionend', onEnd);
+    }
+
     setTimeout(() => {
         if (rendition) {
             const v = document.getElementById('viewer');
@@ -499,6 +552,11 @@ function enterRsvpMode() {
 
 function exitRsvpMode() {
     rsvpStopPlayer(); // clears rsvpTimer, rsvpNavSafetyTimer, resets all async state
+
+    // Clear the mini-page scale transform FIRST, before any epub measurement below.
+    // A live transform on #reader-area scales getBoundingClientRect results, which
+    // would corrupt epub.js layout math during the exit display().
+    rsvpClearMiniPage();
 
     // 1. Enable exit-shielding to block normal-mode relocated save triggers
     rsvpExiting = true;
