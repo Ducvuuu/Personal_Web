@@ -110,6 +110,10 @@ window.addEventListener('message', e => {
         const parentChapterStart = rsvpChapterBoundaries[chIdx].startWordIdx;
         rsvpJumpToGlobalWord(Math.min(parentChapterStart + e.data.li, rsvpWordsArray.length - 1));
     }
+
+    if (e.data.type === 'rsvp-unwrap-done' && !rsvpActive) {
+        if (typeof forceSave === 'function') forceSave();
+    }
 });
 
 // ── Fetch Gemini key from Firestore ──
@@ -540,14 +544,10 @@ function enterRsvpMode() {
     }
 
     setTimeout(() => {
-        if (rendition) {
-            const v = document.getElementById('viewer');
-            try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
-        }
         // rsvp-get-page wraps words AND seeds initial page anchors in one shot
         rsvpSendToEpub({ type: 'rsvp-get-page' });
         rsvpSendToEpub({ type: 'rsvp-state', active: true });
-    }, 280);
+    }, 150);
 }
 
 function exitRsvpMode() {

@@ -389,24 +389,13 @@ async function saveProgress(location) {
     showSaveStatus('saving');
 
     try {
-        const updateData = {
+        await userLib().doc(bookId).update({
             currentCfi:     cfi,
             percentage:     pct,
             currentChapter: chapter,
             status:         pct >= 99 ? 'finished' : 'reading',
             lastRead:       firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        // Save precise word index if available in RSVP mode
-        if (typeof rsvpActive !== 'undefined' && rsvpActive && typeof rsvpIndex === 'number' && !isNaN(rsvpIndex) && typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
-            updateData.rsvpIndex = rsvpIndex;
-        }
-
-        await userLib().doc(bookId).update(updateData);
-
-        if (bookDoc) {
-            Object.assign(bookDoc, updateData);
-        }
+        });
 
         showSaveStatus('saved');
     } catch (err) {
@@ -692,6 +681,7 @@ function registerThemes() {
         }
         if (document.body) document.body.normalize();
         wrapped = false;
+        window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
     }
 
     function highlight(li) {
