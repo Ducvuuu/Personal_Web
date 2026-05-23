@@ -368,14 +368,14 @@ async function rsvpScoreAllChapters(chapters) {
     return allScores;
 }
 
-// ── Score one chapter with gemini-2.5-flash-lite, compact CSV output ──
+// ── Score one chapter with gemini-3.1-flash-lite, compact CSV output ──
 async function rsvpScoreChapter(chapter) {
     const lines = chapter.sentences.map((s, i) => `${i}: ${s.text}`).join('\n');
 
     for (let attempt = 0; attempt < 2; attempt++) {
         try {
             const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${rsvpGeminiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${rsvpGeminiKey}`,
                 {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
