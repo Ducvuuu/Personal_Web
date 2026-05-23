@@ -310,6 +310,10 @@ function showSaveStatus(state) {
         el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Not saved';
         el.className = 'opacity-100 transition-opacity duration-300 font-outfit text-[11px] flex items-center justify-center gap-1 mt-0.5 text-red-500';
         saveStatusTimer = setTimeout(() => el.classList.replace('opacity-100', 'opacity-0'), 3000);
+    } else if (state === 'offline') {
+        el.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Saved offline — will sync';
+        el.className = 'opacity-100 transition-opacity duration-300 font-outfit text-[11px] flex items-center justify-center gap-1 mt-0.5 text-warm-500';
+        saveStatusTimer = setTimeout(() => el.classList.replace('opacity-100', 'opacity-0'), 3000);
     }
 }
 
@@ -386,17 +390,26 @@ async function saveProgress(location) {
 
     if (!cfi) return;
 
-    showSaveStatus('saving');
+    showSaveStatus(navigator.onLine ? 'saving' : 'offline');
+
+    const writePromise = userLib().doc(bookId).update({
+        currentCfi:     cfi,
+        percentage:     pct,
+        currentChapter: chapter,
+        status:         pct >= 99 ? 'finished' : 'reading',
+        lastRead:       firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Offline, Firestore queues the write in memory and only resolves it once the
+    // connection returns. Awaiting here would hang the indicator on "saving…" for
+    // the whole flight, so we return early and let it flip to "Saved" on reconnect.
+    if (!navigator.onLine) {
+        writePromise.then(() => showSaveStatus('saved')).catch(err => console.error('Save failed:', err));
+        return;
+    }
 
     try {
-        await userLib().doc(bookId).update({
-            currentCfi:     cfi,
-            percentage:     pct,
-            currentChapter: chapter,
-            status:         pct >= 99 ? 'finished' : 'reading',
-            lastRead:       firebase.firestore.FieldValue.serverTimestamp()
-        });
-
+        await writePromise;
         showSaveStatus('saved');
     } catch (err) {
         console.error('Save failed:', err);
@@ -416,6 +429,16 @@ function forceSave() {
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
         forceSave();
+    }
+});
+
+// A loaded book lives entirely in memory; reloading while offline (e.g. an
+// accidental Cmd+R on a flight) would need the network to re-fetch it and leave
+// you stranded. Only guard when offline — online, a refresh just reloads cleanly.
+window.addEventListener('beforeunload', (e) => {
+    if (epubBook && !navigator.onLine) {
+        e.preventDefault();
+        e.returnValue = '';
     }
 });
 
