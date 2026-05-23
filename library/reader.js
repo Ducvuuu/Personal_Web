@@ -694,7 +694,6 @@ function registerThemes() {
             }
             parent.removeChild(span);
         }
-        if (document.body) document.body.normalize();
         wrapped = false;
     }
 
