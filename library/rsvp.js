@@ -31,6 +31,7 @@ let rsvpPausedCfi         = null;
 // ── Epub iframe sync state ──
 let rsvpEpubNavigating    = false;
 let rsvpNavSafetyTimer    = null;   // releases rsvpEpubNavigating if 'relocated' never fires
+let rsvpCurrentChapterIdx = -1;     // tracks which chapter the epub is currently showing
 
 // ── Page-word anchor state ──
 let rsvpPageStartGlobal   = -1;     // global index of first visible word on current page
@@ -332,6 +333,7 @@ function rsvpDomExtract(doc) {
 // ── Score all chapters upfront; load from Storage cache if available ──
 async function rsvpScoreAllChapters(chapters) {
     const cacheFile = storage.ref(`library/rsvp/${bookId}.csv`);
+    const totalSentences = chapters.reduce((n, ch) => n + ch.sentences.length, 0);
 
     // Try loading from Storage first
     try {
@@ -339,7 +341,12 @@ async function rsvpScoreAllChapters(chapters) {
         const res = await fetch(url);
         if (res.ok) {
             const csv = await res.text();
-            if (csv.trim().length > 0) return csv.trim().split(',').map(Number);
+            if (csv.trim().length > 0) {
+                const cached = csv.trim().split(',').map(Number);
+                // Validate cache: score count must match current sentence count
+                if (cached.length === totalSentences) return cached;
+                console.warn(`RSVP score cache stale (${cached.length} vs ${totalSentences} sentences), regenerating…`);
+            }
         }
     } catch {}
 
@@ -462,6 +469,15 @@ function enterRsvpMode() {
     rsvpPageEndGlobal   = -1;
     rsvpWaitingForPage  = false;
     rsvpManualJump      = false;
+
+    // Initialize chapter tracking from current rsvpIndex
+    rsvpCurrentChapterIdx = 0;
+    for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+        if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
+            rsvpCurrentChapterIdx = i;
+            break;
+        }
+    }
 
     document.body.classList.add('rsvp-on');
     const btn = document.getElementById('rsvp-btn');
@@ -594,7 +610,8 @@ function rsvpSendToEpub(msg) {
 function rsvpHighlightInEpub(globalIdx) {
     if (rsvpEpubNavigating) return;
 
-    // Find the chapter containing globalIdx
+    // Find the chapter containing globalIdx via word-index boundaries
+    // (avoids the expensive rendition.currentLocation() call on every word)
     let chIdx = 0;
     for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
         if (rsvpChapterBoundaries[i].startWordIdx <= globalIdx) {
@@ -604,22 +621,14 @@ function rsvpHighlightInEpub(globalIdx) {
     }
     const chapter = rsvpChapterBoundaries[chIdx];
 
-    // Cross-chapter sync: if playback has entered a new chapter, navigate to it directly
-    // instead of sending li=0 to the old chapter (which would flip backward)
-    const loc = rendition?.currentLocation();
-    if (loc && loc.start && loc.start.href) {
-        const currentHref = loc.start.href.split('#')[0];
-        const targetHref  = (chapter.spineHref || '').split('#')[0];
-        const isSameChapter = currentHref === targetHref ||
-                              currentHref.endsWith(targetHref) ||
-                              targetHref.endsWith(currentHref.split('/').pop());
-        if (!isSameChapter) {
-            rsvpEpubNavigating = true;
-            clearTimeout(rsvpNavSafetyTimer);
-            rsvpNavSafetyTimer = setTimeout(() => { rsvpEpubNavigating = false; }, 3000);
-            rendition.display(chapter.spineHref);
-            return; // rsvpOnEpubRelocated will resume highlighting after navigation settles
-        }
+    // Cross-chapter sync: detect via tracked chapter index instead of DOM query
+    if (chIdx !== rsvpCurrentChapterIdx) {
+        rsvpCurrentChapterIdx = chIdx;
+        rsvpEpubNavigating = true;
+        clearTimeout(rsvpNavSafetyTimer);
+        rsvpNavSafetyTimer = setTimeout(() => { rsvpEpubNavigating = false; }, 3000);
+        rendition.display(chapter.spineHref);
+        return; // rsvpOnEpubRelocated will resume highlighting after navigation settles
     }
 
     rsvpSendToEpub({ type: 'rsvp-hl', li: globalIdx - chapter.startWordIdx });
@@ -719,11 +728,16 @@ function rsvpLoop() {
 
     if (rsvpActive) rsvpHighlightInEpub(rsvpIndex);
 
-    const ms = (60000 / rsvpBaseWpm) * wd.complexity;
+    // Dampen complexity: compress [0.7, 1.8] → [0.88, 1.32] so scores don't drag speed too far
+    const dampedComplexity = 1.0 + (wd.complexity - 1.0) * 0.4;
+    const wordMs = 60000 / rsvpBaseWpm;
+    const ms = wordMs * dampedComplexity;
     rsvpTimer = setTimeout(() => {
         if (wd.pause_after_ms > 0) {
             rsvpSetWord('');
-            rsvpTimer = setTimeout(() => { rsvpIndex++; rsvpLoop(); }, wd.pause_after_ms);
+            // Scale pauses proportionally to WPM — fixed 150/400ms dominates at high speeds
+            const scaledPause = wd.pause_after_ms * Math.min(1, 320 / rsvpBaseWpm);
+            rsvpTimer = setTimeout(() => { rsvpIndex++; rsvpLoop(); }, scaledPause);
         } else {
             rsvpIndex++;
             rsvpLoop();
