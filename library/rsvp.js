@@ -595,18 +595,22 @@ function exitRsvpMode() {
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
     rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
 
-    // Mobile exit-freeze fix: the old block ran rendition.resize() AND rendition.display()
-    // back-to-back, stacking two full epub re-layouts in one synchronous frame right after
-    // the synchronous span unwrap. The viewer size does not change in RSVP mode, so the
-    // resize was redundant — a single display() in its own frame snaps to the exit page.
-    setTimeout(() => {
-        if (!rendition) { rsvpExiting = false; return; }
-        if (exitCfi) {
-            try { rendition.display(exitCfi); } catch (err) { console.warn('RSVP exit sync failed:', err); }
-        }
-        // Clear the exit shield after the programmatic transition settles.
-        setTimeout(() => { rsvpExiting = false; }, 2500);
-    }, 280);
+    // On desktop: display(exitCfi) snaps to the precise exit paragraph.
+    // On mobile: skip it — epub.js paginated layout runs a synchronous
+    // getBoundingClientRect column-calculation loop that blocks the JS thread
+    // for 500ms–2s on mobile, causing the visible freeze. The RSVP loop already
+    // kept the epub page in sync via rendition.next(), so the position is correct.
+    if (window.innerWidth >= 768) {
+        setTimeout(() => {
+            if (!rendition) { rsvpExiting = false; return; }
+            if (exitCfi) {
+                try { rendition.display(exitCfi); } catch (err) { console.warn('RSVP exit sync failed:', err); }
+            }
+            setTimeout(() => { rsvpExiting = false; }, 2500);
+        }, 280);
+    } else {
+        setTimeout(() => { rsvpExiting = false; }, 600);
+    }
 }
 
 function rsvpOnEpubRelocated() {
