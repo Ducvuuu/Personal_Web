@@ -684,17 +684,26 @@ function registerThemes() {
 
     function unwrapWords() {
         if (!wrapped) return;
-        var spans = document.querySelectorAll('.rsvp-w');
-        for (var i = 0; i < spans.length; i++) {
-            var span = spans[i];
-            var parent = span.parentNode;
-            if (!parent) continue;
-            while (span.firstChild) {
-                parent.insertBefore(span.firstChild, span);
-            }
-            parent.removeChild(span);
-        }
         wrapped = false;
+        var spans = Array.prototype.slice.call(document.querySelectorAll('.rsvp-w'));
+        if (spans.length === 0) return;
+        // Process in chunks so the main thread isn't blocked for the full chapter
+        // (epub.js renders the entire chapter DOM, so spans.length can be 3k–10k+)
+        var i = 0;
+        var CHUNK = 200;
+        function next() {
+            var end = Math.min(i + CHUNK, spans.length);
+            for (; i < end; i++) {
+                var span = spans[i];
+                var parent = span.parentNode;
+                if (!parent) continue;
+                var frag = document.createDocumentFragment();
+                while (span.firstChild) frag.appendChild(span.firstChild);
+                parent.replaceChild(frag, span);
+            }
+            if (i < spans.length) setTimeout(next, 0);
+        }
+        next();
     }
 
     function highlight(li) {
