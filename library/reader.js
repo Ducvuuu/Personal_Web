@@ -389,24 +389,13 @@ async function saveProgress(location) {
     showSaveStatus('saving');
 
     try {
-        const updateData = {
+        await userLib().doc(bookId).update({
             currentCfi:     cfi,
             percentage:     pct,
             currentChapter: chapter,
             status:         pct >= 99 ? 'finished' : 'reading',
             lastRead:       firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        // Save precise word index if available in RSVP mode
-        if (typeof rsvpActive !== 'undefined' && rsvpActive && typeof rsvpIndex === 'number' && !isNaN(rsvpIndex) && typeof rsvpWordsArray !== 'undefined' && rsvpWordsArray && rsvpWordsArray.length > 0) {
-            updateData.rsvpIndex = rsvpIndex;
-        }
-
-        await userLib().doc(bookId).update(updateData);
-
-        if (bookDoc) {
-            Object.assign(bookDoc, updateData);
-        }
+        });
 
         showSaveStatus('saved');
     } catch (err) {
@@ -682,10 +671,16 @@ function registerThemes() {
     }
 
     function unwrapWords() {
-        if (!wrapped) return;
-        wrapped = false;
+        if (!wrapped) {
+            window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
+            return;
+        }
         var spans = Array.prototype.slice.call(document.querySelectorAll('.rsvp-w'));
-        if (spans.length === 0) return;
+        if (spans.length === 0) {
+            wrapped = false;
+            window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
+            return;
+        }
         // Process in chunks so the main thread isn't blocked for the full chapter
         // (epub.js renders the entire chapter DOM, so spans.length can be 3k–10k+)
         var i = 0;
@@ -700,7 +695,13 @@ function registerThemes() {
                 while (span.firstChild) frag.appendChild(span.firstChild);
                 parent.replaceChild(frag, span);
             }
-            if (i < spans.length) setTimeout(next, 0);
+            if (i < spans.length) {
+                setTimeout(next, 0);
+            } else {
+                if (document.body) document.body.normalize();
+                wrapped = false;
+                window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
+            }
         }
         next();
     }
