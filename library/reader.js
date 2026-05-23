@@ -671,38 +671,16 @@ function registerThemes() {
     }
 
     function unwrapWords() {
-        if (!wrapped) {
-            window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
-            return;
-        }
-        var spans = Array.prototype.slice.call(document.querySelectorAll('.rsvp-w'));
-        if (spans.length === 0) {
-            wrapped = false;
-            window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
-            return;
-        }
-        // Process in chunks so the main thread isn't blocked for the full chapter
-        // (epub.js renders the entire chapter DOM, so spans.length can be 3k–10k+)
-        var i = 0;
-        var CHUNK = 200;
-        function next() {
-            var end = Math.min(i + CHUNK, spans.length);
-            for (; i < end; i++) {
-                var span = spans[i];
-                var parent = span.parentNode;
-                if (!parent) continue;
-                var frag = document.createDocumentFragment();
-                while (span.firstChild) frag.appendChild(span.firstChild);
-                parent.replaceChild(frag, span);
-            }
-            if (i < spans.length) {
-                setTimeout(next, 0);
-            } else {
-                wrapped = false;
-                window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
-            }
-        }
-        next();
+        // Don't physically remove the word spans. Tearing down thousands of .rsvp-w
+        // spans on exit (synchronously, or chunked with setTimeout) thrashes iframe
+        // layout and stalls the main thread — that delay is what makes exit feel frozen
+        // and leaves the highlight painted on screen. Without body.rsvp-is-active the
+        // spans are visually inert, so we only clear the active-word highlight and leave
+        // them in place. wrapped stays true: re-entering RSVP on the same rendered
+        // section then skips re-parsing entirely.
+        var els = document.querySelectorAll('.rsvp-current');
+        for (var i = 0; i < els.length; i++) els[i].classList.remove('rsvp-current');
+        window.parent.postMessage({ type: 'rsvp-unwrap-done' }, '*');
     }
 
     function highlight(li) {
