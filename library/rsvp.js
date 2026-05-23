@@ -503,6 +503,27 @@ function exitRsvpMode() {
     // 1. Enable exit-shielding to block normal-mode relocated save triggers
     rsvpExiting = true;
 
+    // Resolve the precise exit CFI BEFORE unwrapping. getCleanParagraphCfi reads the
+    // .rsvp-w spans, which the rsvp-state:false message destroys; previously this ran
+    // 280ms later (after the unwrap) so it always missed and fell back to coarse %.
+    let exitCfi = null;
+    if (rsvpWordsArray.length > 0) {
+        let chIdx = 0;
+        for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
+            if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) { chIdx = i; break; }
+        }
+        const activeChapter = rsvpChapterBoundaries[chIdx];
+        const localWordIdx  = rsvpIndex - activeChapter.startWordIdx;
+
+        if (typeof getCleanParagraphCfi === 'function') {
+            exitCfi = getCleanParagraphCfi(activeChapter.spineHref, localWordIdx);
+        }
+        if (!exitCfi && epubBook?.locations?.length?.() > 0) {
+            try { exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length); } catch {}
+        }
+        if (!exitCfi) exitCfi = activeChapter?.spineHref || null;
+    }
+
     // forceSave MUST run before rsvpActive = false: saveProgress reads the RSVP
     // chapter badge and uses rendition.currentLocation() for the CFI.
     if (typeof forceSave === 'function') forceSave();
@@ -516,54 +537,17 @@ function exitRsvpMode() {
     rsvpSendToEpub({ type: 'rsvp-hl', li: -1 });
     rsvpSendToEpub({ type: 'rsvp-state', active: false }); // removes rsvp-is-active + unwraps spans
 
+    // Mobile exit-freeze fix: the old block ran rendition.resize() AND rendition.display()
+    // back-to-back, stacking two full epub re-layouts in one synchronous frame right after
+    // the synchronous span unwrap. The viewer size does not change in RSVP mode, so the
+    // resize was redundant — a single display() in its own frame snaps to the exit page.
     setTimeout(() => {
         if (!rendition) { rsvpExiting = false; return; }
-        const v = document.getElementById('viewer');
-        try { rendition.resize(v.offsetWidth, v.offsetHeight); } catch {}
-
-        // Sync the epub view to the precise RSVP paragraph exit position
-        if (rsvpWordsArray.length > 0) {
-            let chIdx = 0;
-            for (let i = rsvpChapterBoundaries.length - 1; i >= 0; i--) {
-                if (rsvpChapterBoundaries[i].startWordIdx <= rsvpIndex) {
-                    chIdx = i;
-                    break;
-                }
-            }
-            const activeChapter = rsvpChapterBoundaries[chIdx];
-            const localWordIdx  = rsvpIndex - activeChapter.startWordIdx;
-
-            // Try to get precise paragraph-level CFI
-            let exitCfi = null;
-            if (typeof getCleanParagraphCfi === 'function') {
-                exitCfi = getCleanParagraphCfi(activeChapter.spineHref, localWordIdx);
-            }
-            
-            // Fallback 1: locations percentage-based CFI
-            if (!exitCfi && epubBook?.locations?.length?.() > 0) {
-                try {
-                    exitCfi = epubBook.locations.cfiFromPercentage(rsvpIndex / rsvpWordsArray.length);
-                } catch {}
-            }
-            
-            // Fallback 2: start of chapter
-            if (!exitCfi) {
-                exitCfi = activeChapter?.spineHref || null;
-            }
-
-            if (exitCfi) {
-                try {
-                    rendition.display(exitCfi);
-                } catch (err) {
-                    console.warn('RSVP exit sync failed:', err);
-                }
-            }
+        if (exitCfi) {
+            try { rendition.display(exitCfi); } catch (err) { console.warn('RSVP exit sync failed:', err); }
         }
-
-        // 3. Clear the exit shield after programmatic transition settles completely (2500ms)
-        setTimeout(() => {
-            rsvpExiting = false;
-        }, 2500);
+        // Clear the exit shield after the programmatic transition settles.
+        setTimeout(() => { rsvpExiting = false; }, 2500);
     }, 280);
 }
 
