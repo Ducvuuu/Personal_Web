@@ -688,10 +688,7 @@ function registerThemes() {
             var span = spans[i];
             var parent = span.parentNode;
             if (!parent) continue;
-            while (span.firstChild) {
-                parent.insertBefore(span.firstChild, span);
-            }
-            parent.removeChild(span);
+            parent.replaceChild(document.createTextNode(span.textContent), span);
         }
         if (document.body) document.body.normalize();
         wrapped = false;
