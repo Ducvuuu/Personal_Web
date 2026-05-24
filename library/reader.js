@@ -128,10 +128,17 @@ async function initReader(url) {
         new Promise((_, r) => setTimeout(() => r(new Error('display-timeout')), 30000))
     ]);
 
+    // Snapshot the saved position before anything can overwrite bookDoc. If we
+    // can never display it, `restored` stays false and the shield logic below
+    // keeps saves disabled so we don't clobber the good bookmark with the
+    // book-start fallback.
+    const savedCfi = bookDoc?.currentCfi || null;
+    let restored = false;
+
     try {
-        if (bookDoc.currentCfi) {
-            try { await tryDisplay(bookDoc.currentCfi); }
-            catch { await tryDisplay(); }
+        if (savedCfi) {
+            try { await tryDisplay(savedCfi); restored = true; }
+            catch { await tryDisplay(); }   // show book start so the page isn't blank
         } else {
             await tryDisplay();
         }
@@ -154,11 +161,15 @@ async function initReader(url) {
 
     showLoading(null);
 
-    // Snapshot the original CFI before anything can overwrite bookDoc
-    const savedCfi = bookDoc?.currentCfi || null;
+    // Releasing the shield is gated on `restored`. When a saved position exists
+    // but we never managed to display it, keep the shield up for the whole
+    // session: on mobile a stray relocate/resize or the visibilitychange save
+    // fired on backgrounding the tab would otherwise overwrite the good Firestore
+    // bookmark with the book-start fallback ("reverts to chapter 1").
+    const releaseShield = () => { if (!savedCfi || restored) isInitialDisplay = false; };
 
-    // Safety fallback: always disable shield after 10 seconds even if locations stall
-    let shieldTimer = setTimeout(() => { isInitialDisplay = false; }, 10000);
+    // Last-resort release in case locations never finish generating.
+    let shieldTimer = setTimeout(releaseShield, 10000);
 
     // ── BACKGROUND TASKS ──
     epubBook.locations.generate(1600).then(() => {
@@ -166,26 +177,29 @@ async function initReader(url) {
         const loc = rendition.currentLocation();
         if (loc) updateProgress(loc);
 
-        // Re-display the original saved CFI now that layout is fully stable.
-        // The first display(cfi) on cold load often lands on page 1 of the
-        // chapter because epub.js calculates column positions before web fonts
-        // finish loading, causing incorrect pagination. After locations.generate()
-        // completes, fonts are loaded and the layout is stable, so a second
-        // display(cfi) resolves to the correct page.
+        // Re-display the saved CFI now that layout is fully stable. The first
+        // display(cfi) on cold load often lands on page 1 of the chapter because
+        // epub.js calculates column positions before web fonts finish loading.
+        // After locations.generate() completes, fonts are loaded and the layout
+        // is stable, so display(cfi) resolves to the correct page. This is also
+        // our chance to recover if the initial restore failed entirely, so we
+        // retry once before giving up.
         if (savedCfi) {
-            rendition.display(savedCfi).then(() => {
+            const settle = () => {
+                restored = true;
                 const corrLoc = rendition.currentLocation();
                 if (corrLoc) updateProgress(corrLoc);
-                setTimeout(() => { isInitialDisplay = false; }, 1000);
-            }).catch(() => {
-                isInitialDisplay = false;
-            });
+                setTimeout(releaseShield, 1000);
+            };
+            rendition.display(savedCfi)
+                .then(settle)
+                .catch(() => rendition.display(savedCfi).then(settle).catch(releaseShield));
         } else {
-            isInitialDisplay = false;
+            releaseShield();
         }
     }).catch(() => {
         clearTimeout(shieldTimer);
-        setTimeout(() => { isInitialDisplay = false; }, 4000);
+        setTimeout(releaseShield, 4000);
     });
 
     epubBook.loaded.navigation
