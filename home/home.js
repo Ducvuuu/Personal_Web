@@ -120,15 +120,34 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Promise data ────────────────────────────────────────────────────────
     const promiseContentMap = {
         nishitani: {
-            eyebrow: '[ Nishitani — Religion and Nothingness, 1961 ]',
-            body: `<div class="promise-ph-block"><p>Basically just my stance on nihilism, what is the meaning of this life, and how to live in a world that is void of meaning. I think everyone does need to have a firm stance on this, otherwise it's easy to fall into nihilism. For me, I'm more influenced by the Kyoto School. I think they articulate it something like this:</p>
-<p><em>"The universe has no inherent meaning, but this emptiness is not a void to be feared. It is śūnyatā, the groundless ground from which all things arise and to which they return. The crisis of nihilism comes only when the ego stands apart, demanding meaning from a world that owes it none. The way through is not to conquer the emptiness, nor to assert the self against it, but to pass into it so completely that the boundary between self and void dissolves. When the self empties itself, becomes transparent to its own groundlessness, the things of the world appear again with extraordinary vividness, each exactly what it is, nothing diminished. To become what you are on the near side of nothing: this is not the defeat of meaning, but its quiet recovery, on the other side of the abyss."</em></p>
-<p>So weirdly, in the paradoxical way the Buddhists really love :)), it just means the resolution to nihilism, to the lack of meaning, is dissolution? Stop fighting it, stop demanding something that was never there to begin with, and you start seeing reality and existence in its true nature. <em>Become one with the void</em>??? Or as the Buddhists would say, it's the attachment to these worldly matters that is the source of our suffering.</p>
-<p>But here is where I don't agree with either of them. Fuck them, I don't want to dissolve, I want to be myself?? I <em>want</em> to be attached, because attachment, even when it hurts, isn't a fault or something that needs fixing. It's evidence of how wonderful the world is, and without it, nothing matters. To put it in the mytho phrasing thing:</p>
-<p><em>"Yes, the void is there, the empty universe void of meaning is there, but the answer to it isn't detachment. Mine is: let's be more attached, more woundable on purpose. The world they teach you to release your grip on is exactly the world I choose to grip, a particular city, particular people, fleeting moments of connection, closeness that won't ever happen again till the end of Time, particular beauty that will not last, and love. Non-attachment is their answer to impermanence. Mine is the opposite. I think the blossom is beautiful because it falls, human love because we die, or will get separated eventually, not in spite of it. So I leave the gate open. I choose to grieve: the beauties of this world, and the despair alike."</em></p>
-<p>It hurts, more of the time lol :))), suffering, even. But not for its own sake. I'm not chasing the wound. I just won't reach peace by cutting away the things I love, and I'd rather feel all of it than be calm and untouched. Caring isn't a flaw to be refined away. If anything, there should be <em>more</em> care in this dark universe, because it's the whole point of being a consciousness in a world this full of wonders.</p></div>`,
-            landing: "So that's my answer to a universe with no built-in meaning: so what? I'll choose to love it anyway. Forever and always.",
-            icon: `<img src="https://firebasestorage.googleapis.com/v0/b/personal-web-journal.firebasestorage.app/o/Home%20Page%20Assets%2FVoid.jpg?alt=media&token=e7c60445-f18b-42e1-bab6-3674354e0fea" alt="Nishitani" class="w-full h-auto rounded-2xl border border-warm-800 shadow-xl object-cover">`,
+            eyebrow: `<i class="fa-solid fa-circle-notch icon-slow-spin mr-2 opacity-75" aria-hidden="true"></i>[ Nishitani, Religion and Nothingness, 1961 ]`,
+            body: `<div class="space-y-6 text-warm-300">
+                <p class="text-base leading-[1.9]">Basically just my stance on nihilism, what is the meaning of this life, and how to live in a world that is void of meaning. I think everyone does need to have a firm stance on this, otherwise it's easy to fall into nihilism. For me, I'm more influenced by the Kyoto School. I think they articulate it something like this:</p>
+                <blockquote class="quote-kyoto">
+                    <p>"The universe has no inherent meaning, but this emptiness is not a void to be feared. It is <em>śūnyatā</em>, the groundless ground from which all things arise and to which they return. The crisis of nihilism comes only when the ego stands apart, demanding meaning from a world that owes it none. The way through is not to conquer the emptiness, nor to assert the self against it, but to pass into it so completely that the boundary between self and void dissolves. When the self empties itself, becomes transparent to its own groundlessness, the things of the world appear again with extraordinary vividness, each exactly what it is, nothing diminished. To become what you are on the near side of nothing: this is not the defeat of meaning, but its quiet recovery, on the other side of the abyss."</p>
+                    <span class="attribution"><i class="fa-solid fa-yin-yang" aria-hidden="true"></i>Kyoto School reading of Nishitani</span>
+                </blockquote>
+                <p class="text-base leading-[1.9]">So weirdly, in the paradoxical way the Buddhists really love :)), it just means the resolution to nihilism, to the lack of meaning, is dissolution? Stop fighting it, stop demanding something that was never there to begin with, and you start seeing reality and existence in its true nature. <em class="italic text-warm-400">Become one with the void???</em> Or as the Buddhists would say, it's the attachment to these worldly matters that is the source of our suffering.</p>
+                <div class="pivot">
+                    <div class="pivot-line"></div>
+                    <span class="pivot-mark"><i class="fa-solid fa-bolt" aria-hidden="true"></i>but here I disagree</span>
+                    <div class="pivot-line right"></div>
+                </div>
+                <p class="text-base leading-[1.9] text-warm-100">But here is where I don't agree with either of them. Fuck them, I don't want to dissolve, I want to be myself?? I <span class="font-medium">want</span> to be attached, because attachment, even when it hurts, isn't a fault or something that needs fixing. It's evidence of how wonderful the world is, and without it, nothing matters. To put it in the mytho phrasing thing:</p>
+                <blockquote class="quote-ducanh">
+                    <i class="fa-solid fa-heart quote-heart" aria-hidden="true"></i>
+                    <p>"Yes, the void is there, the empty universe void of meaning is there, but the answer to it isn't detachment. Mine is: <span class="text-warm-100 font-medium not-italic">let's be more attached, more woundable on purpose.</span> The world they teach you to release your grip on is exactly the world I choose to grip, a particular city, particular people, fleeting moments of connection, closeness that won't ever happen again till the end of Time, particular beauty that will not last, and love. Non-attachment is their answer to impermanence. Mine is the opposite. I think the blossom is beautiful <span class="text-warm-100 font-medium not-italic">because</span> it falls, human love because we die, or will get separated eventually, not in spite of it. So I leave the gate open. I choose to grieve: the beauties of this world, and the despair alike."</p>
+                </blockquote>
+                <p class="text-base leading-[1.9]">It hurts, more of the time lol :))), suffering, even. But not for its own sake. I'm not chasing the wound. I just won't reach peace by cutting away the things I love, and I'd rather feel all of it than be calm and untouched. Caring isn't a flaw to be refined away. If anything, there should be <span class="text-warm-100 font-medium">more</span> care in this dark universe, because it's the whole point of being a consciousness in a world this full of wonders.</p>
+            </div>`,
+            landing: `<i class="fa-solid fa-infinity mr-2 text-warm-700 opacity-70" aria-hidden="true"></i>So that's my answer to a universe with no built-in meaning: so what? I'll choose to love it anyway. Forever and always.`,
+            icon: `<img src="https://firebasestorage.googleapis.com/v0/b/personal-web-journal.firebasestorage.app/o/Home%20Page%20Assets%2FVoid.jpg?alt=media&token=e7c60445-f18b-42e1-bab6-3674354e0fea" alt="Void. Image for the Nishitani tile" class="w-full h-auto rounded-2xl border border-warm-800 shadow-xl object-cover block">
+            <div class="mt-4">
+                <p class="font-heavy text-sm text-warm-200 mb-1">Religion and Nothingness</p>
+                <p class="font-mono text-[0.62rem] uppercase tracking-widest text-warm-700">Nishitani Keiji · 1961 · Kyoto School</p>
+                <hr class="border-t border-warm-800 my-3">
+                <p class="text-[0.78rem] text-warm-700 italic leading-relaxed">On the movement from nihilism through nihility to śūnyatā, and why emptiness is not absence, but the condition for encounter.</p>
+            </div>`,
         },
         fromm: {
             eyebrow: '[ Fromm — The Art of Loving, 1956 ]',
@@ -177,9 +196,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.openPromiseModal = function (key) {
         const data = promiseContentMap[key];
-        promiseEyebrow.innerText        = data.eyebrow;
+        promiseEyebrow.innerHTML        = data.eyebrow;
         promiseTextContent.innerHTML    = data.body;
-        promiseLanding.innerText        = data.landing;
+        promiseLanding.innerHTML        = data.landing;
         promiseIconSlot.innerHTML       = data.icon;
         promiseModal.classList.remove('opacity-0', 'pointer-events-none');
         setTimeout(() => {
