@@ -142,3 +142,65 @@
 
 /* ── Tab panel hidden ── */
 .tab-panel.hidden { display: none; }
+
+/* ── Promise modal essay ── */
+.quote-kyoto {
+    border-left: 2px solid rgba(245, 211, 179, 0.22);
+    background: rgba(255, 251, 247, 0.025);
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+}
+.quote-kyoto p {
+    font-size: 0.95rem;
+    line-height: 1.9;
+    font-style: italic;
+    color: #ebad7a;
+    font-weight: 300;
+}
+.quote-kyoto .attribution {
+    display: block;
+    margin-top: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #b15129;
+    font-style: normal;
+}
+.quote-kyoto .attribution i { margin-right: 0.45em; color: #b15129; opacity: 0.8; }
+
+.pivot { display: flex; align-items: center; gap: 1rem; margin: 0.5rem 0; }
+.pivot-line { flex: 1; height: 1px; background: linear-gradient(to right, #4a2517, rgba(143,66,40,0.3)); }
+.pivot-line.right { background: linear-gradient(to left, #4a2517, rgba(143,66,40,0.3)); }
+.pivot-mark {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #b15129;
+    white-space: nowrap;
+}
+.pivot-mark i { margin-right: 0.4em; color: #d56a31; }
+
+.quote-ducanh {
+    position: relative;
+    border-left: 2px solid rgba(213, 106, 49, 0.55);
+    background: rgba(213, 106, 49, 0.04);
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+}
+.quote-ducanh p {
+    font-size: 0.95rem;
+    line-height: 1.95;
+    font-style: italic;
+    color: #fbe8d4;
+    font-weight: 400;
+}
+.quote-heart {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #d56a31;
+    font-size: 0.85rem;
+    opacity: 0.65;
+}
