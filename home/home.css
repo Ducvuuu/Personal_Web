@@ -204,3 +204,19 @@
     font-size: 0.85rem;
     opacity: 0.65;
 }
+
+/* ── Edit mode ── */
+body.edit-mode-active [data-edit-key] {
+    outline: 1px dashed rgba(213, 106, 49, 0.5);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
+    transition: outline-color 0.15s ease, background-color 0.15s ease;
+}
+body.edit-mode-active [data-edit-key]:hover,
+body.edit-mode-active [data-edit-key]:focus {
+    outline-color: #d56a31;
+    background-color: rgba(213, 106, 49, 0.06);
+}
+#edit-mode-toggle[aria-pressed="true"] {
+    background-color: #d56a31;
+}
