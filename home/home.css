@@ -7,10 +7,161 @@
 }
 
 @keyframes gentle-float {
-    0%   { transform: translateY(0px)  rotate(-2deg); }
-    50%  { transform: translateY(-6px) rotate(-1.5deg); }
-    100% { transform: translateY(0px)  rotate(-2deg); }
+    0%   { transform: translateY(0px)  translateX(-50%); }
+    50%  { transform: translateY(-6px) translateX(-50%); }
+    100% { transform: translateY(0px)  translateX(-50%); }
 }
 .animate-gentle-float {
-    animation: gentle-float 6s ease-in-out infinite;
+    animation: gentle-float 3s ease-in-out infinite;
+}
+
+/* ── Top nav links ── */
+.top-nav-link.active {
+    background-color: #fbe8d4; /* warm-200 */
+    color: #4a2517;            /* warm-900 */
+}
+
+/* ── Side nav ── */
+.side-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    color: #ebad7a; /* warm-400 */
+    transition: background-color 0.15s, color 0.15s;
+}
+.side-nav-link:hover,
+.side-nav-link.active {
+    background-color: #fbe8d4; /* warm-200 */
+    color: #4a2517;            /* warm-900 */
+}
+
+.side-nav-tooltip {
+    position: absolute;
+    left: calc(100% + 0.75rem);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #4a2517;
+    color: #fffbf7;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.4rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.side-nav-link:hover .side-nav-tooltip {
+    opacity: 1;
+}
+
+/* ── Shelf tabs ── */
+.shelf-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid #f2e3d5;
+    background: white;
+    color: #b15129; /* warm-700 */
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.shelf-tab:hover {
+    background-color: #fdf5eb; /* warm-100 */
+}
+.shelf-tab.active {
+    background-color: #4a2517; /* warm-900 */
+    color: #fffbf7;             /* warm-50 */
+    border-color: #4a2517;
+}
+
+/* ── Cover / image placeholders ── */
+.cover-placeholder {
+    background: linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%);
+}
+.ph-block {
+    background: linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%);
+}
+.ph-inline {
+    display: inline-block;
+    background: #fbe8d4;
+    border-radius: 4px;
+    height: 1em;
+    vertical-align: middle;
+}
+
+/* ── Interest tags ── */
+.interest-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #fdf5eb; /* warm-100 */
+    border: 1px solid #fbe8d4; /* warm-200 */
+    color: #8f4228; /* warm-800 */
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 999px;
+}
+
+/* ── Promise tile ── */
+.promise-tile {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+}
+.promise-tile:focus-visible {
+    outline: 2px solid #e38847;
+    outline-offset: 2px;
+    border-radius: 1.5rem;
+}
+
+/* ── No scrollbar ── */
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── Slow spin (promise icon) ── */
+@keyframes slow-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.icon-slow-spin {
+    animation: slow-spin 20s linear infinite;
+    display: inline-block;
+}
+
+/* ── Audio visualiser bars ── */
+@keyframes sound-bounce {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1);   }
+}
+.vis-bar {
+    transform-origin: bottom;
+    animation: sound-bounce 1s ease-in-out infinite;
+}
+
+/* ── Edit mode outlines ── */
+.edit-outline {
+    outline: 2px dashed #e38847;
+    outline-offset: 2px;
+    border-radius: 2px;
+    cursor: text;
+    min-width: 1em;
+    min-height: 1em;
+}
+[contenteditable="true"].edit-outline:focus {
+    outline-color: #d56a31;
+    background-color: rgba(227, 136, 71, 0.06);
 }
