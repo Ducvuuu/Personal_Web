@@ -1,3 +1,107 @@
+// ── FIREBASE (reuses the same project/login as library & journal) ──────────
+const firebaseConfig = {
+    apiKey: "AIzaSyAp4iRTfJ0jWBX5XcTiBAghdN_iCE0Ix4o",
+    authDomain: "personal-web-journal.firebaseapp.com",
+    projectId: "personal-web-journal",
+    storageBucket: "personal-web-journal.firebasestorage.app",
+    messagingSenderId: "980592936593",
+    appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── EDIT MODE STATE ──────────────────────────────────────────────────────
+// editModeOn: whether contenteditable is currently active on [data-edit-key] elements
+// contentOverrides: key -> saved HTML, loaded once from Firestore (siteContent/home)
+let editModeOn        = false;
+let contentOverrides   = {};
+const contentDocRef    = db.collection('siteContent').doc('home');
+
+// Returns the saved override for `key` if one exists, otherwise `fallbackHtml`.
+// Used by content that's (re)rendered on demand, like the Promise modal.
+function getOverrideOrDefault(key, fallbackHtml) {
+    return Object.prototype.hasOwnProperty.call(contentOverrides, key) ? contentOverrides[key] : fallbackHtml;
+}
+
+// Applies saved overrides to every currently-rendered [data-edit-key] element.
+// Safe to call more than once — it's idempotent.
+function applyContentOverrides() {
+    document.querySelectorAll('[data-edit-key]').forEach(el => {
+        const key = el.dataset.editKey;
+        if (Object.prototype.hasOwnProperty.call(contentOverrides, key)) {
+            el.innerHTML = contentOverrides[key];
+        }
+    });
+}
+
+const contentOverridesReady = contentDocRef.get().then(doc => {
+    contentOverrides = doc.exists ? (doc.data() || {}) : {};
+    applyContentOverrides();
+}).catch(() => {});
+
+function setEditToggleVisible(visible) {
+    const btn = document.getElementById('edit-mode-toggle');
+    if (btn) btn.classList.toggle('hidden', !visible);
+}
+
+function enterEditMode() {
+    editModeOn = true;
+    document.querySelectorAll('[data-edit-key]').forEach(el => el.setAttribute('contenteditable', 'true'));
+    document.body.classList.add('edit-mode-active');
+    const toggle = document.getElementById('edit-mode-toggle');
+    if (toggle) toggle.setAttribute('aria-pressed', 'true');
+    const saveBtn = document.getElementById('edit-save-btn');
+    if (saveBtn) saveBtn.classList.remove('hidden');
+}
+
+function exitEditMode() {
+    editModeOn = false;
+    document.querySelectorAll('[data-edit-key]').forEach(el => el.removeAttribute('contenteditable'));
+    document.body.classList.remove('edit-mode-active');
+    const toggle = document.getElementById('edit-mode-toggle');
+    if (toggle) toggle.setAttribute('aria-pressed', 'false');
+    const saveBtn = document.getElementById('edit-save-btn');
+    if (saveBtn) saveBtn.classList.add('hidden');
+}
+
+async function saveEdits() {
+    const saveBtn = document.getElementById('edit-save-btn');
+    const status  = document.getElementById('edit-save-status');
+    const updates = {};
+    document.querySelectorAll('[data-edit-key]').forEach(el => {
+        updates[el.dataset.editKey] = el.innerHTML.trim();
+    });
+    if (saveBtn) {
+        saveBtn.disabled  = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving…';
+    }
+    try {
+        await contentDocRef.set(updates, { merge: true });
+        contentOverrides = Object.assign({}, contentOverrides, updates);
+        if (status) {
+            status.textContent = 'Saved';
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 2000);
+        }
+    } catch (err) {
+        if (status) {
+            status.textContent = 'Save failed: ' + err.message;
+            status.classList.remove('hidden');
+        }
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled  = false;
+            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save changes';
+        }
+    }
+}
+
+auth.onAuthStateChanged(user => {
+    setEditToggleVisible(!!user);
+    if (!user && editModeOn) exitEditMode();
+});
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // ── Dynamic year / age ──────────────────────────────────────────────────
@@ -26,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const interestsGrid = document.getElementById('interests-grid');
     if (interestsGrid) {
         interestsGrid.innerHTML = '';
-        interestsData.forEach(item => {
+        interestsData.forEach((item, idx) => {
             const iconClass = item.spin ? `${item.icon} icon-slow-spin` : item.icon;
             interestsGrid.innerHTML += `
                 <div class="bg-warm-50 p-6 rounded-[1.5rem] border border-warm-200 shadow-sm hover:shadow-md transition-shadow group">
@@ -34,9 +138,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center text-lg group-hover:bg-orange-100 transition-colors shrink-0">
                             <i class="fa-solid ${iconClass}"></i>
                         </div>
-                        <h3 class="font-heavy text-lg text-warm-900 leading-tight">${item.title}</h3>
+                        <h3 class="font-heavy text-lg text-warm-900 leading-tight" data-edit-key="interests.${idx}.title">${item.title}</h3>
                     </div>
-                    <p class="text-warm-700 text-sm leading-relaxed">${item.desc}</p>
+                    <p class="text-warm-700 text-sm leading-relaxed" data-edit-key="interests.${idx}.desc">${item.desc}</p>
                 </div>`;
         });
     }
@@ -57,11 +161,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagsContainer = document.getElementById('interests-tags');
     if (tagsContainer) {
         tagsContainer.innerHTML = '';
-        interestsTags.forEach(tag => {
+        interestsTags.forEach((tag, idx) => {
             tagsContainer.innerHTML += `
                 <span class="interest-tag">
-                    <i class="fa-solid ${tag.icon}"></i>
-                    ${tag.label}
+                    <i class="fa-solid ${tag.icon}" aria-hidden="true"></i>
+                    <span data-edit-key="interests.tags.${idx}">${tag.label}</span>
                 </span>`;
         });
     }
@@ -95,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <i class="fa-solid ${icons[type]} text-3xl text-white/60"></i>
                         <span class="absolute bottom-2 left-2 right-2 font-mono text-[8px] text-white/70 text-center uppercase tracking-widest">[ cover ]</span>
                     </div>
-                    <p class="ph-inline mt-3 truncate block text-center">[ Title placeholder ]</p>
+                    <p class="ph-inline mt-3 truncate block text-center" data-edit-key="shelf.${type}.${i}.title">[ Title placeholder ]</p>
                     <div class="text-center mt-1"><span class="inline-block font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${status.cls}">${status.label}</span></div>
                 </div>`;
         }
@@ -196,10 +300,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.openPromiseModal = function (key) {
         const data = promiseContentMap[key];
-        promiseEyebrow.innerHTML        = data.eyebrow;
-        promiseTextContent.innerHTML    = data.body;
-        promiseLanding.innerHTML        = data.landing;
+        promiseEyebrow.dataset.editKey     = `promise.${key}.eyebrow`;
+        promiseTextContent.dataset.editKey = `promise.${key}.body`;
+        promiseLanding.dataset.editKey     = `promise.${key}.landing`;
+        promiseEyebrow.innerHTML        = getOverrideOrDefault(promiseEyebrow.dataset.editKey, data.eyebrow);
+        promiseTextContent.innerHTML    = getOverrideOrDefault(promiseTextContent.dataset.editKey, data.body);
+        promiseLanding.innerHTML        = getOverrideOrDefault(promiseLanding.dataset.editKey, data.landing);
         promiseIconSlot.innerHTML       = data.icon;
+        if (editModeOn) {
+            promiseEyebrow.setAttribute('contenteditable', 'true');
+            promiseTextContent.setAttribute('contenteditable', 'true');
+            promiseLanding.setAttribute('contenteditable', 'true');
+        }
         promiseModal.classList.remove('opacity-0', 'pointer-events-none');
         setTimeout(() => {
             promiseModalContent.classList.remove('scale-95');
@@ -374,4 +486,21 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+
+    // ── Edit mode controls ───────────────────────────────────────────────────
+    const editToggleBtn = document.getElementById('edit-mode-toggle');
+    const editSaveBtn   = document.getElementById('edit-save-btn');
+
+    if (editToggleBtn) {
+        editToggleBtn.addEventListener('click', () => {
+            if (editModeOn) exitEditMode(); else enterEditMode();
+        });
+    }
+    if (editSaveBtn) {
+        editSaveBtn.addEventListener('click', saveEdits);
+    }
+
+    // Re-apply in case elements above (interests, shelf) rendered before the
+    // Firestore fetch resolved.
+    contentOverridesReady.then(applyContentOverrides);
 });
