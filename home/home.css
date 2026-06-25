@@ -84,6 +84,7 @@
     border-radius: 0.75rem;
 }
 .promise-tile {
+    position: relative;
     background: rgba(255, 251, 247, 0.03);
     border: 1px solid rgba(245, 211, 179, 0.15);
     border-radius: 1.5rem;
@@ -101,6 +102,24 @@
     border-color: rgba(213, 106, 49, 0.5);
     transform: translateY(-4px);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+.promise-tile:focus-visible {
+    outline: 2px solid #d56a31;
+    outline-offset: 3px;
+}
+.promise-hint-icon {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    font-size: 0.7rem;
+    color: #ebad7a;
+    opacity: 0.45;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.promise-tile:hover .promise-hint-icon,
+.promise-tile:focus-visible .promise-hint-icon {
+    opacity: 0.9;
+    transform: translate(2px, -2px);
 }
 
 /* ── Audio visualizer ── */
