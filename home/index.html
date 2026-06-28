@@ -802,28 +802,46 @@
         <button onclick="closeShelfModal()" aria-label="Close" class="absolute top-4 right-6 md:top-6 md:right-8 text-warm-300 hover:text-white text-4xl p-2 z-50 transition-colors">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
-        <div id="shelf-modal-content" class="w-full max-w-md flex flex-col items-center">
-            <div id="shelf-modal-cover" class="w-48 h-64 rounded-2xl shadow-2xl border-4 border-warm-50 mb-4 flex items-center justify-center text-white/70 bg-warm-400 cover-placeholder relative overflow-hidden">
-                <img id="shelf-modal-cover-img" src="" alt="" class="hidden w-full h-full object-cover absolute inset-0">
-                <i id="shelf-modal-icon" class="fa-solid fa-book text-4xl relative z-10" aria-hidden="true"></i>
+        <div id="shelf-modal-content" class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-10 items-start max-h-[85vh] overflow-y-auto no-scrollbar">
+            <div class="md:col-span-2 flex flex-col items-center md:items-start md:sticky md:top-0">
+                <div id="shelf-modal-cover" class="w-full max-w-xs aspect-[2/3] rounded-2xl shadow-2xl border-4 border-warm-50 mb-3 flex items-center justify-center text-white/70 bg-warm-400 cover-placeholder relative overflow-hidden">
+                    <img id="shelf-modal-cover-img" src="" alt="" class="hidden w-full h-full object-cover absolute inset-0">
+                    <i id="shelf-modal-icon" class="fa-solid fa-book text-5xl relative z-10" aria-hidden="true"></i>
+                </div>
+                <label id="shelf-modal-upload-label" for="shelf-modal-upload" class="hidden cursor-pointer font-mono text-[10px] uppercase tracking-widest text-warm-400 hover:text-orange-400 transition-colors">
+                    <i class="fa-solid fa-camera mr-1" aria-hidden="true"></i>Change cover (max 2MB)
+                    <input type="file" id="shelf-modal-upload" accept="image/*" class="hidden">
+                </label>
             </div>
-            <label id="shelf-modal-upload-label" for="shelf-modal-upload" class="hidden mb-4 cursor-pointer font-mono text-[10px] uppercase tracking-widest text-warm-400 hover:text-orange-400 transition-colors">
-                <i class="fa-solid fa-camera mr-1" aria-hidden="true"></i>Change cover (max 2MB)
-                <input type="file" id="shelf-modal-upload" accept="image/*" class="hidden">
-            </label>
-            <span id="shelf-modal-badge" class="font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full mb-3 bg-orange-100 text-orange-700">Reading</span>
-            <select id="shelf-modal-status-select" aria-label="Status" class="hidden mb-3 font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded-full bg-warm-800 text-warm-100 border border-warm-700"></select>
-            <h3 id="shelf-modal-title" class="font-heavy text-2xl text-warm-50 text-center mb-3 leading-tight w-full">[ Title placeholder ]</h3>
-            <div id="shelf-modal-desc" class="ph-inline text-warm-300 text-center w-full">[ one-line reaction placeholder ]</div>
-            <div id="shelf-modal-owner-controls" class="hidden flex gap-3 mt-6">
-                <button type="button" id="shelf-modal-save-btn" aria-label="Save item" class="px-4 py-2 rounded-full bg-orange-600 text-warm-50 text-xs font-bold flex items-center gap-2 hover:bg-orange-500 transition-colors">
-                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save
-                </button>
-                <button type="button" id="shelf-modal-delete-btn" aria-label="Delete item" class="px-4 py-2 rounded-full bg-warm-800 text-warm-200 text-xs font-bold flex items-center gap-2 hover:bg-red-700 hover:text-white transition-colors">
-                    <i class="fa-solid fa-trash" aria-hidden="true"></i> Delete
-                </button>
+            <div class="md:col-span-3 w-full">
+                <div class="flex items-center gap-3 mb-3">
+                    <span id="shelf-modal-badge" class="font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-orange-100 text-orange-700">Reading</span>
+                    <select id="shelf-modal-status-select" aria-label="Status" class="hidden font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded-full bg-warm-800 text-warm-100 border border-warm-700"></select>
+                </div>
+                <h3 id="shelf-modal-title" class="font-heavy text-2xl md:text-3xl text-warm-50 mb-4 leading-tight w-full">[ Title placeholder ]</h3>
+
+                <div id="shelf-modal-toolbar" class="hidden flex-wrap gap-1 mb-2 bg-warm-900/60 border border-warm-700 rounded-lg p-1 w-fit">
+                    <button type="button" data-cmd="bold" aria-label="Bold" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="italic" aria-label="Italic" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="underline" aria-label="Underline" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-underline" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="insertUnorderedList" aria-label="Bulleted list" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="formatBlock" data-cmd-value="blockquote" aria-label="Quote" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-quote-left" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="createLink" aria-label="Insert link" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
+                    <button type="button" data-cmd="removeFormat" aria-label="Clear formatting" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-text-slash" aria-hidden="true"></i></button>
+                </div>
+
+                <div id="shelf-modal-desc" class="ph-inline text-warm-300 w-full min-h-[8rem] leading-relaxed">[ one-line reaction placeholder ]</div>
+
+                <div id="shelf-modal-owner-controls" class="hidden flex gap-3 mt-6">
+                    <button type="button" id="shelf-modal-save-btn" aria-label="Save item" class="px-4 py-2 rounded-full bg-orange-600 text-warm-50 text-xs font-bold flex items-center gap-2 hover:bg-orange-500 transition-colors">
+                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save
+                    </button>
+                    <button type="button" id="shelf-modal-delete-btn" aria-label="Delete item" class="px-4 py-2 rounded-full bg-warm-800 text-warm-200 text-xs font-bold flex items-center gap-2 hover:bg-red-700 hover:text-white transition-colors">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i> Delete
+                    </button>
+                </div>
+                <span id="shelf-modal-save-status" role="status" class="hidden mt-3 font-mono text-[10px] text-warm-400"></span>
             </div>
-            <span id="shelf-modal-save-status" role="status" class="hidden mt-3 font-mono text-[10px] text-warm-400"></span>
         </div>
     </div>
 
