@@ -798,49 +798,80 @@
     </div>
 
     <!-- Shelf Detail Modal -->
-    <div id="shelf-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md transition-opacity duration-300 px-4 opacity-0 pointer-events-none">
+    <div id="shelf-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md transition-opacity duration-300 px-4 py-8 opacity-0 pointer-events-none">
         <button onclick="closeShelfModal()" aria-label="Close" class="absolute top-4 right-6 md:top-6 md:right-8 text-warm-300 hover:text-white text-4xl p-2 z-50 transition-colors">
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
-        <div id="shelf-modal-content" class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-10 items-start max-h-[85vh] overflow-y-auto no-scrollbar">
-            <div class="md:col-span-2 flex flex-col items-center md:items-start md:sticky md:top-0">
-                <div id="shelf-modal-cover" class="w-full max-w-xs aspect-[2/3] rounded-2xl shadow-2xl border-4 border-warm-50 mb-3 flex items-center justify-center text-white/70 bg-warm-400 cover-placeholder relative overflow-hidden">
-                    <img id="shelf-modal-cover-img" src="" alt="" class="hidden w-full h-full object-cover absolute inset-0">
-                    <i id="shelf-modal-icon" class="fa-solid fa-book text-5xl relative z-10" aria-hidden="true"></i>
+        <div id="shelf-modal-content" class="w-full max-w-4xl max-h-[90vh] bg-[#fcf6f0] rounded-[2rem] shadow-2xl border border-warm-200 overflow-hidden flex flex-col md:flex-row">
+
+            <!-- Left: cover + status -->
+            <div class="w-full md:w-2/5 bg-warm-100/50 p-8 md:p-10 flex flex-col items-center border-b md:border-b-0 md:border-r border-warm-200 overflow-y-auto no-scrollbar">
+                <div class="relative group w-48 sm:w-56 aspect-[2/3]">
+                    <div id="shelf-modal-cover" class="w-full h-full rounded-xl shadow-xl border-4 border-white overflow-hidden bg-warm-400 cover-placeholder flex items-center justify-center text-white/70 relative">
+                        <img id="shelf-modal-cover-img" src="" alt="" class="hidden w-full h-full object-cover absolute inset-0">
+                        <i id="shelf-modal-icon" class="fa-solid fa-book text-5xl relative z-10" aria-hidden="true"></i>
+                    </div>
+                    <label id="shelf-modal-upload-label" for="shelf-modal-upload" class="hidden absolute inset-0 cursor-pointer bg-warm-900/70 backdrop-blur-[2px] flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 rounded-xl text-center">
+                        <i class="fa-solid fa-camera text-2xl text-white mb-2" aria-hidden="true"></i>
+                        <span class="font-mono text-[10px] uppercase tracking-widest text-white/90 font-bold">Change cover</span>
+                        <span class="font-mono text-[9px] text-white/60 mt-1">(Max 2MB)</span>
+                        <input type="file" id="shelf-modal-upload" accept="image/*" class="hidden">
+                    </label>
                 </div>
-                <label id="shelf-modal-upload-label" for="shelf-modal-upload" class="hidden cursor-pointer font-mono text-[10px] uppercase tracking-widest text-warm-400 hover:text-orange-400 transition-colors">
-                    <i class="fa-solid fa-camera mr-1" aria-hidden="true"></i>Change cover (max 2MB)
-                    <input type="file" id="shelf-modal-upload" accept="image/*" class="hidden">
-                </label>
-            </div>
-            <div class="md:col-span-3 w-full">
-                <div class="flex items-center gap-3 mb-3">
+
+                <div class="mt-8 w-full max-w-[14rem] flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-warm-200 shadow-sm">
+                    <span class="font-mono text-[10px] uppercase tracking-widest text-warm-500">Status</span>
                     <span id="shelf-modal-badge" class="font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-orange-100 text-orange-700">Reading</span>
-                    <select id="shelf-modal-status-select" aria-label="Status" class="hidden font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded-full bg-warm-800 text-warm-100 border border-warm-700"></select>
+                    <select id="shelf-modal-status-select" aria-label="Status" class="hidden font-mono text-xs uppercase tracking-widest px-2 py-1 rounded-full bg-warm-800 text-warm-100 border border-warm-700"></select>
                 </div>
-                <h3 id="shelf-modal-title" class="font-heavy text-2xl md:text-3xl text-warm-50 mb-4 leading-tight w-full">[ Title placeholder ]</h3>
+            </div>
 
-                <div id="shelf-modal-toolbar" class="hidden flex-wrap gap-1 mb-2 bg-warm-900/60 border border-warm-700 rounded-lg p-1 w-fit">
-                    <button type="button" data-cmd="bold" aria-label="Bold" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="italic" aria-label="Italic" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="underline" aria-label="Underline" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-underline" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="insertUnorderedList" aria-label="Bulleted list" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="formatBlock" data-cmd-value="blockquote" aria-label="Quote" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-quote-left" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="createLink" aria-label="Insert link" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
-                    <button type="button" data-cmd="removeFormat" aria-label="Clear formatting" class="w-8 h-8 rounded hover:bg-warm-700 text-warm-100 transition-colors"><i class="fa-solid fa-text-slash" aria-hidden="true"></i></button>
+            <!-- Right: title + editor -->
+            <div class="w-full md:w-3/5 p-8 md:p-10 flex flex-col bg-[#fffbf7] overflow-y-auto no-scrollbar">
+                <h3 id="shelf-modal-title" class="w-full bg-transparent font-heavy text-2xl md:text-3xl text-warm-900 border-b-2 border-dashed border-warm-200 pb-3 mb-6 outline-none focus:border-orange-400 transition-colors">[ Title placeholder ]</h3>
+
+                <div class="flex-1 flex flex-col mb-6 min-h-[250px]">
+                    <span class="font-handwriting text-2xl text-warm-500 -rotate-1 inline-block mb-3">My thoughts…</span>
+
+                    <div class="flex-1 border border-warm-200 rounded-2xl shadow-sm bg-white overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-orange-400/30 transition-all duration-300">
+                        <div id="shelf-modal-toolbar" class="hidden flex-wrap items-center justify-between gap-2 bg-warm-100 border-b border-warm-200 p-2">
+                            <div class="flex items-center gap-1 bg-warm-200/50 p-1 rounded-xl" role="group" aria-label="Editor mode">
+                                <button type="button" id="shelf-tab-write" data-tab="write" aria-pressed="true" class="px-4 py-1.5 rounded-lg text-sm font-bold bg-white text-orange-600 shadow-sm transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-pen-nib" aria-hidden="true"></i> Draft
+                                </button>
+                                <button type="button" id="shelf-tab-html" data-tab="html" aria-pressed="false" class="px-4 py-1.5 rounded-lg text-sm font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-200 transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-code" aria-hidden="true"></i> HTML
+                                </button>
+                            </div>
+                            <div id="shelf-modal-format-buttons" class="flex items-center gap-1">
+                                <button type="button" data-cmd="bold" aria-label="Bold" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-bold" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="italic" aria-label="Italic" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-italic" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="underline" aria-label="Underline" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-underline" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="insertUnorderedList" aria-label="Bulleted list" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-list-ul" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="formatBlock" data-cmd-value="blockquote" aria-label="Quote" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-quote-left" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="createLink" aria-label="Insert link" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-link" aria-hidden="true"></i></button>
+                                <button type="button" data-cmd="removeFormat" aria-label="Clear formatting" class="w-8 h-8 rounded hover:bg-white text-warm-600 transition-colors"><i class="fa-solid fa-text-slash" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 relative flex flex-col">
+                            <div id="shelf-modal-desc" spellcheck="false" class="flex-1 p-5 outline-none overflow-y-auto text-warm-800 leading-relaxed ph-inline min-h-[8rem]">[ one-line reaction placeholder ]</div>
+                            <textarea id="shelf-modal-html" aria-label="HTML source" class="hidden flex-1 w-full p-5 bg-[#1a1513] text-orange-200 font-mono text-[13px] leading-relaxed outline-none resize-none min-h-[8rem]" spellcheck="false" placeholder="&lt;!-- Paste your formatted HTML here --&gt;"></textarea>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="shelf-modal-desc" class="ph-inline text-warm-300 w-full min-h-[8rem] leading-relaxed">[ one-line reaction placeholder ]</div>
-
-                <div id="shelf-modal-owner-controls" class="hidden flex gap-3 mt-6">
-                    <button type="button" id="shelf-modal-save-btn" aria-label="Save item" class="px-4 py-2 rounded-full bg-orange-600 text-warm-50 text-xs font-bold flex items-center gap-2 hover:bg-orange-500 transition-colors">
-                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save
-                    </button>
-                    <button type="button" id="shelf-modal-delete-btn" aria-label="Delete item" class="px-4 py-2 rounded-full bg-warm-800 text-warm-200 text-xs font-bold flex items-center gap-2 hover:bg-red-700 hover:text-white transition-colors">
-                        <i class="fa-solid fa-trash" aria-hidden="true"></i> Delete
-                    </button>
+                <div class="flex items-center justify-between mt-auto pt-5 border-t border-warm-200">
+                    <div id="shelf-modal-owner-controls" class="hidden w-full items-center justify-between">
+                        <button type="button" id="shelf-modal-delete-btn" aria-label="Delete item" class="group flex items-center gap-2 text-warm-400 hover:text-red-500 font-bold text-sm px-3 py-2 rounded-lg transition-colors">
+                            <i class="fa-solid fa-trash-can group-hover:animate-bounce" aria-hidden="true"></i> <span class="hidden sm:inline">Delete</span>
+                        </button>
+                        <button type="button" id="shelf-modal-save-btn" aria-label="Save item" class="bg-orange-500 hover:bg-orange-600 text-white font-heavy text-sm px-6 py-2.5 rounded-xl shadow-[0_4px_14px_rgba(249,115,22,0.3)] transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save Changes
+                        </button>
+                    </div>
+                    <span id="shelf-modal-save-status" role="status" class="hidden font-mono text-[10px] text-warm-400"></span>
                 </div>
-                <span id="shelf-modal-save-status" role="status" class="hidden mt-3 font-mono text-[10px] text-warm-400"></span>
             </div>
         </div>
     </div>

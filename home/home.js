@@ -318,6 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Shelf modal ──────────────────────────────────────────────────────────
     const shelfModal        = document.getElementById('shelf-modal');
     const shelfCoverBox      = document.getElementById('shelf-modal-cover');
+    const shelfCoverWrap     = shelfCoverBox.parentElement;
     const shelfCoverImg      = document.getElementById('shelf-modal-cover-img');
     const shelfIcon          = document.getElementById('shelf-modal-icon');
     const shelfUploadLabel   = document.getElementById('shelf-modal-upload-label');
@@ -331,12 +332,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const shelfDeleteBtn     = document.getElementById('shelf-modal-delete-btn');
     const shelfSaveStatus    = document.getElementById('shelf-modal-save-status');
     const shelfToolbar       = document.getElementById('shelf-modal-toolbar');
+    const shelfFormatButtons = document.getElementById('shelf-modal-format-buttons');
+    const shelfTabWrite      = document.getElementById('shelf-tab-write');
+    const shelfTabHtml       = document.getElementById('shelf-tab-html');
+    const shelfHtmlArea      = document.getElementById('shelf-modal-html');
 
     let currentShelfItem = null; // { type, id } of whatever the modal currently shows
+    let shelfEditorMode   = 'write'; // 'write' (rendered, contenteditable) or 'html' (raw source)
 
     function renderShelfModalCover(item) {
         const color = placeholderColors[shelfCache[item.type].findIndex(i => i.id === item.id) % placeholderColors.length];
-        shelfCoverBox.className = `w-full ${item.type === 'games' ? 'aspect-square' : 'aspect-[2/3]'} rounded-2xl shadow-2xl border-4 border-warm-50 mb-3 flex items-center justify-center text-white/70 cover-placeholder relative overflow-hidden ${item.coverUrl ? '' : color}`;
+        shelfCoverWrap.className = `relative group w-48 sm:w-56 ${item.type === 'games' ? 'aspect-square' : 'aspect-[2/3]'}`;
+        shelfCoverBox.className = `w-full h-full rounded-xl shadow-xl border-4 border-white flex items-center justify-center text-white/70 cover-placeholder relative overflow-hidden ${item.coverUrl ? '' : color}`;
         if (item.coverUrl) {
             shelfCoverImg.src = item.coverUrl;
             shelfCoverImg.alt = `Cover of ${stripHtml(item.title)}`;
@@ -376,12 +383,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         shelfDescEl.innerHTML = item.descriptionHtml || '[ one-line reaction placeholder ]';
         shelfDescEl.toggleAttribute('contenteditable', canEdit);
+        shelfDescEl.classList.remove('hidden');
+        shelfHtmlArea.classList.add('hidden');
+        shelfEditorMode = 'write';
+        setShelfTabStyle('write');
 
         shelfToolbar.classList.toggle('hidden', !canEdit);
         shelfToolbar.classList.toggle('flex', canEdit);
 
         shelfUploadLabel.classList.toggle('hidden', !canEdit);
+        shelfUploadLabel.classList.toggle('flex', canEdit);
         shelfOwnerControls.classList.toggle('hidden', !canEdit);
+        shelfOwnerControls.classList.toggle('flex', canEdit);
         shelfSaveStatus.classList.add('hidden');
 
         shelfModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -395,6 +408,35 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     shelfModal.addEventListener('click', e => { if (e.target.id === 'shelf-modal') window.closeShelfModal(); });
+
+    function setShelfTabStyle(mode) {
+        const html = mode === 'html';
+        shelfTabWrite.className = `px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-2 ${html ? 'font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-200' : 'font-bold bg-white text-orange-600 shadow-sm'}`;
+        shelfTabHtml.className  = `px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-2 ${html ? 'font-bold bg-[#1a1513] text-orange-300 shadow-sm' : 'font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-200'}`;
+        shelfTabWrite.setAttribute('aria-pressed', String(!html));
+        shelfTabHtml.setAttribute('aria-pressed', String(html));
+        shelfFormatButtons.classList.toggle('hidden', html);
+    }
+
+    function getShelfDescriptionHtml() {
+        return shelfEditorMode === 'html' ? shelfHtmlArea.value.trim() : shelfDescEl.innerHTML.trim();
+    }
+
+    function setShelfEditorMode(mode) {
+        if (mode === shelfEditorMode) return;
+        if (mode === 'html') {
+            shelfHtmlArea.value = shelfDescEl.innerHTML.trim();
+        } else {
+            shelfDescEl.innerHTML = shelfHtmlArea.value.trim() || '[ one-line reaction placeholder ]';
+        }
+        shelfEditorMode = mode;
+        shelfDescEl.classList.toggle('hidden', mode === 'html');
+        shelfHtmlArea.classList.toggle('hidden', mode !== 'html');
+        setShelfTabStyle(mode);
+    }
+
+    shelfTabWrite.addEventListener('click', () => setShelfEditorMode('write'));
+    shelfTabHtml.addEventListener('click', () => setShelfEditorMode('html'));
 
     shelfToolbar.addEventListener('click', e => {
         const btn = e.target.closest('button[data-cmd]');
@@ -420,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const { type, id } = currentShelfItem;
         const updates = {
             title:           shelfTitleEl.innerHTML.trim(),
-            descriptionHtml: shelfDescEl.innerHTML.trim(),
+            descriptionHtml: getShelfDescriptionHtml(),
             status:          shelfStatusSelect.value,
         };
         shelfSaveBtn.disabled = true;
