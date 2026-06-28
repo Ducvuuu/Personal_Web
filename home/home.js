@@ -8,8 +8,14 @@ const firebaseConfig = {
     appId: "1:980592936593:web:20e8dc2a636a3e8be8e130"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.firestore();
+const auth    = firebase.auth();
+const db      = firebase.firestore();
+const storage = firebase.storage();
+
+const OWNER_EMAIL = 'neopet2010@gmail.com';
+function isOwner() {
+    return !!auth.currentUser && auth.currentUser.email === OWNER_EMAIL;
+}
 
 // ── EDIT MODE STATE ──────────────────────────────────────────────────────
 // editModeOn: whether contenteditable is currently active on [data-edit-key] elements
@@ -53,6 +59,7 @@ function enterEditMode() {
     if (toggle) toggle.setAttribute('aria-pressed', 'true');
     const saveBtn = document.getElementById('edit-save-btn');
     if (saveBtn) saveBtn.classList.remove('hidden');
+    if (window.refreshShelfPanels) window.refreshShelfPanels();
 }
 
 function exitEditMode() {
@@ -63,6 +70,7 @@ function exitEditMode() {
     if (toggle) toggle.setAttribute('aria-pressed', 'false');
     const saveBtn = document.getElementById('edit-save-btn');
     if (saveBtn) saveBtn.classList.add('hidden');
+    if (window.refreshShelfPanels) window.refreshShelfPanels();
 }
 
 async function saveEdits() {
@@ -98,8 +106,8 @@ async function saveEdits() {
 }
 
 auth.onAuthStateChanged(user => {
-    setEditToggleVisible(!!user);
-    if (!user && editModeOn) exitEditMode();
+    setEditToggleVisible(isOwner());
+    if (!isOwner() && editModeOn) exitEditMode();
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -170,9 +178,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Shelf panels ────────────────────────────────────────────────────────
-    const colors    = ['bg-warm-300', 'bg-warm-400', 'bg-warm-500', 'bg-warm-600', 'bg-warm-700'];
-    const statusMap = {
+    // ── Shelf data (Firestore-backed, unbounded items per type) ──────────────
+    // shelfCache: type -> array of { id, type, title, descriptionHtml, status, coverUrl, order }
+    const shelfCollection    = db.collection('shelfItems');
+    const shelfCache         = { books: [], games: [], movies: [] };
+    const placeholderColors  = ['bg-warm-300', 'bg-warm-400', 'bg-warm-500', 'bg-warm-600', 'bg-warm-700'];
+    const statusOptions = {
         books:  [{ label: 'Finished',      cls: 'bg-emerald-100 text-emerald-700' },
                  { label: 'Reading',       cls: 'bg-orange-100 text-orange-700' },
                  { label: 'Want to read',  cls: 'bg-warm-200 text-warm-600' }],
@@ -183,32 +194,69 @@ document.addEventListener('DOMContentLoaded', function () {
                  { label: 'Watching',      cls: 'bg-orange-100 text-orange-700' },
                  { label: 'Want to watch', cls: 'bg-warm-200 text-warm-600' }],
     };
-    const icons  = { books: 'fa-book',    games: 'fa-gamepad',  movies: 'fa-film' };
-    const aspect = { books: 'aspect-[2/3]', games: 'aspect-square', movies: 'aspect-[2/3]' };
+    const typeIcon   = { books: 'fa-book',    games: 'fa-gamepad',  movies: 'fa-film' };
+    const typeAspect = { books: 'aspect-[2/3]', games: 'aspect-square', movies: 'aspect-[2/3]' };
 
-    function buildPanel(type, count) {
+    function statusMeta(type, label) {
+        return statusOptions[type].find(s => s.label === label) || statusOptions[type][0];
+    }
+
+    function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html || '';
+        return tmp.textContent.trim();
+    }
+
+    function escAttr(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function renderShelfPanel(type) {
         const panel = document.getElementById('panel-' + type);
         if (!panel) return;
-        let html = '';
-        for (let i = 0; i < count; i++) {
-            const color  = colors[i % colors.length];
-            const status = statusMap[type][i % statusMap[type].length];
-            html += `
-                <div class="group cursor-pointer" onclick="openShelfModal('${type}', ${i})">
-                    <div class="${aspect[type]} ${color} cover-placeholder rounded-xl overflow-hidden relative flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-300">
-                        <i class="fa-solid ${icons[type]} text-3xl text-white/60"></i>
-                        <span class="absolute bottom-2 left-2 right-2 font-mono text-[8px] text-white/70 text-center uppercase tracking-widest">[ cover ]</span>
+        let html = shelfCache[type].map((item, idx) => {
+            const color  = placeholderColors[idx % placeholderColors.length];
+            const status = statusMeta(type, item.status);
+            const coverHtml = item.coverUrl
+                ? `<img src="${item.coverUrl}" alt="Cover of ${escAttr(stripHtml(item.title))}" class="w-full h-full object-cover">`
+                : `<i class="fa-solid ${typeIcon[type]} text-3xl text-white/60" aria-hidden="true"></i>
+                   <span class="absolute bottom-2 left-2 right-2 font-mono text-[8px] text-white/70 text-center uppercase tracking-widest">[ cover ]</span>`;
+            return `
+                <button type="button" class="group cursor-pointer text-left" onclick="openShelfModal('${type}', '${item.id}')">
+                    <div class="${typeAspect[type]} ${item.coverUrl ? '' : color} cover-placeholder rounded-xl overflow-hidden relative flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-300">
+                        ${coverHtml}
                     </div>
-                    <p class="ph-inline mt-3 truncate block text-center" data-edit-key="shelf.${type}.${i}.title">[ Title placeholder ]</p>
+                    <p class="ph-inline mt-3 truncate block text-center">${item.title}</p>
                     <div class="text-center mt-1"><span class="inline-block font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${status.cls}">${status.label}</span></div>
-                </div>`;
+                </button>`;
+        }).join('');
+
+        if (isOwner() && editModeOn) {
+            html += `
+                <button type="button" onclick="addShelfItem('${type}')" aria-label="Add ${type.slice(0, -1)} item" class="${typeAspect[type]} rounded-xl border-2 border-dashed border-warm-300 flex flex-col items-center justify-center gap-2 text-warm-400 hover:text-orange-500 hover:border-orange-400 transition-colors">
+                    <i class="fa-solid fa-plus text-2xl" aria-hidden="true"></i>
+                    <span class="font-mono text-[9px] uppercase tracking-widest">Add</span>
+                </button>`;
         }
         panel.innerHTML = html;
     }
 
-    buildPanel('books', 10);
-    buildPanel('games', 10);
-    buildPanel('movies', 10);
+    function loadShelfItems() {
+        return shelfCollection.orderBy('order').get().then(snap => {
+            shelfCache.books = []; shelfCache.games = []; shelfCache.movies = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (shelfCache[data.type]) shelfCache[data.type].push(Object.assign({ id: doc.id }, data));
+            });
+            ['books', 'games', 'movies'].forEach(renderShelfPanel);
+        }).catch(() => {});
+    }
+
+    loadShelfItems();
+
+    window.refreshShelfPanels = function () {
+        ['books', 'games', 'movies'].forEach(renderShelfPanel);
+    };
 
     window.switchTab = function (type) {
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
@@ -268,17 +316,70 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // ── Shelf modal ──────────────────────────────────────────────────────────
-    const shelfModal = document.getElementById('shelf-modal');
+    const shelfModal        = document.getElementById('shelf-modal');
+    const shelfCoverBox      = document.getElementById('shelf-modal-cover');
+    const shelfCoverImg      = document.getElementById('shelf-modal-cover-img');
+    const shelfIcon          = document.getElementById('shelf-modal-icon');
+    const shelfUploadLabel   = document.getElementById('shelf-modal-upload-label');
+    const shelfUploadInput   = document.getElementById('shelf-modal-upload');
+    const shelfBadge         = document.getElementById('shelf-modal-badge');
+    const shelfStatusSelect  = document.getElementById('shelf-modal-status-select');
+    const shelfTitleEl       = document.getElementById('shelf-modal-title');
+    const shelfDescEl        = document.getElementById('shelf-modal-desc');
+    const shelfOwnerControls = document.getElementById('shelf-modal-owner-controls');
+    const shelfSaveBtn       = document.getElementById('shelf-modal-save-btn');
+    const shelfDeleteBtn     = document.getElementById('shelf-modal-delete-btn');
+    const shelfSaveStatus    = document.getElementById('shelf-modal-save-status');
 
-    window.openShelfModal = function (type, i) {
-        const color  = colors[i % colors.length];
-        const status = statusMap[type][i % statusMap[type].length];
-        const cover  = document.getElementById('shelf-modal-cover');
-        cover.className = `w-48 ${type === 'games' ? 'h-48' : 'h-64'} rounded-2xl shadow-2xl border-4 border-warm-50 mb-6 flex items-center justify-center text-white/70 ${color} cover-placeholder`;
-        document.getElementById('shelf-modal-icon').className = `fa-solid ${icons[type]} text-4xl`;
-        const badge = document.getElementById('shelf-modal-badge');
-        badge.innerText  = status.label;
-        badge.className  = `font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full mb-3 ${status.cls}`;
+    let currentShelfItem = null; // { type, id } of whatever the modal currently shows
+
+    function renderShelfModalCover(item) {
+        const color = placeholderColors[shelfCache[item.type].findIndex(i => i.id === item.id) % placeholderColors.length];
+        shelfCoverBox.className = `w-48 ${item.type === 'games' ? 'h-48' : 'h-64'} rounded-2xl shadow-2xl border-4 border-warm-50 mb-4 flex items-center justify-center text-white/70 cover-placeholder relative overflow-hidden ${item.coverUrl ? '' : color}`;
+        if (item.coverUrl) {
+            shelfCoverImg.src = item.coverUrl;
+            shelfCoverImg.alt = `Cover of ${stripHtml(item.title)}`;
+            shelfCoverImg.classList.remove('hidden');
+            shelfIcon.classList.add('hidden');
+        } else {
+            shelfCoverImg.classList.add('hidden');
+            shelfIcon.className = `fa-solid ${typeIcon[item.type]} text-4xl relative z-10`;
+            shelfIcon.classList.remove('hidden');
+        }
+    }
+
+    function populateShelfStatusSelect(type, currentLabel) {
+        shelfStatusSelect.innerHTML = statusOptions[type]
+            .map(s => `<option value="${s.label}" ${s.label === currentLabel ? 'selected' : ''}>${s.label}</option>`)
+            .join('');
+    }
+
+    window.openShelfModal = function (type, id) {
+        const item = shelfCache[type].find(i => i.id === id);
+        if (!item) return;
+        currentShelfItem = { type, id };
+
+        renderShelfModalCover(item);
+
+        const canEdit = isOwner() && editModeOn;
+
+        const status = statusMeta(type, item.status);
+        shelfBadge.innerText  = status.label;
+        shelfBadge.className  = `font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full mb-3 ${status.cls}`;
+        shelfBadge.classList.toggle('hidden', canEdit);
+        populateShelfStatusSelect(type, item.status);
+        shelfStatusSelect.classList.toggle('hidden', !canEdit);
+
+        shelfTitleEl.innerHTML = item.title;
+        shelfTitleEl.toggleAttribute('contenteditable', canEdit);
+
+        shelfDescEl.innerHTML = item.descriptionHtml || '[ one-line reaction placeholder ]';
+        shelfDescEl.toggleAttribute('contenteditable', canEdit);
+
+        shelfUploadLabel.classList.toggle('hidden', !canEdit);
+        shelfOwnerControls.classList.toggle('hidden', !canEdit);
+        shelfSaveStatus.classList.add('hidden');
+
         shelfModal.classList.remove('opacity-0', 'pointer-events-none');
         document.body.style.overflow = 'hidden';
     };
@@ -286,9 +387,106 @@ document.addEventListener('DOMContentLoaded', function () {
     window.closeShelfModal = function () {
         shelfModal.classList.add('opacity-0', 'pointer-events-none');
         document.body.style.overflow = 'auto';
+        currentShelfItem = null;
     };
 
     shelfModal.addEventListener('click', e => { if (e.target.id === 'shelf-modal') window.closeShelfModal(); });
+
+    function setShelfSaveStatus(text) {
+        shelfSaveStatus.textContent = text;
+        shelfSaveStatus.classList.remove('hidden');
+        setTimeout(() => shelfSaveStatus.classList.add('hidden'), 2000);
+    }
+
+    shelfSaveBtn.addEventListener('click', async () => {
+        if (!currentShelfItem || !isOwner()) return;
+        const { type, id } = currentShelfItem;
+        const updates = {
+            title:           shelfTitleEl.innerHTML.trim(),
+            descriptionHtml: shelfDescEl.innerHTML.trim(),
+            status:          shelfStatusSelect.value,
+        };
+        shelfSaveBtn.disabled = true;
+        try {
+            await shelfCollection.doc(id).update(updates);
+            const item = shelfCache[type].find(i => i.id === id);
+            if (item) Object.assign(item, updates);
+            renderShelfPanel(type);
+            setShelfSaveStatus('Saved');
+        } catch (err) {
+            setShelfSaveStatus('Save failed: ' + err.message);
+        } finally {
+            shelfSaveBtn.disabled = false;
+        }
+    });
+
+    shelfDeleteBtn.addEventListener('click', async () => {
+        if (!currentShelfItem || !isOwner()) return;
+        if (!window.confirm('Delete this item? This also removes its cover image.')) return;
+        const { type, id } = currentShelfItem;
+        const item = shelfCache[type].find(i => i.id === id);
+        shelfDeleteBtn.disabled = true;
+        try {
+            if (item && item.coverUrl) {
+                try { await storage.refFromURL(item.coverUrl).delete(); } catch { /* cover already gone — continue */ }
+            }
+            await shelfCollection.doc(id).delete();
+            shelfCache[type] = shelfCache[type].filter(i => i.id !== id);
+            renderShelfPanel(type);
+            window.closeShelfModal();
+        } catch (err) {
+            setShelfSaveStatus('Delete failed: ' + err.message);
+        } finally {
+            shelfDeleteBtn.disabled = false;
+        }
+    });
+
+    shelfUploadInput.addEventListener('change', async () => {
+        const file = shelfUploadInput.files[0];
+        shelfUploadInput.value = '';
+        if (!file || !currentShelfItem || !isOwner()) return;
+        if (file.size > 2 * 1024 * 1024) {
+            setShelfSaveStatus('Cover must be under 2MB');
+            return;
+        }
+        const { type, id } = currentShelfItem;
+        setShelfSaveStatus('Uploading…');
+        try {
+            const ext      = file.name.split('.').pop() || 'jpg';
+            const coverRef = storage.ref(`home/${auth.currentUser.uid}/shelf-covers/${id}.${ext}`);
+            await coverRef.put(file, { contentType: file.type });
+            const coverUrl = await coverRef.getDownloadURL();
+            await shelfCollection.doc(id).update({ coverUrl });
+            const item = shelfCache[type].find(i => i.id === id);
+            if (item) item.coverUrl = coverUrl;
+            renderShelfModalCover(item || { type, id, coverUrl, title: '' });
+            renderShelfPanel(type);
+            setShelfSaveStatus('Cover updated');
+        } catch (err) {
+            setShelfSaveStatus('Upload failed: ' + err.message);
+        }
+    });
+
+    window.addShelfItem = async function (type) {
+        if (!isOwner()) return;
+        const defaults = {
+            type,
+            title:           '[ Title placeholder ]',
+            descriptionHtml: '',
+            status:          statusOptions[type][0].label,
+            coverUrl:        null,
+            order:           shelfCache[type].length,
+            createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        try {
+            const ref = await shelfCollection.add(defaults);
+            shelfCache[type].push(Object.assign({ id: ref.id }, defaults));
+            renderShelfPanel(type);
+            window.openShelfModal(type, ref.id);
+        } catch (err) {
+            window.alert('Could not add item: ' + err.message);
+        }
+    };
 
     // ── Promise modal ────────────────────────────────────────────────────────
     const promiseModal        = document.getElementById('promise-modal');
@@ -362,9 +560,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalCaption = document.getElementById('modal-caption');
     const storyContent = document.getElementById('story-content');
 
-    window.openStory = function (src, caption) {
-        modalImg.src            = src;
-        modalCaption.innerText  = caption;
+    window.openStory = function (src, key) {
+        modalImg.src             = src;
+        modalCaption.dataset.editKey = key;
+        modalCaption.innerHTML   = getOverrideOrDefault(key, '[ caption placeholder ]');
+        modalCaption.toggleAttribute('contenteditable', editModeOn);
         storyModal.classList.remove('opacity-0', 'pointer-events-none');
         setTimeout(() => {
             storyContent.classList.remove('scale-95');
