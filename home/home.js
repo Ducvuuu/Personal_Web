@@ -323,22 +323,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const shelfIcon          = document.getElementById('shelf-modal-icon');
     const shelfUploadLabel   = document.getElementById('shelf-modal-upload-label');
     const shelfUploadInput   = document.getElementById('shelf-modal-upload');
-    const shelfBadge         = document.getElementById('shelf-modal-badge');
-    const shelfStatusSelect  = document.getElementById('shelf-modal-status-select');
+    const shelfRatingEl      = document.getElementById('shelf-modal-rating');
+    const shelfDateEl        = document.getElementById('shelf-modal-date');
     const shelfTitleEl       = document.getElementById('shelf-modal-title');
     const shelfDescEl        = document.getElementById('shelf-modal-desc');
     const shelfOwnerControls = document.getElementById('shelf-modal-owner-controls');
     const shelfSaveBtn       = document.getElementById('shelf-modal-save-btn');
     const shelfDeleteBtn     = document.getElementById('shelf-modal-delete-btn');
+    const shelfCancelBtn     = document.getElementById('shelf-modal-cancel-btn');
+    const shelfCopyBtn       = document.getElementById('shelf-modal-copy-btn');
     const shelfSaveStatus    = document.getElementById('shelf-modal-save-status');
     const shelfToolbar       = document.getElementById('shelf-modal-toolbar');
-    const shelfFormatButtons = document.getElementById('shelf-modal-format-buttons');
     const shelfTabWrite      = document.getElementById('shelf-tab-write');
     const shelfTabHtml       = document.getElementById('shelf-tab-html');
     const shelfHtmlArea      = document.getElementById('shelf-modal-html');
 
     let currentShelfItem = null; // { type, id } of whatever the modal currently shows
     let shelfEditorMode   = 'write'; // 'write' (rendered, contenteditable) or 'html' (raw source)
+    let shelfModalRating  = 0; // current rating (0-5) shown/edited in the open modal
 
     function renderShelfModalCover(item) {
         const color = placeholderColors[shelfCache[item.type].findIndex(i => i.id === item.id) % placeholderColors.length];
@@ -356,11 +358,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function populateShelfStatusSelect(type, currentLabel) {
-        shelfStatusSelect.innerHTML = statusOptions[type]
-            .map(s => `<option value="${s.label}" ${s.label === currentLabel ? 'selected' : ''}>${s.label}</option>`)
-            .join('');
+    function formatShelfDate(timestamp) {
+        const date = timestamp && typeof timestamp.toDate === 'function' ? timestamp.toDate() : null;
+        if (!date) return '';
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+
+    function renderShelfModalRating(rating, canEdit) {
+        shelfModalRating = rating || 0;
+        shelfRatingEl.innerHTML = [1, 2, 3, 4, 5].map(n => {
+            const filled = n <= shelfModalRating;
+            const cls = `fa-star ${filled ? 'fa-solid' : 'fa-regular text-warm-300'} ${canEdit ? 'cursor-pointer hover:scale-125 hover:text-orange-500' : ''} transition-all`;
+            return canEdit
+                ? `<button type="button" data-star="${n}" aria-label="Rate ${n} star${n > 1 ? 's' : ''}" class="leading-none"><i class="${cls}" aria-hidden="true"></i></button>`
+                : `<i class="${cls}" aria-hidden="true"></i>`;
+        }).join('');
+    }
+
+    shelfRatingEl.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-star]');
+        if (!btn || !currentShelfItem || !isOwner()) return;
+        renderShelfModalRating(Number(btn.dataset.star), true);
+    });
 
     window.openShelfModal = function (type, id) {
         const item = shelfCache[type].find(i => i.id === id);
@@ -371,12 +390,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const canEdit = isOwner() && editModeOn;
 
-        const status = statusMeta(type, item.status);
-        shelfBadge.innerText  = status.label;
-        shelfBadge.className  = `font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full ${status.cls}`;
-        shelfBadge.classList.toggle('hidden', canEdit);
-        populateShelfStatusSelect(type, item.status);
-        shelfStatusSelect.classList.toggle('hidden', !canEdit);
+        renderShelfModalRating(item.rating, canEdit);
+        shelfDateEl.innerHTML = `<i class="fa-regular fa-calendar mr-1" aria-hidden="true"></i> ${formatShelfDate(item.createdAt)}`;
 
         shelfTitleEl.innerHTML = item.title;
         shelfTitleEl.toggleAttribute('contenteditable', canEdit);
@@ -415,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
         shelfTabHtml.className  = `px-4 py-1.5 rounded-lg text-sm transition-all flex items-center gap-2 ${html ? 'font-bold bg-[#1a1513] text-orange-300 shadow-sm' : 'font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-200'}`;
         shelfTabWrite.setAttribute('aria-pressed', String(!html));
         shelfTabHtml.setAttribute('aria-pressed', String(html));
-        shelfFormatButtons.classList.toggle('hidden', html);
     }
 
     function getShelfDescriptionHtml() {
@@ -438,18 +452,16 @@ document.addEventListener('DOMContentLoaded', function () {
     shelfTabWrite.addEventListener('click', () => setShelfEditorMode('write'));
     shelfTabHtml.addEventListener('click', () => setShelfEditorMode('html'));
 
-    shelfToolbar.addEventListener('click', e => {
-        const btn = e.target.closest('button[data-cmd]');
-        if (!btn) return;
-        shelfDescEl.focus();
-        const cmd = btn.dataset.cmd;
-        let value = btn.dataset.cmdValue || null;
-        if (cmd === 'createLink') {
-            value = window.prompt('Link URL:');
-            if (!value) return;
+    shelfCopyBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(getShelfDescriptionHtml());
+            setShelfSaveStatus('Copied');
+        } catch (err) {
+            setShelfSaveStatus('Copy failed: ' + err.message);
         }
-        document.execCommand(cmd, false, value);
     });
+
+    shelfCancelBtn.addEventListener('click', () => window.closeShelfModal());
 
     function setShelfSaveStatus(text) {
         shelfSaveStatus.textContent = text;
@@ -463,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const updates = {
             title:           shelfTitleEl.innerHTML.trim(),
             descriptionHtml: getShelfDescriptionHtml(),
-            status:          shelfStatusSelect.value,
+            rating:          shelfModalRating,
         };
         shelfSaveBtn.disabled = true;
         try {
@@ -533,6 +545,7 @@ document.addEventListener('DOMContentLoaded', function () {
             title:           '[ Title placeholder ]',
             descriptionHtml: '',
             status:          statusOptions[type][0].label,
+            rating:          0,
             coverUrl:        null,
             order:           shelfCache[type].length,
             createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
