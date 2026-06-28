@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Single-user project (personal-web-journal) — confirmed no other Firebase
+// Auth accounts exist, so every path is gated to the owner's email rather
+// than just "signed in".
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email == 'neopet2010@gmail.com';
+    }
+
+    function isImageUnder2MB() {
+      return request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // home/index.html — Shelf cover images. Public read (homepage has no
+    // login wall); only the owner can upload/replace.
+    match /home/{uid}/shelf-covers/{fileName} {
+      allow read: if true;
+      allow write: if isOwner() && request.auth.uid == uid && isImageUnder2MB();
+    }
+
+    // library/* — private epub library files (epubs + covers).
+    match /library/{uid}/books/{fileName} {
+      allow read: if isOwner() && request.auth.uid == uid;
+      allow write: if isOwner() && request.auth.uid == uid;
+    }
+    match /library/{uid}/covers/{fileName} {
+      allow read: if isOwner() && request.auth.uid == uid;
+      allow write: if isOwner() && request.auth.uid == uid && isImageUnder2MB();
+    }
+
+    // RSVP sentence-complexity score cache (CSV per book).
+    match /library/rsvp/{fileName} {
+      allow read, write: if isOwner();
+    }
+
+    // Everything else in this bucket (e.g. the journal app), now scoped to
+    // the owner instead of any signed-in user.
+    match /{allPaths=**} {
+      allow read, write: if isOwner();
+    }
+  }
+}
