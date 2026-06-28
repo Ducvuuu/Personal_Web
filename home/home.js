@@ -197,10 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const typeIcon   = { books: 'fa-book',    games: 'fa-gamepad',  movies: 'fa-film' };
     const typeAspect = { books: 'aspect-[2/3]', games: 'aspect-square', movies: 'aspect-[2/3]' };
 
-    function statusMeta(type, label) {
-        return statusOptions[type].find(s => s.label === label) || statusOptions[type][0];
-    }
-
     function stripHtml(html) {
         const tmp = document.createElement('div');
         tmp.innerHTML = html || '';
@@ -216,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!panel) return;
         let html = shelfCache[type].map((item, idx) => {
             const color  = placeholderColors[idx % placeholderColors.length];
-            const status = statusMeta(type, item.status);
             const coverHtml = item.coverUrl
                 ? `<img src="${item.coverUrl}" alt="Cover of ${escAttr(stripHtml(item.title))}" class="w-full h-full object-cover">`
                 : `<i class="fa-solid ${typeIcon[type]} text-3xl text-white/60" aria-hidden="true"></i>
@@ -227,7 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${coverHtml}
                     </div>
                     <p class="ph-inline mt-3 truncate block text-center">${item.title}</p>
-                    <div class="text-center mt-1"><span class="inline-block font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${status.cls}">${status.label}</span></div>
                 </button>`;
         }).join('');
 
