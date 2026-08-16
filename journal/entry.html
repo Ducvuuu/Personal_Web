@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="field-note-template.css">
+    <link rel="stylesheet" href="open-sky-template.css">
 
     <script>
         tailwind.config = {
@@ -249,6 +250,7 @@
         <!-- Entry (populated by JS) -->
         <div id="entry-content" class="hidden w-full pt-14">
             <div id="field-note-entry-host" class="hidden"></div>
+            <div id="open-sky-entry-host" class="hidden"></div>
             <div id="default-entry-layout">
 
             <!-- ── HERO: cover image + overlaid title/receipt ── -->
@@ -457,7 +459,11 @@
             }
 
             if (isTemplateEntry) {
-                renderFieldNoteEntry(e);
+                const templateRenderers = {
+                    'field-note': renderFieldNoteEntry,
+                    'open-sky': renderOpenSkyEntry
+                };
+                (templateRenderers[e.templateId] || renderFieldNoteEntry)(e);
             } else {
                 renderDefaultEntry(e, isPublicView);
             }
@@ -474,6 +480,7 @@
         function renderDefaultEntry(e, isPublicView) {
             document.getElementById('default-entry-layout').classList.remove('hidden');
             document.getElementById('field-note-entry-host').classList.add('hidden');
+            document.getElementById('open-sky-entry-host').classList.add('hidden');
 
             const imageSrc = entryImageSrc(e.image);
             if (imageSrc) {
@@ -536,6 +543,7 @@
                 : '';
 
             document.getElementById('default-entry-layout').classList.add('hidden');
+            document.getElementById('open-sky-entry-host').classList.add('hidden');
             host.classList.remove('hidden');
             host.innerHTML = `
                 <article class="field-note-template" aria-label="${escHtml(title)}">
@@ -576,10 +584,83 @@
                 </article>`;
         }
 
+        function renderOpenSkyEntry(e) {
+            const host = document.getElementById('open-sky-entry-host');
+            const templateData = e.templateData || {};
+            const title = e.title || '(Untitled)';
+            const subtitle = templateData.subtitle
+                ? `<p class="open-sky-subtitle">${escHtml(templateData.subtitle)}</p>`
+                : '';
+            const date = formatOpenSkyDate(e.date);
+            const time = formatOpenSkyTime(e.date);
+            const location = e.locationDetail || e.location || 'Location unstamped';
+            const wordCount = countHtmlWords(e.content || '');
+            const lengthMode = wordCount > 180 ? 'long' : 'short';
+
+            document.getElementById('default-entry-layout').classList.add('hidden');
+            document.getElementById('field-note-entry-host').classList.add('hidden');
+            host.classList.remove('hidden');
+            host.innerHTML = `
+                <article class="open-sky-template" data-length="${lengthMode}" aria-label="${escHtml(title)}">
+                    <span class="open-sky-moon" aria-hidden="true"></span>
+                    <span class="open-sky-bright-star open-sky-star-one" aria-hidden="true"></span>
+                    <span class="open-sky-bright-star open-sky-star-two" aria-hidden="true"></span>
+                    <span class="open-sky-bright-star open-sky-star-three" aria-hidden="true"></span>
+                    <span class="open-sky-bright-star open-sky-star-four" aria-hidden="true"></span>
+                    <span class="open-sky-bright-star open-sky-star-five" aria-hidden="true"></span>
+
+                    <section class="open-sky-writing-shell">
+                        <div class="open-sky-meta" aria-label="Entry context">
+                            <span>${escHtml(date)}</span>
+                            <span class="open-sky-meta-dot" aria-hidden="true"></span>
+                            <span>${escHtml(time)}</span>
+                            <span class="open-sky-meta-dot" aria-hidden="true"></span>
+                            <span>${escHtml(location)}</span>
+                        </div>
+                        <h1 class="open-sky-title">${escHtml(title)}</h1>
+                        ${subtitle}
+                        <div class="open-sky-body">${e.content || ''}</div>
+
+                        <svg class="open-sky-long-detail open-sky-constellation-one" viewBox="0 0 160 120" fill="none" aria-hidden="true">
+                            <path d="M18 91L48 52L82 70L112 28L142 47" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 4"/>
+                            <circle cx="18" cy="91" r="2.3" fill="currentColor"/><circle cx="48" cy="52" r="1.7" fill="currentColor"/>
+                            <circle cx="82" cy="70" r="2.8" fill="currentColor"/><circle cx="112" cy="28" r="1.8" fill="currentColor"/>
+                            <circle cx="142" cy="47" r="2.1" fill="currentColor"/>
+                        </svg>
+                        <svg class="open-sky-long-detail open-sky-constellation-two" viewBox="0 0 110 90" fill="none" aria-hidden="true">
+                            <path d="M12 19L41 44L67 24L95 65" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 4"/>
+                            <circle cx="12" cy="19" r="1.7" fill="currentColor"/><circle cx="41" cy="44" r="2.5" fill="currentColor"/>
+                            <circle cx="67" cy="24" r="1.6" fill="currentColor"/><circle cx="95" cy="65" r="2.2" fill="currentColor"/>
+                        </svg>
+                    </section>
+
+                    <section class="open-sky-closing-scene" aria-label="Night landscape illustration">
+                        <img class="open-sky-closing-art" src="assets/open-sky-horizon.png"
+                            alt="A solitary traveler sitting on a softly illuminated camper among blue-and-gold grass and distant mountains">
+                    </section>
+                </article>`;
+        }
+
         function formatTemplateDate(dateStr) {
             const date = dateStr ? new Date(dateStr) : new Date();
             if (Number.isNaN(date.getTime())) return 'Field Notes';
             return `Field Notes · ${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+        }
+
+        function formatOpenSkyDate(dateStr) {
+            const date = dateStr ? new Date(dateStr) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Date unstamped';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            }).toUpperCase();
+        }
+
+        function formatOpenSkyTime(dateStr) {
+            const date = dateStr ? new Date(dateStr) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Time unstamped';
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
         }
 
         function countHtmlWords(html) {
