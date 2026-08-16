@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Field Notes — Entry</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="field-note-template.css">
 
     <script>
         tailwind.config = {
@@ -247,6 +248,8 @@
 
         <!-- Entry (populated by JS) -->
         <div id="entry-content" class="hidden w-full pt-14">
+            <div id="field-note-entry-host" class="hidden"></div>
+            <div id="default-entry-layout">
 
             <!-- ── HERO: cover image + overlaid title/receipt ── -->
             <div id="cover-wrapper" class="w-full relative" style="min-height: 70vh;">
@@ -289,6 +292,8 @@
                     <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
                     <i class="fa-solid fa-asterisk text-warm-400 text-sm"></i>
                 </div>
+
+            </div>
 
             </div>
 
@@ -425,14 +430,52 @@
             }
         }
 
+        function escHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function renderEntry(e, isPublicView) {
+            const isTemplateEntry = e.authoringMode === 'template';
+            const entryContent = document.getElementById('entry-content');
+            entryContent.dataset.authoringMode = isTemplateEntry ? 'template' : 'html';
+            entryContent.dataset.template = isTemplateEntry ? (e.templateId || 'field-note') : '';
+
             if (e.title) document.title = `${e.title} — Field Notes`;
 
             document.getElementById('chrome-title').textContent = e.title || '';
 
-            const imageSrc = e.image
-                ? (e.image.startsWith('http') ? e.image : `assets/${e.image}`)
-                : null;
+            if (isPublicView) {
+                showPublicBar();
+            } else {
+                document.getElementById('edit-btn').onclick   = () => goToEdit();
+                document.getElementById('delete-btn').onclick = () => deleteEntry();
+            }
+
+            if (isTemplateEntry) {
+                renderFieldNoteEntry(e);
+            } else {
+                renderDefaultEntry(e, isPublicView);
+            }
+
+            document.getElementById('loading-state').classList.add('hidden');
+            entryContent.classList.remove('hidden');
+        }
+
+        function entryImageSrc(image) {
+            if (!image) return null;
+            return image.startsWith('http') ? image : `assets/${image}`;
+        }
+
+        function renderDefaultEntry(e, isPublicView) {
+            document.getElementById('default-entry-layout').classList.remove('hidden');
+            document.getElementById('field-note-entry-host').classList.add('hidden');
+
+            const imageSrc = entryImageSrc(e.image);
             if (imageSrc) {
                 const img = document.getElementById('cover-img');
                 img.src = imageSrc;
@@ -443,24 +486,21 @@
 
             if (isPublicView) {
                 document.getElementById('receipt-card').classList.add('hidden');
-                showPublicBar();
             } else {
                 const displayLoc  = e.locationDetail || e.location || '—';
                 const displayDate = formatDate(e.date);
                 const weather     = formatWeather(e.weather);
                 document.getElementById('entry-receipt').innerHTML = `
-                    <p class="font-bold text-white mb-1.5"><i class="fa-solid fa-location-dot text-orange-300 mr-2 w-3"></i> ${displayLoc.toUpperCase()}</p>
-                    <p class="text-white/80 mb-1"><i class="fa-regular fa-clock text-white/50 mr-2 w-3"></i> ${displayDate}</p>
-                    ${weather ? `<p class="text-white/80"><i class="fa-solid fa-cloud text-white/50 mr-2 w-3"></i> ${weather}</p>` : ''}
+                    <p class="font-bold text-white mb-1.5"><i class="fa-solid fa-location-dot text-orange-300 mr-2 w-3" aria-hidden="true"></i> ${escHtml(displayLoc.toUpperCase())}</p>
+                    <p class="text-white/80 mb-1"><i class="fa-regular fa-clock text-white/50 mr-2 w-3" aria-hidden="true"></i> ${escHtml(displayDate)}</p>
+                    ${weather ? `<p class="text-white/80"><i class="fa-solid fa-cloud text-white/50 mr-2 w-3" aria-hidden="true"></i> ${escHtml(weather)}</p>` : ''}
                 `;
-                document.getElementById('edit-btn').onclick   = () => goToEdit();
-                document.getElementById('delete-btn').onclick = () => deleteEntry();
             }
 
-            // Body — re-execute any <script> tags since browsers block scripts injected via innerHTML.
             const bodyEl = document.getElementById('entry-body');
             bodyEl.innerHTML = e.content || '';
 
+            // Raw HTML and legacy entries intentionally preserve executable scripts.
             const origAddEventListener = document.addEventListener.bind(document);
             document.addEventListener = function(type, listener, options) {
                 if (type === 'DOMContentLoaded') { listener(); return; }
@@ -473,9 +513,81 @@
                 old.parentNode.replaceChild(s, old);
             });
             document.addEventListener = origAddEventListener;
+        }
 
-            document.getElementById('loading-state').classList.add('hidden');
-            document.getElementById('entry-content').classList.remove('hidden');
+        function renderFieldNoteEntry(e) {
+            const host = document.getElementById('field-note-entry-host');
+            const templateData = e.templateData || {};
+            const title = e.title || '(Untitled)';
+            const imageSrc = entryImageSrc(e.image) || '../shared/bg_pattern.jpg';
+            const location = e.locationDetail || e.location || 'Location unstamped';
+            const weather = formatWeather(e.weather) || 'Field Note';
+            const date = formatTemplateDate(e.date);
+            const year = new Date(e.date || Date.now()).getFullYear();
+            const wordCount = countHtmlWords(e.content || '');
+            const subtitle = templateData.subtitle
+                ? `<p class="field-note-subtitle">${escHtml(templateData.subtitle)}</p>`
+                : '';
+            const epigraph = templateData.epigraph
+                ? `<blockquote class="field-note-epigraph">${escHtml(templateData.epigraph)}</blockquote>`
+                : '';
+            const caption = templateData.imageCaption
+                ? `<p class="field-note-caption-copy">${escHtml(templateData.imageCaption)}</p>`
+                : '';
+
+            document.getElementById('default-entry-layout').classList.add('hidden');
+            host.classList.remove('hidden');
+            host.innerHTML = `
+                <article class="field-note-template" aria-label="${escHtml(title)}">
+                    <div class="field-note-shell">
+                        <div class="field-note-spread">
+                            <aside class="field-note-cover-column">
+                                <div class="field-note-cover">
+                                    <img class="field-note-cover-image" src="${escHtml(imageSrc)}" alt="Cover image for ${escHtml(title)}">
+                                    <div class="field-note-cover-wash" aria-hidden="true"></div>
+                                    <div class="field-note-cover-grain" aria-hidden="true"></div>
+                                    <div class="field-note-weather">${escHtml(weather)}</div>
+                                    <div class="field-note-plate">Plate I · ${escHtml(year)}</div>
+                                    <div class="field-note-caption">
+                                        <p class="field-note-location">${escHtml(location)}</p>
+                                        ${caption}
+                                    </div>
+                                </div>
+                            </aside>
+                            <section class="field-note-paper">
+                                <div class="field-note-paper-inner">
+                                    <div class="field-note-accent" aria-hidden="true"></div>
+                                    <div class="field-note-meta">
+                                        <span>${escHtml(date)}</span>
+                                        <span>${escHtml(location)}</span>
+                                    </div>
+                                    <h1 class="field-note-title">${escHtml(title)}</h1>
+                                    ${subtitle}
+                                    ${epigraph}
+                                    <div class="field-note-body">${e.content || ''}</div>
+                                    <footer class="field-note-footer">
+                                        <span>${wordCount} ${wordCount === 1 ? 'word' : 'words'}</span>
+                                        <span class="field-note-mark">Field Note</span>
+                                    </footer>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </article>`;
+        }
+
+        function formatTemplateDate(dateStr) {
+            const date = dateStr ? new Date(dateStr) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Field Notes';
+            return `Field Notes · ${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+        }
+
+        function countHtmlWords(html) {
+            const holder = document.createElement('div');
+            holder.innerHTML = html;
+            holder.querySelectorAll('script, style').forEach(element => element.remove());
+            const text = (holder.textContent || '').trim();
+            return text ? text.split(/\s+/).filter(Boolean).length : 0;
         }
 
         function goToEdit() {

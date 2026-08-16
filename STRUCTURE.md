@@ -24,6 +24,17 @@
 │   └── assets/
 │       └── cover-about.jpg   # About page header image
 │
+├── journal/
+│   ├── index.html        # Private journal desk, drafts, chronicle, and atlas
+│   ├── new.html          # Permanent authoring-mode choice for new entries
+│   ├── write.html        # Template or raw-HTML editor, selected per entry
+│   ├── entry.html        # Private/public entry renderer
+│   ├── field-note-template.css # Shared Field Note editor/reader design
+│   └── migrate.html      # Legacy Firestore collection migration utility
+│
+├── writing/
+│   └── index.html        # Public showcase of featured journal entries
+│
 └── library/
     ├── index.html        # Library home — book grid, upload, currently-reading hero
     ├── index.js          # All JS for index.html (auth, book loading, rendering, upload, filters)
@@ -32,6 +43,21 @@
     ├── rsvp.js           # RSVP speed-reading engine (Gemini scoring, playback, epub sync)
     └── RSVP.md           # Technical reference for the RSVP feature
 ```
+
+### Journal authoring modes
+
+Every new journal entry permanently chooses one authoring mode in `journal/new.html`:
+
+- `template` — focused content editor using a stable `templateId`. The initial `field-note`
+  design uses a sticky, height-limited cover on desktop and a fixed-height cover above the paper
+  on mobile. Additional template designs can be added later.
+- `html` — raw HTML editor with preview. Custom scripts retain the legacy behavior.
+
+New documents store `schemaVersion: 2`, `authoringMode`, and `templateId`. Documents without
+these fields are legacy entries and continue to edit and render as raw HTML without migration.
+The title, cover, location, weather, visibility, and featured status use the same Firestore
+fields in both modes. Field Note-specific subtitle, epigraph, and image caption values are grouped
+under `templateData`.
 
 ---
 

@@ -24,6 +24,14 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - **RSVP engine** lives entirely in the `<!-- ── RSVP INTEGRATION ── -->` script block at the bottom of `reader.html`. Do not split it out unless the user explicitly asks to refactor files.
 - `shared/components.js` injects the site nav and footer. Do not duplicate nav/footer HTML.
 - `library/RSVP.md` is the technical reference for the RSVP feature. Update it if you change the RSVP architecture.
+- `journal/new.html` is the only creation gateway for journal entries. It permanently selects
+  `template` or `html`; do not add an editor control that switches an existing entry between them.
+- Journal entries created by the new flow store `schemaVersion: 2`, `authoringMode`, and
+  `templateId`. Entries without those fields are legacy raw-HTML entries and must remain compatible.
+- The `field-note` template stores its optional subtitle, epigraph, and image caption inside
+  `templateData`. Its shared editor/reader presentation lives in `journal/field-note-template.css`.
+- Template journal content is sanitized when saved and never executes scripts. Raw HTML and legacy
+  entries intentionally retain executable-script behavior in `journal/entry.html`.
 
 ---
 
