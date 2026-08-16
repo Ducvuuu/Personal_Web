@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="field-note-template.css">
+    <link rel="stylesheet" href="open-sky-template.css">
 
     <script>
         tailwind.config = {
@@ -163,7 +164,7 @@
                 <div class="flex flex-col lg:flex-row gap-8 mb-10 pb-10 border-b border-warm-200">
 
                     <!-- Left: Metadata Receipt -->
-                    <div class="w-full lg:w-1/3 flex flex-col justify-start">
+                    <div id="metadata-panel" class="w-full lg:w-1/3 flex flex-col justify-start">
                         <div class="bg-warm-50/80 border border-warm-200 p-5 relative shadow-inner h-full flex flex-col justify-center rounded-lg">
                             <div class="absolute -left-1.5 -top-1.5 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm"></div>
 
@@ -186,7 +187,7 @@
                     </div>
 
                     <!-- Right: Cover Image -->
-                    <div class="w-full lg:w-2/3">
+                    <div id="cover-image-field" class="w-full lg:w-2/3">
                         <input type="file" id="image-file-input" accept="image/*" class="hidden"
                             onchange="handleImageFile(this.files[0])">
                         <div id="image-dropzone"
@@ -286,6 +287,55 @@
                 </div>
             </div>
 
+            <!-- Open Sky template editor -->
+            <div id="open-sky-editor" class="open-sky-template is-editing hidden -mx-8 md:-mx-16" data-length="short">
+                <span class="open-sky-moon" aria-hidden="true"></span>
+                <span class="open-sky-bright-star open-sky-star-one" aria-hidden="true"></span>
+                <span class="open-sky-bright-star open-sky-star-two" aria-hidden="true"></span>
+                <span class="open-sky-bright-star open-sky-star-three" aria-hidden="true"></span>
+                <span class="open-sky-bright-star open-sky-star-four" aria-hidden="true"></span>
+                <span class="open-sky-bright-star open-sky-star-five" aria-hidden="true"></span>
+
+                <section class="open-sky-writing-shell" aria-label="Editable Open Sky template">
+                    <div class="open-sky-meta" aria-label="Entry context">
+                        <span id="open-sky-date-editor"></span>
+                        <span class="open-sky-meta-dot" aria-hidden="true"></span>
+                        <span id="open-sky-time-editor"></span>
+                        <span class="open-sky-meta-dot" aria-hidden="true"></span>
+                        <span id="open-sky-location-editor">Location unstamped</span>
+                    </div>
+
+                    <h1 id="open-sky-title-editor" class="open-sky-title" contenteditable="true"
+                        role="textbox" aria-label="Entry title" aria-multiline="false" spellcheck="true"
+                        data-placeholder="Give tonight a name…"></h1>
+
+                    <p id="open-sky-subtitle-editor" class="open-sky-subtitle" contenteditable="true"
+                        role="textbox" aria-label="Entry subtitle" aria-multiline="false" spellcheck="true"
+                        data-placeholder="An optional thought beneath it…"></p>
+
+                    <div id="open-sky-body-editor" class="open-sky-body" contenteditable="true"
+                        role="textbox" aria-label="Journal entry body" aria-multiline="true" spellcheck="true"
+                        data-placeholder="Start writing into the sky…"></div>
+
+                    <svg class="open-sky-long-detail open-sky-constellation-one" viewBox="0 0 160 120" fill="none" aria-hidden="true">
+                        <path d="M18 91L48 52L82 70L112 28L142 47" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 4"/>
+                        <circle cx="18" cy="91" r="2.3" fill="currentColor"/><circle cx="48" cy="52" r="1.7" fill="currentColor"/>
+                        <circle cx="82" cy="70" r="2.8" fill="currentColor"/><circle cx="112" cy="28" r="1.8" fill="currentColor"/>
+                        <circle cx="142" cy="47" r="2.1" fill="currentColor"/>
+                    </svg>
+                    <svg class="open-sky-long-detail open-sky-constellation-two" viewBox="0 0 110 90" fill="none" aria-hidden="true">
+                        <path d="M12 19L41 44L67 24L95 65" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 4"/>
+                        <circle cx="12" cy="19" r="1.7" fill="currentColor"/><circle cx="41" cy="44" r="2.5" fill="currentColor"/>
+                        <circle cx="67" cy="24" r="1.6" fill="currentColor"/><circle cx="95" cy="65" r="2.2" fill="currentColor"/>
+                    </svg>
+                </section>
+
+                <section class="open-sky-closing-scene" aria-label="Night landscape illustration">
+                    <img class="open-sky-closing-art" src="assets/open-sky-horizon.png"
+                        alt="A solitary traveler sitting on a softly illuminated camper among blue-and-gold grass and distant mountains">
+                </section>
+            </div>
+
             <!-- Raw HTML mode -->
             <textarea id="journal-body"
                 placeholder="<p>Start writing your HTML here…</p>"
@@ -367,6 +417,57 @@
         let templateId = null;
         let htmlView = 'code';
 
+        const templateConfigs = {
+            'field-note': {
+                label: 'Template · Field Note',
+                editorId: 'field-note-editor',
+                titleId: 'field-note-title-editor',
+                bodyId: 'simple-body',
+                populate(entry) {
+                    document.getElementById(this.titleId).textContent = entry.title || '';
+                    document.getElementById(this.bodyId).innerHTML = entry.content || '';
+                    const data = entry.templateData || {};
+                    document.getElementById('field-note-subtitle-editor').textContent = data.subtitle || '';
+                    document.getElementById('field-note-epigraph-editor').textContent = data.epigraph || '';
+                    document.getElementById('field-note-caption-editor').textContent = data.imageCaption || '';
+                },
+                collectData() {
+                    return {
+                        subtitle: plainEditableText('field-note-subtitle-editor'),
+                        epigraph: plainEditableText('field-note-epigraph-editor'),
+                        imageCaption: plainEditableText('field-note-caption-editor')
+                    };
+                },
+                update() {
+                    updateFieldNoteContext();
+                    updateFieldNoteWordCount();
+                }
+            },
+            'open-sky': {
+                label: 'Template · Open Sky',
+                editorId: 'open-sky-editor',
+                titleId: 'open-sky-title-editor',
+                bodyId: 'open-sky-body-editor',
+                populate(entry) {
+                    document.getElementById(this.titleId).textContent = entry.title || '';
+                    document.getElementById(this.bodyId).innerHTML = entry.content || '';
+                    const data = entry.templateData || {};
+                    document.getElementById('open-sky-subtitle-editor').textContent = data.subtitle || '';
+                },
+                collectData() {
+                    return { subtitle: plainEditableText('open-sky-subtitle-editor') };
+                },
+                update() {
+                    updateOpenSkyContext();
+                    updateOpenSkyLength();
+                }
+            }
+        };
+
+        function activeTemplateConfig() {
+            return templateConfigs[templateId] || templateConfigs['field-note'];
+        }
+
         function updatePublicLabel() {
             const checked = document.getElementById('public-toggle').checked;
             document.getElementById('public-track').className =
@@ -434,7 +535,7 @@
         function initializeNewEntry() {
             const requestedMode = params.get('mode');
             const requestedTemplate = params.get('template');
-            const validTemplate = requestedMode === 'template' && requestedTemplate === 'field-note';
+            const validTemplate = requestedMode === 'template' && !!templateConfigs[requestedTemplate];
             const validHtml = requestedMode === 'html' && !requestedTemplate;
 
             if (!validTemplate && !validHtml) {
@@ -450,7 +551,7 @@
         function resolveStoredMode(entry) {
             if (entry.authoringMode === 'template') {
                 authoringMode = 'template';
-                templateId = entry.templateId || 'field-note';
+                templateId = templateConfigs[entry.templateId] ? entry.templateId : 'field-note';
             } else {
                 // Entries created before schema version 2 retain their existing HTML behavior.
                 authoringMode = 'html';
@@ -461,7 +562,6 @@
         function populateEditor(entry) {
             resolveStoredMode(entry);
             document.getElementById('entry-title').value = entry.title || '';
-            document.getElementById('field-note-title-editor').textContent = entry.title || '';
             document.getElementById('location-detail').value = entry.locationDetail || '';
             capturedDate     = entry.date     || capturedDate;
             capturedLocation = entry.location || '';
@@ -470,11 +570,7 @@
             capturedWeather  = entry.weather  || null;
 
             if (authoringMode === 'template') {
-                document.getElementById('simple-body').innerHTML = entry.content || '';
-                const templateData = entry.templateData || {};
-                document.getElementById('field-note-subtitle-editor').textContent = templateData.subtitle || '';
-                document.getElementById('field-note-epigraph-editor').textContent = templateData.epigraph || '';
-                document.getElementById('field-note-caption-editor').textContent = templateData.imageCaption || '';
+                activeTemplateConfig().populate(entry);
             } else {
                 document.getElementById('journal-body').value = entry.content || '';
             }
@@ -615,6 +711,7 @@
                             <i class="fa-solid fa-check-circle"></i> Environment locked
                         </div>`;
                     updateFieldNoteContext();
+                    updateOpenSkyContext();
 
                 } catch (err) {
                     showGeoError('Failed to fetch environment data.');
@@ -698,8 +795,9 @@
 
         // ── AUTHORING MODE ──
         function configureAuthoringMode(shouldFocus) {
-            const templateEditor = document.getElementById('field-note-editor');
             const htmlTitleField = document.getElementById('html-title-field');
+            const metadataPanel = document.getElementById('metadata-panel');
+            const coverImageField = document.getElementById('cover-image-field');
             const codeEl    = document.getElementById('journal-body');
             const previewEl = document.getElementById('journal-preview');
             const controls   = document.getElementById('html-view-controls');
@@ -710,21 +808,31 @@
             const on  = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
             const off = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
 
-            templateEditor.classList.add('hidden');
+            Object.values(templateConfigs).forEach(config => {
+                document.getElementById(config.editorId).classList.add('hidden');
+            });
+            coverImageField.classList.remove('hidden');
+            metadataPanel.classList.remove('lg:w-full');
+            metadataPanel.classList.add('lg:w-1/3');
             codeEl.classList.add('hidden');
             previewEl.classList.add('hidden');
             btnCode.className    = off;
             btnPreview.className = off;
 
             if (authoringMode === 'template') {
+                const config = activeTemplateConfig();
                 controls.classList.add('hidden');
                 controls.classList.remove('flex');
                 htmlTitleField.classList.add('hidden');
-                templateEditor.classList.remove('hidden');
-                label.textContent = 'Template · Field Note';
-                updateFieldNoteContext();
-                updateFieldNoteWordCount();
-                if (shouldFocus) document.getElementById('field-note-title-editor').focus();
+                document.getElementById(config.editorId).classList.remove('hidden');
+                label.textContent = config.label;
+                if (templateId === 'open-sky') {
+                    coverImageField.classList.add('hidden');
+                    metadataPanel.classList.remove('lg:w-1/3');
+                    metadataPanel.classList.add('lg:w-full');
+                }
+                config.update();
+                if (shouldFocus) document.getElementById(config.titleId).focus();
                 return;
             }
 
@@ -759,17 +867,13 @@
         }
 
         function getEntryTitle() {
-            if (authoringMode === 'template') return plainEditableText('field-note-title-editor');
+            if (authoringMode === 'template') return plainEditableText(activeTemplateConfig().titleId);
             return document.getElementById('entry-title').value.trim();
         }
 
         function getTemplateData() {
             if (authoringMode !== 'template') return null;
-            return {
-                subtitle: plainEditableText('field-note-subtitle-editor'),
-                epigraph: plainEditableText('field-note-epigraph-editor'),
-                imageCaption: plainEditableText('field-note-caption-editor')
-            };
+            return activeTemplateConfig().collectData();
         }
 
         function formatTemplateDate(dateValue) {
@@ -802,11 +906,69 @@
             document.getElementById('field-note-word-count').textContent = `${count} ${count === 1 ? 'word' : 'words'}`;
         }
 
-        document.getElementById('location-detail').addEventListener('input', updateFieldNoteContext);
+        function formatOpenSkyDate(dateValue) {
+            const date = dateValue ? new Date(dateValue) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Date unstamped';
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            }).toUpperCase();
+        }
+
+        function formatOpenSkyTime(dateValue) {
+            const date = dateValue ? new Date(dateValue) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Time unstamped';
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+
+        function updateOpenSkyContext() {
+            const locationDetail = document.getElementById('location-detail').value.trim();
+            document.getElementById('open-sky-date-editor').textContent = formatOpenSkyDate(capturedDate);
+            document.getElementById('open-sky-time-editor').textContent = formatOpenSkyTime(capturedDate);
+            document.getElementById('open-sky-location-editor').textContent =
+                locationDetail || capturedLocation || 'Location unstamped';
+        }
+
+        function updateOpenSkyLength() {
+            const text = (document.getElementById('open-sky-body-editor').innerText || '').trim();
+            const count = text ? text.split(/\s+/).filter(Boolean).length : 0;
+            document.getElementById('open-sky-editor').dataset.length = count > 180 ? 'long' : 'short';
+        }
+
+        document.getElementById('location-detail').addEventListener('input', () => {
+            updateFieldNoteContext();
+            updateOpenSkyContext();
+        });
         document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
+        document.getElementById('open-sky-body-editor').addEventListener('input', updateOpenSkyLength);
         document.getElementById('field-note-title-editor').addEventListener('input', () => {
             document.getElementById('entry-title').value = plainEditableText('field-note-title-editor');
         });
+        document.getElementById('open-sky-title-editor').addEventListener('input', () => {
+            document.getElementById('entry-title').value = plainEditableText('open-sky-title-editor');
+        });
+
+        function focusNextOnEnter(event, nextId) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            document.getElementById(nextId).focus();
+        }
+
+        function pastePlainText(event) {
+            event.preventDefault();
+            const text = (event.clipboardData || window.clipboardData).getData('text').replace(/\s+/g, ' ');
+            document.execCommand('insertText', false, text);
+        }
+
+        document.getElementById('open-sky-title-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'open-sky-subtitle-editor');
+        });
+        document.getElementById('open-sky-subtitle-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'open-sky-body-editor');
+        });
+        document.getElementById('open-sky-title-editor').addEventListener('paste', pastePlainText);
+        document.getElementById('open-sky-subtitle-editor').addEventListener('paste', pastePlainText);
 
         function sanitizeTemplateContent(html) {
             const template = document.createElement('template');
@@ -844,7 +1006,7 @@
 
         function getContent() {
             if (authoringMode === 'template') {
-                return sanitizeTemplateContent(document.getElementById('simple-body').innerHTML);
+                return sanitizeTemplateContent(document.getElementById(activeTemplateConfig().bodyId).innerHTML);
             }
             return document.getElementById('journal-body').value.trim();
         }

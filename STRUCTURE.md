@@ -30,6 +30,9 @@
 │   ├── write.html        # Template or raw-HTML editor, selected per entry
 │   ├── entry.html        # Private/public entry renderer
 │   ├── field-note-template.css # Shared Field Note editor/reader design
+│   ├── open-sky-template.css # Shared Open Sky editor/reader design
+│   ├── assets/
+│   │   └── open-sky-horizon.png # Open Sky closing landscape artwork
 │   └── migrate.html      # Legacy Firestore collection migration utility
 │
 ├── writing/
@@ -48,16 +51,16 @@
 
 Every new journal entry permanently chooses one authoring mode in `journal/new.html`:
 
-- `template` — focused content editor using a stable `templateId`. The initial `field-note`
-  design uses a sticky, height-limited cover on desktop and a fixed-height cover above the paper
-  on mobile. Additional template designs can be added later.
+- `template` — focused content editor using a stable `templateId`. `field-note` uses a sticky,
+  height-limited cover on desktop and a fixed-height cover above the paper on mobile. `open-sky`
+  provides a borderless night-sky canvas whose illustrated horizon follows the final paragraph.
 - `html` — raw HTML editor with preview. Custom scripts retain the legacy behavior.
 
 New documents store `schemaVersion: 2`, `authoringMode`, and `templateId`. Documents without
 these fields are legacy entries and continue to edit and render as raw HTML without migration.
-The title, cover, location, weather, visibility, and featured status use the same Firestore
-fields in both modes. Field Note-specific subtitle, epigraph, and image caption values are grouped
-under `templateData`.
+The title, location, weather, visibility, and featured status use the same Firestore fields in both
+modes. Template-specific values are grouped under `templateData`: Field Note stores subtitle,
+epigraph, and image caption; Open Sky stores its optional subtitle.
 
 ---
 

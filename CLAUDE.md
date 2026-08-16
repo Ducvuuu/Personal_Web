@@ -30,6 +30,10 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   `templateId`. Entries without those fields are legacy raw-HTML entries and must remain compatible.
 - The `field-note` template stores its optional subtitle, epigraph, and image caption inside
   `templateData`. Its shared editor/reader presentation lives in `journal/field-note-template.css`.
+- The `open-sky` template stores its optional subtitle in `templateData`. Its editor/reader design
+  lives in `journal/open-sky-template.css`, and its fixed closing artwork lives under `journal/assets/`.
+- Template selection and editor behavior are dispatched by `templateId` in `journal/write.html`;
+  template entry rendering is dispatched by `templateId` in `journal/entry.html`.
 - Template journal content is sanitized when saved and never executes scripts. Raw HTML and legacy
   entries intentionally retain executable-script behavior in `journal/entry.html`.
 
