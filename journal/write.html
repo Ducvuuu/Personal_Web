@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Write Entry — Journal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="field-note-template.css">
 
     <script>
         tailwind.config = {
@@ -196,7 +197,7 @@
                             ondrop="event.preventDefault(); this.classList.remove('border-orange-400','bg-orange-50/30'); handleImageFile(event.dataTransfer.files[0])">
                             <i id="upload-icon" class="fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2"></i>
                             <p class="font-mono text-xs font-bold text-warm-600">Drop image here or click to browse</p>
-                            <p id="upload-status" class="font-outfit text-sm text-warm-400 mt-1">Uploads straight to <code>journal/assets/</code> on GitHub</p>
+                            <p id="upload-status" class="font-outfit text-sm text-warm-400 mt-1">Uploads securely to Firebase Storage</p>
                             <img id="image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Cover Preview">
                             <button id="remove-img-btn" onclick="removeImage(event)"
                                 class="absolute top-3 right-3 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
@@ -206,50 +207,93 @@
                     </div>
                 </div>
 
-                <!-- Location + Title + Toggle -->
+                <!-- Location + Title + authoring mode -->
                 <div class="flex items-center gap-2 mb-6">
                     <i class="fa-solid fa-location-dot text-warm-400"></i>
                     <input type="text" id="location-detail" placeholder="Specific place? (e.g. Back of a Grab car, Senopati)"
                         class="w-full font-mono text-sm font-bold text-warm-600 placeholder-warm-300 bg-transparent border-none focus:outline-none">
                 </div>
 
-                <input type="text" id="entry-title" placeholder="A title for this moment…"
-                    class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
+                <div id="html-title-field">
+                    <input type="text" id="entry-title" placeholder="A title for this moment…"
+                        class="w-full font-heavy text-4xl sm:text-5xl lg:text-6xl text-warm-900 placeholder-warm-200 bg-transparent border-none mb-6 tracking-tight focus:outline-none">
+                </div>
 
-                <div class="flex justify-between items-end mb-4">
-                    <span id="mode-label" class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Simple</span>
-                    <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner">
-                        <button id="btn-simple" onclick="toggleEditor('simple')"
+                <div class="flex justify-between items-end gap-4 mb-4">
+                    <span id="mode-label" class="font-mono text-xs text-warm-400 uppercase tracking-widest pl-2">Loading editor…</span>
+                    <div id="html-view-controls" class="hidden items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner" aria-label="HTML editor view">
+                        <button id="btn-code" type="button"
                             class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
-                            <i class="fa-solid fa-feather mr-1"></i> Simple
+                            <i class="fa-solid fa-code mr-1" aria-hidden="true"></i> HTML
                         </button>
-                        <button id="btn-code" onclick="toggleEditor('code')"
+                        <button id="btn-preview" type="button"
                             class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
-                            <i class="fa-solid fa-code mr-1"></i> Code
-                        </button>
-                        <button id="btn-preview" onclick="toggleEditor('preview')"
-                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent hidden">
-                            <i class="fa-solid fa-eye mr-1"></i> Preview
+                            <i class="fa-solid fa-eye mr-1" aria-hidden="true"></i> Preview
                         </button>
                     </div>
                 </div>
 
             </div><!-- end constrained fields -->
 
-            <!-- Simple mode — styled contenteditable, WYSIWYG -->
-            <div id="simple-body"
-                contenteditable="true"
-                data-placeholder="Just write… press Enter for a new paragraph."
-                class="rendered-content w-full bg-[#fdfcf6] border border-warm-200 rounded-2xl px-8 md:px-16 py-10 shadow-inner transition-all mt-4 font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light"
-                style="min-height: 65vh;"></div>
+            <!-- Field Note template editor -->
+            <div id="field-note-editor" class="field-note-template is-editing hidden -mx-8 md:-mx-16">
+                <div class="field-note-shell">
+                    <article class="field-note-spread" aria-label="Editable Field Note template">
+                        <aside class="field-note-cover-column">
+                            <div class="field-note-cover">
+                                <img id="field-note-cover-image-editor" class="field-note-cover-image"
+                                    src="../shared/bg_pattern.jpg" alt="Entry cover preview">
+                                <div class="field-note-cover-wash" aria-hidden="true"></div>
+                                <div class="field-note-cover-grain" aria-hidden="true"></div>
+                                <div id="field-note-weather-editor" class="field-note-weather">Weather unstamped</div>
+                                <div id="field-note-plate-editor" class="field-note-plate">Plate I</div>
+                                <div class="field-note-caption">
+                                    <p id="field-note-location-editor" class="field-note-location">Location unstamped</p>
+                                    <p id="field-note-caption-editor" class="field-note-caption-copy" contenteditable="true"
+                                        role="textbox" aria-label="Image caption" data-placeholder="Add an image caption…"></p>
+                                </div>
+                            </div>
+                        </aside>
 
-            <!-- Code mode — raw HTML textarea -->
+                        <section class="field-note-paper">
+                            <div class="field-note-paper-inner">
+                                <div class="field-note-accent" aria-hidden="true"></div>
+                                <div class="field-note-meta">
+                                    <span id="field-note-date-editor">Field Notes</span>
+                                    <span id="field-note-context-editor">A working draft</span>
+                                </div>
+
+                                <h1 id="field-note-title-editor" class="field-note-title" contenteditable="true"
+                                    role="textbox" aria-label="Entry title" data-placeholder="Your title…"></h1>
+
+                                <p id="field-note-subtitle-editor" class="field-note-subtitle" contenteditable="true"
+                                    role="textbox" aria-label="Entry subtitle" data-placeholder="An optional subtitle…"></p>
+
+                                <blockquote id="field-note-epigraph-editor" class="field-note-epigraph" contenteditable="true"
+                                    role="textbox" aria-label="Entry epigraph" data-placeholder="An optional epigraph…"></blockquote>
+
+                                <div id="simple-body" class="field-note-body" contenteditable="true"
+                                    role="textbox" aria-multiline="true" aria-label="Journal entry body"
+                                    data-placeholder="Start writing…"></div>
+
+                                <footer class="field-note-footer">
+                                    <span id="field-note-word-count">0 words</span>
+                                    <span class="field-note-mark">Field Note</span>
+                                </footer>
+                            </div>
+                        </section>
+                    </article>
+                </div>
+            </div>
+
+            <!-- Raw HTML mode -->
             <textarea id="journal-body"
                 placeholder="<p>Start writing your HTML here…</p>"
+                aria-label="Raw HTML entry body"
                 class="w-full font-mono text-sm sm:text-base text-warm-800 placeholder-warm-300 bg-[#fdfcf6] border border-warm-200 rounded-2xl p-6 shadow-inner leading-relaxed focus:ring-2 focus:ring-warm-300 transition-all mt-4 hidden"
                 style="min-height: 65vh;"></textarea>
 
-            <!-- Preview mode — renders Code textarea -->
+            <!-- Raw HTML preview -->
             <div id="journal-preview" class="rendered-content w-full min-h-[65vh] font-outfit text-lg sm:text-xl text-warm-900 leading-relaxed font-light hidden mt-4 px-8 md:px-16 py-8"></div>
 
         </div>
@@ -317,9 +361,11 @@
         const storage = firebase.storage();
 
         // ── STATE ──
-        let currentUid    = null;
+        let currentUid = null;
         let currentImageValue = '';
-        let currentMode = 'simple';
+        let authoringMode = null;
+        let templateId = null;
+        let htmlView = 'code';
 
         function updatePublicLabel() {
             const checked = document.getElementById('public-toggle').checked;
@@ -350,8 +396,9 @@
                 updatePublicLabel();
             }
         }
-        const editId = new URLSearchParams(window.location.search).get('id');
-        let draftId  = new URLSearchParams(window.location.search).get('draft');
+        const params = new URLSearchParams(window.location.search);
+        const editId = params.get('id');
+        let draftId  = params.get('draft');
 
         function userEntries() {
             return db.collection('users').doc(currentUid).collection('entries');
@@ -374,6 +421,7 @@
                 actions.style.display = 'flex';
                 if (editId)       loadEntryForEdit(editId);
                 else if (draftId) loadDraftForEdit(draftId);
+                else              initializeNewEntry();
             } else {
                 currentUid = null;
                 document.getElementById('auth-gate').classList.remove('hidden');
@@ -383,33 +431,77 @@
             }
         });
 
+        function initializeNewEntry() {
+            const requestedMode = params.get('mode');
+            const requestedTemplate = params.get('template');
+            const validTemplate = requestedMode === 'template' && requestedTemplate === 'field-note';
+            const validHtml = requestedMode === 'html' && !requestedTemplate;
+
+            if (!validTemplate && !validHtml) {
+                window.location.replace('new.html');
+                return;
+            }
+
+            authoringMode = requestedMode;
+            templateId = validTemplate ? requestedTemplate : null;
+            configureAuthoringMode(true);
+        }
+
+        function resolveStoredMode(entry) {
+            if (entry.authoringMode === 'template') {
+                authoringMode = 'template';
+                templateId = entry.templateId || 'field-note';
+            } else {
+                // Entries created before schema version 2 retain their existing HTML behavior.
+                authoringMode = 'html';
+                templateId = null;
+            }
+        }
+
+        function populateEditor(entry) {
+            resolveStoredMode(entry);
+            document.getElementById('entry-title').value = entry.title || '';
+            document.getElementById('field-note-title-editor').textContent = entry.title || '';
+            document.getElementById('location-detail').value = entry.locationDetail || '';
+            capturedDate     = entry.date     || capturedDate;
+            capturedLocation = entry.location || '';
+            capturedLat      = entry.lat      || null;
+            capturedLng      = entry.lng      || null;
+            capturedWeather  = entry.weather  || null;
+
+            if (authoringMode === 'template') {
+                document.getElementById('simple-body').innerHTML = entry.content || '';
+                const templateData = entry.templateData || {};
+                document.getElementById('field-note-subtitle-editor').textContent = templateData.subtitle || '';
+                document.getElementById('field-note-epigraph-editor').textContent = templateData.epigraph || '';
+                document.getElementById('field-note-caption-editor').textContent = templateData.imageCaption || '';
+            } else {
+                document.getElementById('journal-body').value = entry.content || '';
+            }
+
+            if (entry.image) {
+                currentImageValue = entry.image;
+                showImagePreview(entry.image);
+                setUploadStatus('done', '✓ Existing image');
+            }
+
+            document.getElementById('public-toggle').checked = !!entry.isPublic;
+            updatePublicLabel();
+            document.getElementById('featured-toggle').checked = !!entry.featuredOnSite;
+            updateFeaturedLabel(true);
+            configureAuthoringMode(false);
+        }
+
         async function loadEntryForEdit(id) {
             try {
                 const doc = await userEntries().doc(id).get();
                 if (!doc.exists) return;
                 const e = doc.data();
-                document.getElementById('entry-title').value    = e.title        || '';
-                document.getElementById('journal-body').value   = e.content      || '';
-                document.getElementById('location-detail').value = e.locationDetail || '';
-                capturedDate     = e.date     || '';
-                capturedLocation = e.location || '';
-                capturedLat      = e.lat      || null;
-                capturedLng      = e.lng      || null;
-                capturedWeather  = e.weather  || '';
-                if (e.image) {
-                    currentImageValue = e.image;
-                    showImagePreview(e.image);
-                    setUploadStatus('done', '✓ Existing image');
-                }
-                document.getElementById('public-toggle').checked = !!e.isPublic;
-                updatePublicLabel();
-                document.getElementById('featured-toggle').checked = !!e.featuredOnSite;
-                updateFeaturedLabel(true);
+                populateEditor(e);
                 // Update UI labels for edit mode
                 document.querySelector('h1.font-heavy') && (document.querySelector('h1.font-heavy').textContent = 'Edit Entry');
                 const saveBtn = document.getElementById('save-btn');
                 saveBtn.innerHTML = '<i class="fa-solid fa-pen-nib text-xs opacity-70"></i> Update Entry';
-                toggleEditor('code'); // existing HTML always opens in Code mode
             } catch (err) {
                 console.error('Failed to load entry for edit:', err);
             }
@@ -420,24 +512,7 @@
                 const doc = await userEntries().doc(id).get();
                 if (!doc.exists) return;
                 const e = doc.data();
-                document.getElementById('entry-title').value     = e.title          || '';
-                document.getElementById('journal-body').value    = e.content        || '';
-                document.getElementById('location-detail').value = e.locationDetail || '';
-                capturedDate     = e.date     || capturedDate;
-                capturedLocation = e.location || '';
-                capturedLat      = e.lat      || null;
-                capturedLng      = e.lng      || null;
-                capturedWeather  = e.weather  || null;
-                if (e.image) {
-                    currentImageValue = e.image;
-                    showImagePreview(e.image);
-                    setUploadStatus('done', '✓ Existing image');
-                }
-                document.getElementById('public-toggle').checked = !!e.isPublic;
-                updatePublicLabel();
-                document.getElementById('featured-toggle').checked = !!e.featuredOnSite;
-                updateFeaturedLabel(true);
-                toggleEditor('code'); // drafts are stored as HTML, open in Code mode
+                populateEditor(e);
                 document.getElementById('save-status').innerHTML =
                     '<i class="fa-regular fa-floppy-disk text-warm-400"></i> Draft loaded — keep writing.';
             } catch (err) {
@@ -539,6 +614,7 @@
                         <div class="mt-3 text-[9px] text-green-600 flex items-center gap-1 opacity-70">
                             <i class="fa-solid fa-check-circle"></i> Environment locked
                         </div>`;
+                    updateFieldNoteContext();
 
                 } catch (err) {
                     showGeoError('Failed to fetch environment data.');
@@ -577,6 +653,7 @@
                 err => {
                     setUploadStatus('error', `Upload failed: ${err.message}`);
                     currentImageValue = '';
+                    document.getElementById('field-note-cover-image-editor').src = '../shared/bg_pattern.jpg';
                 },
                 async () => {
                     const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
@@ -595,6 +672,7 @@
             preview.classList.remove('hidden');
             removeBtn.classList.remove('hidden');
             removeBtn.style.display = 'flex';
+            document.getElementById('field-note-cover-image-editor').src = src;
         }
 
         function setUploadStatus(state, message) {
@@ -613,18 +691,18 @@
             document.getElementById('image-preview').classList.add('hidden');
             document.getElementById('remove-img-btn').classList.add('hidden');
             document.getElementById('upload-icon').className = 'fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2';
-            document.getElementById('upload-status').textContent = 'Uploads straight to journal/assets/ on GitHub';
+            document.getElementById('upload-status').textContent = 'Uploads securely to Firebase Storage';
             document.getElementById('image-file-input').value = '';
+            document.getElementById('field-note-cover-image-editor').src = '../shared/bg_pattern.jpg';
         }
 
-        // ── EDITOR TOGGLE ──
-        function toggleEditor(mode) {
-            currentMode = mode;
-
-            const simpleEl  = document.getElementById('simple-body');
+        // ── AUTHORING MODE ──
+        function configureAuthoringMode(shouldFocus) {
+            const templateEditor = document.getElementById('field-note-editor');
+            const htmlTitleField = document.getElementById('html-title-field');
             const codeEl    = document.getElementById('journal-body');
             const previewEl = document.getElementById('journal-preview');
-            const btnSimple  = document.getElementById('btn-simple');
+            const controls   = document.getElementById('html-view-controls');
             const btnCode    = document.getElementById('btn-code');
             const btnPreview = document.getElementById('btn-preview');
             const label      = document.getElementById('mode-label');
@@ -632,44 +710,156 @@
             const on  = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
             const off = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
 
-            // Hide all panels, reset all buttons
-            simpleEl.classList.add('hidden');
+            templateEditor.classList.add('hidden');
             codeEl.classList.add('hidden');
             previewEl.classList.add('hidden');
-            btnSimple.className  = off;
             btnCode.className    = off;
             btnPreview.className = off;
 
-            if (mode === 'simple') {
-                simpleEl.classList.remove('hidden');
-                btnSimple.className = on;
-                btnPreview.classList.add('hidden');    // Preview not relevant in simple
-                label.textContent = 'Simple';
-                simpleEl.focus();
-            } else if (mode === 'code') {
+            if (authoringMode === 'template') {
+                controls.classList.add('hidden');
+                controls.classList.remove('flex');
+                htmlTitleField.classList.add('hidden');
+                templateEditor.classList.remove('hidden');
+                label.textContent = 'Template · Field Note';
+                updateFieldNoteContext();
+                updateFieldNoteWordCount();
+                if (shouldFocus) document.getElementById('field-note-title-editor').focus();
+                return;
+            }
+
+            htmlTitleField.classList.remove('hidden');
+            controls.classList.remove('hidden');
+            controls.classList.add('flex');
+            if (htmlView === 'code') {
                 codeEl.classList.remove('hidden');
                 btnCode.className = on;
-                btnPreview.classList.remove('hidden'); // Preview appears in code mode
-                label.textContent = 'HTML';
-            } else { // preview
+                label.textContent = 'Raw HTML';
+                if (shouldFocus) codeEl.focus();
+            } else {
                 previewEl.classList.remove('hidden');
                 btnPreview.className = on;
-                btnPreview.classList.remove('hidden');
-                label.textContent = 'Preview';
+                label.textContent = 'Raw HTML · Preview';
                 const html = codeEl.value.trim();
                 previewEl.innerHTML = html || '<span style="color:#f5d3b3;font-style:italic;">Nothing to preview yet…</span>';
             }
         }
 
-        // ── GET CONTENT (mode-aware) ──
+        function setHtmlView(view) {
+            if (authoringMode !== 'html' || !['code', 'preview'].includes(view)) return;
+            htmlView = view;
+            configureAuthoringMode(view === 'code');
+        }
+
+        document.getElementById('btn-code').addEventListener('click', () => setHtmlView('code'));
+        document.getElementById('btn-preview').addEventListener('click', () => setHtmlView('preview'));
+
+        function plainEditableText(id) {
+            return (document.getElementById(id).innerText || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function getEntryTitle() {
+            if (authoringMode === 'template') return plainEditableText('field-note-title-editor');
+            return document.getElementById('entry-title').value.trim();
+        }
+
+        function getTemplateData() {
+            if (authoringMode !== 'template') return null;
+            return {
+                subtitle: plainEditableText('field-note-subtitle-editor'),
+                epigraph: plainEditableText('field-note-epigraph-editor'),
+                imageCaption: plainEditableText('field-note-caption-editor')
+            };
+        }
+
+        function formatTemplateDate(dateValue) {
+            const date = dateValue ? new Date(dateValue) : new Date();
+            if (Number.isNaN(date.getTime())) return 'Field Notes';
+            return `Field Notes · ${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+        }
+
+        function formatTemplateWeather(weather) {
+            if (!weather) return 'Weather unstamped';
+            if (typeof weather === 'string') return weather;
+            const temperature = weather.temp == null ? '' : `${weather.temp}°C`;
+            return [temperature, weather.condition].filter(Boolean).join(' · ') || 'Weather unstamped';
+        }
+
+        function updateFieldNoteContext() {
+            const locationDetail = document.getElementById('location-detail').value.trim();
+            const location = locationDetail || capturedLocation || 'Location unstamped';
+            const year = new Date(capturedDate || Date.now()).getFullYear();
+            document.getElementById('field-note-date-editor').textContent = formatTemplateDate(capturedDate);
+            document.getElementById('field-note-context-editor').textContent = locationDetail || capturedLocation || 'A working draft';
+            document.getElementById('field-note-location-editor').textContent = location;
+            document.getElementById('field-note-weather-editor').textContent = formatTemplateWeather(capturedWeather);
+            document.getElementById('field-note-plate-editor').textContent = `Plate I · ${year}`;
+        }
+
+        function updateFieldNoteWordCount() {
+            const text = (document.getElementById('simple-body').innerText || '').trim();
+            const count = text ? text.split(/\s+/).filter(Boolean).length : 0;
+            document.getElementById('field-note-word-count').textContent = `${count} ${count === 1 ? 'word' : 'words'}`;
+        }
+
+        document.getElementById('location-detail').addEventListener('input', updateFieldNoteContext);
+        document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
+        document.getElementById('field-note-title-editor').addEventListener('input', () => {
+            document.getElementById('entry-title').value = plainEditableText('field-note-title-editor');
+        });
+
+        function sanitizeTemplateContent(html) {
+            const template = document.createElement('template');
+            template.innerHTML = html;
+            const allowedTags = new Set(['P', 'BR', 'H2', 'H3', 'BLOCKQUOTE', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'A', 'HR', 'MARK']);
+            const blockedTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'INPUT', 'BUTTON']);
+
+            function clean(parent) {
+                Array.from(parent.children).forEach(element => {
+                    if (blockedTags.has(element.tagName)) {
+                        element.remove();
+                        return;
+                    }
+                    if (!allowedTags.has(element.tagName)) {
+                        clean(element);
+                        element.replaceWith(...element.childNodes);
+                        return;
+                    }
+
+                    const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
+                    Array.from(element.attributes).forEach(attribute => element.removeAttribute(attribute.name));
+                    if (element.tagName === 'A') {
+                        if (/^(https?:|mailto:|#)/i.test(href)) {
+                            element.setAttribute('href', href);
+                            element.setAttribute('rel', 'noopener noreferrer');
+                        }
+                    }
+                    clean(element);
+                });
+            }
+
+            clean(template.content);
+            return template.innerHTML.trim();
+        }
+
         function getContent() {
-            if (currentMode === 'simple') return document.getElementById('simple-body').innerHTML;
+            if (authoringMode === 'template') {
+                return sanitizeTemplateContent(document.getElementById('simple-body').innerHTML);
+            }
             return document.getElementById('journal-body').value.trim();
+        }
+
+        function creationMetadata() {
+            return {
+                schemaVersion: 2,
+                authoringMode: authoringMode,
+                templateId: authoringMode === 'template' ? templateId : null
+            };
         }
 
         // ── SAVE DRAFT TO FIRESTORE ──
         async function saveDraft() {
-            const title          = document.getElementById('entry-title').value.trim();
+            const title          = getEntryTitle();
             const content        = getContent();
             const locationDetail = document.getElementById('location-detail').value.trim();
 
@@ -694,10 +884,12 @@
                     isPublic:       document.getElementById('public-toggle').checked,
                     featuredOnSite: document.getElementById('featured-toggle').checked
                 };
+                if (authoringMode === 'template') data.templateData = getTemplateData();
 
                 if (draftId) {
                     await userEntries().doc(draftId).update(data);
                 } else {
+                    Object.assign(data, creationMetadata());
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     const docRef = await userEntries().add(data);
                     draftId = docRef.id;
@@ -727,7 +919,7 @@
 
         // ── SEAL & SAVE TO FIRESTORE ──
         async function saveEntry() {
-            const title          = document.getElementById('entry-title').value.trim();
+            const title          = getEntryTitle();
             const content        = getContent();
             const locationDetail = document.getElementById('location-detail').value.trim();
             const imageFilename  = currentImageValue;
@@ -759,6 +951,7 @@
                     isPublic:       document.getElementById('public-toggle').checked,
                     featuredOnSite: document.getElementById('featured-toggle').checked
                 };
+                if (authoringMode === 'template') data.templateData = getTemplateData();
                 if (editId) {
                     await userEntries().doc(editId).update(data);
                     window.location.href = `entry.html?id=${editId}`;
@@ -766,6 +959,7 @@
                     await userEntries().doc(draftId).update(data);
                     window.location.href = './';
                 } else {
+                    Object.assign(data, creationMetadata());
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await userEntries().add(data);
                     window.location.href = './';
