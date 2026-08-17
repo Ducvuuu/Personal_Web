@@ -32,10 +32,26 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   `templateData`. Its shared editor/reader presentation lives in `journal/field-note-template.css`.
 - The `open-sky` template stores its optional subtitle in `templateData`. Its editor/reader design
   lives in `journal/open-sky-template.css`, and its fixed closing artwork lives under `journal/assets/`.
+- The `open-canvas` template stores its subtitle plus every appearance value — `backgroundImage`,
+  `closingArt`, `inkColor`, `accentColor`, `scrimOpacity`, `layoutMode`, `focalPoint`,
+  `softenArtEdge` — in `templateData`. Its design lives in `journal/open-canvas-template.css`. It
+  ships no bundled artwork: both images are uploaded per entry, and each has a graceful empty state.
 - Template selection and editor behavior are dispatched by `templateId` in `journal/write.html`;
-  template entry rendering is dispatched by `templateId` in `journal/entry.html`.
-- Template journal content is sanitized when saved and never executes scripts. Raw HTML and legacy
-  entries intentionally retain executable-script behavior in `journal/entry.html`.
+  template entry rendering is dispatched by `templateId` in `journal/entry.html`. `entry.html` uses
+  `showEntryHost()` to reveal one host and hide the rest — don't hand-hide hosts in a renderer.
+- `shared/rich-text.js` is the shared rich-text engine: `RichText.sanitize()` plus the selection
+  toolbar (`RichText.attach()`). Consumers pass their own palette so colours stay on-brand per
+  surface. Only `open-canvas` uses the toolbar today; Shelf and the home inline editors are the
+  intended next consumers.
+- Template journal content is sanitized by `RichText.sanitize()` when saved **and again when
+  rendered**, so entries written under an older allowlist are held to the current one. Raw HTML
+  and legacy entries intentionally retain executable-script behavior in `journal/entry.html`.
+- Coloured text spans survive sanitizing only for templates whose config sets `richText: true`.
+  Every other template gets the original colourless allowlist, and their spans are unwrapped.
+- Uploads go through the slot registry in `journal/write.html` (`uploadSlots`). A slot's `reflect()`
+  is visual only and `commit()` is the only path that writes a persisted value — that split is what
+  stops a `blob:` preview being saved if the entry is sealed mid-upload. Images are downscaled to
+  the slot's `maxEdge` before upload.
 
 ---
 
@@ -151,7 +167,25 @@ Any button that toggles something on/off (highlight mode, RSVP mode, play/pause)
 btn.setAttribute('aria-pressed', String(highlightMode));
 ```
 
-### 8. Pacing mode buttons must indicate the active selection
+### 8. Never interpolate a colour into a `style` attribute without validating it
+
+`escHtml` is **not** sufficient in a style context — `red;background:url(…)` passes it cleanly and
+still injects a declaration. Run every colour through `RichText.normalizeColor()`, which returns
+`#rrggbb` or `null`, and fall back to a default on `null`.
+
+```js
+// Wrong
+style="--oc-ink:${escHtml(templateData.inkColor)}"
+
+// Right
+const ink = RichText.normalizeColor(templateData.inkColor) || '#f6f2ea';
+style="--oc-ink:${ink}"
+```
+
+The same applies to any other value reaching a style or `data-*` attribute: narrow it to a known-safe
+set first (see `CANVAS_FOCAL_POINTS` and the scrim clamp in `journal/entry.html`).
+
+### 9. Pacing mode buttons must indicate the active selection
 
 The five RSVP pacing buttons are a group of mutually exclusive choices. Use `aria-pressed`
 (or `aria-current`) to mark the active one, and update it in `rsvpSetMode()`.

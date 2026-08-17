@@ -7,6 +7,8 @@
 ├── shared/
 │   ├── shared.css        # Global styles: body bg, font utilities, sticky-note
 │   ├── components.js     # Nav + footer injection (shared across all pages)
+│   ├── rich-text.js      # Shared sanitizer + contenteditable selection toolbar
+│   ├── rich-text.css     # Selection toolbar chrome
 │   └── assets/           # Reserved for assets used across multiple pages
 │
 ├── home/
@@ -31,6 +33,7 @@
 │   ├── entry.html        # Private/public entry renderer
 │   ├── field-note-template.css # Shared Field Note editor/reader design
 │   ├── open-sky-template.css # Shared Open Sky editor/reader design
+│   ├── open-canvas-template.css # Shared Open Canvas editor/reader design
 │   ├── assets/
 │   │   └── open-sky-horizon.png # Open Sky closing landscape artwork
 │   └── migrate.html      # Legacy Firestore collection migration utility
@@ -54,13 +57,56 @@ Every new journal entry permanently chooses one authoring mode in `journal/new.h
 - `template` — focused content editor using a stable `templateId`. `field-note` uses a sticky,
   height-limited cover on desktop and a fixed-height cover above the paper on mobile. `open-sky`
   provides a borderless night-sky canvas whose illustrated horizon follows the final paragraph.
+  `open-canvas` is photographic: the author supplies the backdrop and closing artwork and sets the
+  ink and accent colours, so nothing about its look is bundled.
 - `html` — raw HTML editor with preview. Custom scripts retain the legacy behavior.
 
 New documents store `schemaVersion: 2`, `authoringMode`, and `templateId`. Documents without
 these fields are legacy entries and continue to edit and render as raw HTML without migration.
 The title, location, weather, visibility, and featured status use the same Firestore fields in both
 modes. Template-specific values are grouped under `templateData`: Field Note stores subtitle,
-epigraph, and image caption; Open Sky stores its optional subtitle.
+epigraph, and image caption; Open Sky stores its optional subtitle; Open Canvas stores its subtitle
+plus `backgroundImage`, `closingArt`, `inkColor`, `accentColor`, `scrimOpacity`, `layoutMode`,
+`focalPoint` and `softenArtEdge`.
+
+### Open Canvas appearance
+
+| Value | Range | Empty / invalid falls back to |
+|---|---|---|
+| `backgroundImage` | Storage URL | Dusk gradient |
+| `closingArt` | Storage URL | Section omitted entirely |
+| `inkColor` / `accentColor` | `#rrggbb` | `#f6f2ea` / `#ffd36f` |
+| `scrimOpacity` | 0–80 | 42 (clamped, never rejected) |
+| `layoutMode` | `panel` \| `bare` | `panel` |
+| `focalPoint` | 9 `object-position` keywords | `center` |
+| `softenArtEdge` | boolean | `true` |
+
+`panel` puts the text on a translucent frosted card, which stays readable over any photograph.
+`bare` sets it directly on the backdrop and leans on the scrim. Every colour in the stylesheet
+resolves from `--oc-ink` and `--oc-accent`, so those two values drive the whole surface.
+
+On upload the backdrop is sampled down to a single pixel to estimate luminance, and the ink is
+switched to light or dark accordingly — but only until the author picks a colour themselves.
+
+### Rich text — `shared/rich-text.js`
+
+A selection toolbar (bold, italic, link, clear, colour swatches, custom picker) plus the sanitizer
+used by every template.
+
+```js
+RichText.attach(el, { palette: [{ name, value }], onChange });
+RichText.sanitize(html, { allowColor: true });
+RichText.normalizeColor(value);   // '#rrggbb' or null
+```
+
+The engine and sanitizer are shared; the **palette is per-surface** so colours stay on-brand.
+Sanitizing runs on save *and* on render. Colour spans survive only when the template config sets
+`richText: true` — `open-canvas` is the only one today, so Field Note and Open Sky keep the
+original colourless allowlist.
+
+`normalizeColor()` validates by assigning to a CSSOM property and resolving through a canvas
+`fillStyle`, so the browser's own parser rejects anything that is not a bare colour. Use it for any
+value heading into a `style` attribute; `escHtml` does not protect a style context.
 
 ---
 
@@ -202,6 +248,22 @@ Extend this when adding new pages (e.g. `pathname.includes('/writing') ? 'writin
 7. Update the active-page detection logic in `components.js` if needed
 
 ---
+
+## Adding a new journal template
+
+Five files. `journal/index.html` and `writing/index.html` list entries generically and need no change.
+
+1. `journal/<name>-template.css` — define every colour as a custom property on the root class so the
+   template can be recoloured later without a retrofit
+2. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
+3. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry
+   (`editorId`, `titleId`, `bodyId`, `populate`, `collectData`, `update`; `richText: true` to allow
+   coloured text)
+4. `journal/entry.html` — `<link>` the CSS, add a host `<div>`, add a `templateRenderers` entry, and
+   call `showEntryHost('<id>-entry-host')` at the top of the renderer
+5. `CLAUDE.md` + `STRUCTURE.md` — document what the template stores in `templateData`
+
+Validate anything from `templateData` that reaches a `style` or `data-*` attribute before it goes in.
 
 ## Tech stack
 

@@ -1,0 +1,306 @@
+/* Open Canvas — a photographic template whose backdrop, closing artwork and ink
+   colours are supplied per entry. Every colour resolves from --oc-ink and
+   --oc-accent so the two values set on the article drive the whole surface. */
+
+.open-canvas-template {
+    --oc-ink: #f6f2ea;
+    --oc-accent: #ffd36f;
+    --oc-scrim: 0.42;
+    --oc-focal: center;
+    --oc-panel-tint: 12, 14, 20;
+
+    position: relative;
+    isolation: isolate;
+    min-width: 320px;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--oc-ink);
+    background: #14171f;
+    font-family: "Lora", Georgia, serif;
+}
+
+.open-canvas-template *,
+.open-canvas-template *::before,
+.open-canvas-template *::after {
+    box-sizing: border-box;
+}
+
+/* ── Backdrop ── */
+
+.open-canvas-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 74% 18%, rgba(255, 255, 255, 0.14), transparent 26rem),
+        linear-gradient(168deg, #10131b 0%, #1d2430 54%, #2b323d 100%);
+}
+
+/* Sticky keeps one viewport of photo in view instead of stretching a landscape
+   crop over the full height of a long entry. */
+.open-canvas-backdrop-media {
+    position: sticky;
+    top: 0;
+    display: block;
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+    object-fit: cover;
+    object-position: var(--oc-focal);
+}
+
+.open-canvas-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: var(--oc-scrim);
+    background: linear-gradient(178deg, rgba(6, 8, 13, 0.92) 0%, rgba(6, 8, 13, 0.55) 42%, rgba(6, 8, 13, 0.88) 100%);
+}
+
+.open-canvas-grain {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    opacity: 0.12;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+.open-canvas-template ::selection {
+    color: #0c0f16;
+    background: var(--oc-accent);
+}
+
+/* ── Writing shell ── */
+
+.open-canvas-shell {
+    position: relative;
+    z-index: 3;
+    width: min(760px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: clamp(120px, 17vh, 190px) 0 80px;
+}
+
+.open-canvas-template[data-layout="panel"] .open-canvas-shell {
+    width: min(800px, calc(100% - 40px));
+    margin: clamp(72px, 11vh, 130px) auto clamp(40px, 7vh, 90px);
+    padding: clamp(34px, 5vw, 62px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 26px;
+    background: rgba(var(--oc-panel-tint), 0.44);
+    backdrop-filter: blur(16px) saturate(1.1);
+    box-shadow: 0 26px 60px rgba(4, 7, 14, 0.34);
+}
+
+.open-canvas-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 15px;
+    margin-bottom: 26px;
+    color: rgba(246, 242, 234, 0.62);
+    color: color-mix(in oklab, var(--oc-ink) 62%, transparent);
+    font: 500 10px/1.5 "Spline Sans Mono", monospace;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.open-canvas-meta-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--oc-accent);
+}
+
+.open-canvas-title {
+    max-width: 820px;
+    min-height: 1em;
+    margin: 0;
+    color: var(--oc-ink);
+    font: 700 clamp(42px, 5.6vw, 82px)/1.02 "Poppins", sans-serif;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+}
+
+.open-canvas-subtitle {
+    max-width: 640px;
+    min-height: 1.45em;
+    margin: 22px 0 0;
+    color: rgba(246, 242, 234, 0.78);
+    color: color-mix(in oklab, var(--oc-ink) 78%, transparent);
+    font: italic 400 clamp(18px, 1.9vw, 25px)/1.45 "Lora", serif;
+}
+
+.open-canvas-body {
+    max-width: 680px;
+    min-height: 150px;
+    margin-top: 32px;
+    color: rgba(246, 242, 234, 0.93);
+    color: color-mix(in oklab, var(--oc-ink) 93%, transparent);
+    font: 400 clamp(17px, 1.3vw, 20px)/1.85 "Lora", serif;
+    text-wrap: pretty;
+}
+
+.open-canvas-body p,
+.open-canvas-body > div {
+    margin: 0 0 1.25em;
+}
+
+.open-canvas-body a {
+    color: var(--oc-accent);
+    text-underline-offset: 3px;
+}
+
+.open-canvas-body h2,
+.open-canvas-body h3 {
+    margin: 1.9em 0 0.6em;
+    color: var(--oc-ink);
+    font-family: "Poppins", sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.open-canvas-body h2 { font-size: 1.6em; }
+.open-canvas-body h3 { font-size: 1.28em; }
+
+.open-canvas-body blockquote {
+    margin: 1.8em 0;
+    padding-left: 1.2em;
+    border-left: 2px solid var(--oc-accent);
+    font-style: italic;
+}
+
+.open-canvas-body ul,
+.open-canvas-body ol {
+    margin: 0 0 1.25em;
+    padding-left: 1.4em;
+}
+
+.open-canvas-body mark {
+    padding: 0.05em 0.3em;
+    border-radius: 0.3em;
+    background: var(--oc-accent);
+    color: #14171f;
+}
+
+.open-canvas-body hr {
+    margin: 2.4em 0;
+    border: none;
+    border-top: 1px solid rgba(246, 242, 234, 0.24);
+    border-top-color: color-mix(in oklab, var(--oc-ink) 24%, transparent);
+}
+
+.open-canvas-body p:first-child::first-letter,
+.open-canvas-body > div:first-child::first-letter {
+    float: left;
+    margin: 0.08em 0.1em 0 0;
+    color: var(--oc-accent);
+    font: 600 3.1em/0.78 "Poppins", sans-serif;
+}
+
+/* ── Closing artwork ── */
+
+.open-canvas-closing {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    height: clamp(260px, 33vw, 470px);
+    margin-top: auto;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.open-canvas-closing[hidden] {
+    display: none;
+}
+
+.open-canvas-closing-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+}
+
+.open-canvas-template[data-soften="on"] .open-canvas-closing-art {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 7%, #000 29%);
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 7%, #000 29%);
+}
+
+/* ── Editing state ── */
+
+.open-canvas-template.is-editing [contenteditable="true"] {
+    position: relative;
+    outline: none;
+    caret-color: var(--oc-accent);
+    transition: text-shadow 180ms ease;
+}
+
+.open-canvas-template.is-editing [contenteditable="true"]:focus {
+    text-shadow: 0 0 28px rgba(255, 255, 255, 0.12);
+}
+
+.open-canvas-template.is-editing [contenteditable="true"]:empty::before {
+    content: attr(data-placeholder);
+    color: rgba(246, 242, 234, 0.34);
+    color: color-mix(in oklab, var(--oc-ink) 34%, transparent);
+    pointer-events: none;
+}
+
+@media (max-width: 900px) {
+    .open-canvas-template[data-layout="panel"] .open-canvas-shell {
+        padding: clamp(26px, 6vw, 40px);
+    }
+}
+
+@media (max-width: 640px) {
+    .open-canvas-shell {
+        width: calc(100% - 32px);
+        padding: 108px 0 56px;
+    }
+
+    .open-canvas-template[data-layout="panel"] .open-canvas-shell {
+        width: calc(100% - 24px);
+        margin: 66px auto 34px;
+        border-radius: 20px;
+    }
+
+    .open-canvas-meta {
+        margin-bottom: 20px;
+        font-size: 9px;
+    }
+
+    .open-canvas-title {
+        font-size: clamp(36px, 11vw, 54px);
+    }
+
+    .open-canvas-subtitle {
+        margin-top: 18px;
+        font-size: 18px;
+    }
+
+    .open-canvas-body {
+        margin-top: 26px;
+        font-size: 17px;
+        line-height: 1.76;
+    }
+
+    .open-canvas-closing {
+        height: 250px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .open-canvas-template *,
+    .open-canvas-template *::before,
+    .open-canvas-template *::after {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}

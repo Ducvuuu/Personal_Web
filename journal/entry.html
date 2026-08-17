@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
+    <link rel="stylesheet" href="open-canvas-template.css">
 
     <script>
         tailwind.config = {
@@ -251,6 +252,7 @@
         <div id="entry-content" class="hidden w-full pt-14">
             <div id="field-note-entry-host" class="hidden"></div>
             <div id="open-sky-entry-host" class="hidden"></div>
+            <div id="open-canvas-entry-host" class="hidden"></div>
             <div id="default-entry-layout">
 
             <!-- ── HERO: cover image + overlaid title/receipt ── -->
@@ -314,6 +316,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <!-- Shared rich-text engine — used here for its sanitizer -->
+    <script src="../shared/rich-text.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -441,8 +446,26 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function renderEntry(e, isPublicView) {
-            const isTemplateEntry = e.authoringMode === 'template';
+        const ENTRY_HOSTS = [
+            'default-entry-layout', 'field-note-entry-host',
+            'open-sky-entry-host', 'open-canvas-entry-host'
+        ];
+
+        function showEntryHost(activeId) {
+            ENTRY_HOSTS.forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== activeId);
+            });
+        }
+
+        function renderEntry(entry, isPublicView) {
+            const isTemplateEntry = entry.authoringMode === 'template';
+            // Sanitised again on read, so entries saved under an older allowlist are
+            // held to the current one rather than trusted from storage.
+            const e = isTemplateEntry
+                ? Object.assign({}, entry, {
+                    content: RichText.sanitize(entry.content || '', { allowColor: entry.templateId === 'open-canvas' })
+                })
+                : entry;
             const entryContent = document.getElementById('entry-content');
             entryContent.dataset.authoringMode = isTemplateEntry ? 'template' : 'html';
             entryContent.dataset.template = isTemplateEntry ? (e.templateId || 'field-note') : '';
@@ -461,7 +484,8 @@
             if (isTemplateEntry) {
                 const templateRenderers = {
                     'field-note': renderFieldNoteEntry,
-                    'open-sky': renderOpenSkyEntry
+                    'open-sky': renderOpenSkyEntry,
+                    'open-canvas': renderOpenCanvasEntry
                 };
                 (templateRenderers[e.templateId] || renderFieldNoteEntry)(e);
             } else {
@@ -478,9 +502,7 @@
         }
 
         function renderDefaultEntry(e, isPublicView) {
-            document.getElementById('default-entry-layout').classList.remove('hidden');
-            document.getElementById('field-note-entry-host').classList.add('hidden');
-            document.getElementById('open-sky-entry-host').classList.add('hidden');
+            showEntryHost('default-entry-layout');
 
             const imageSrc = entryImageSrc(e.image);
             if (imageSrc) {
@@ -542,9 +564,7 @@
                 ? `<p class="field-note-caption-copy">${escHtml(templateData.imageCaption)}</p>`
                 : '';
 
-            document.getElementById('default-entry-layout').classList.add('hidden');
-            document.getElementById('open-sky-entry-host').classList.add('hidden');
-            host.classList.remove('hidden');
+            showEntryHost('field-note-entry-host');
             host.innerHTML = `
                 <article class="field-note-template" aria-label="${escHtml(title)}">
                     <div class="field-note-shell">
@@ -597,9 +617,7 @@
             const wordCount = countHtmlWords(e.content || '');
             const lengthMode = wordCount > 180 ? 'long' : 'short';
 
-            document.getElementById('default-entry-layout').classList.add('hidden');
-            document.getElementById('field-note-entry-host').classList.add('hidden');
-            host.classList.remove('hidden');
+            showEntryHost('open-sky-entry-host');
             host.innerHTML = `
                 <article class="open-sky-template" data-length="${lengthMode}" aria-label="${escHtml(title)}">
                     <span class="open-sky-moon" aria-hidden="true"></span>
@@ -638,6 +656,73 @@
                         <img class="open-sky-closing-art" src="assets/open-sky-horizon.png"
                             alt="A solitary traveler sitting on a softly illuminated camper among blue-and-gold grass and distant mountains">
                     </section>
+                </article>`;
+        }
+
+        const CANVAS_FOCAL_POINTS = new Set([
+            'center', 'top', 'bottom', 'left', 'right',
+            'left top', 'right top', 'left bottom', 'right bottom'
+        ]);
+
+        function canvasColor(value, fallback) {
+            return RichText.normalizeColor(value) || fallback;
+        }
+
+        function renderOpenCanvasEntry(e) {
+            const host = document.getElementById('open-canvas-entry-host');
+            const templateData = e.templateData || {};
+            const title    = e.title || '(Untitled)';
+            const date     = formatOpenSkyDate(e.date);
+            const time     = formatOpenSkyTime(e.date);
+            const location = e.locationDetail || e.location || 'Location unstamped';
+            const subtitle = templateData.subtitle
+                ? `<p class="open-canvas-subtitle">${escHtml(templateData.subtitle)}</p>`
+                : '';
+
+            // These land in a style attribute, where escHtml would not be enough —
+            // each one is narrowed to a known-safe value instead.
+            const ink    = canvasColor(templateData.inkColor, '#f6f2ea');
+            const accent = canvasColor(templateData.accentColor, '#ffd36f');
+            const scrimNumber = Number(templateData.scrimOpacity);
+            const scrim  = Number.isFinite(scrimNumber) ? Math.min(80, Math.max(0, Math.round(scrimNumber))) : 42;
+            const focal  = CANVAS_FOCAL_POINTS.has(templateData.focalPoint) ? templateData.focalPoint : 'center';
+            const layout = templateData.layoutMode === 'bare' ? 'bare' : 'panel';
+            const soften = templateData.softenArtEdge === false ? 'off' : 'on';
+
+            const backdrop = typeof templateData.backgroundImage === 'string' ? templateData.backgroundImage : '';
+            const art      = typeof templateData.closingArt === 'string' ? templateData.closingArt : '';
+
+            const backdropMarkup = backdrop
+                ? `<img class="open-canvas-backdrop-media" src="${escHtml(backdrop)}" alt="Backdrop for ${escHtml(title)}">`
+                : '';
+            const closingMarkup = art
+                ? `<section class="open-canvas-closing" aria-label="Closing artwork">
+                        <img class="open-canvas-closing-art" src="${escHtml(art)}" alt="Closing artwork for ${escHtml(title)}">
+                   </section>`
+                : '';
+
+            showEntryHost('open-canvas-entry-host');
+            host.innerHTML = `
+                <article class="open-canvas-template" data-layout="${layout}" data-soften="${soften}"
+                    style="--oc-ink:${ink};--oc-accent:${accent};--oc-scrim:${scrim / 100};--oc-focal:${focal}"
+                    aria-label="${escHtml(title)}">
+                    <div class="open-canvas-backdrop">${backdropMarkup}</div>
+                    <div class="open-canvas-scrim" aria-hidden="true"></div>
+                    <div class="open-canvas-grain" aria-hidden="true"></div>
+
+                    <section class="open-canvas-shell">
+                        <div class="open-canvas-meta" aria-label="Entry context">
+                            <span>${escHtml(date)}</span>
+                            <span class="open-canvas-meta-dot" aria-hidden="true"></span>
+                            <span>${escHtml(time)}</span>
+                            <span class="open-canvas-meta-dot" aria-hidden="true"></span>
+                            <span>${escHtml(location)}</span>
+                        </div>
+                        <h1 class="open-canvas-title">${escHtml(title)}</h1>
+                        ${subtitle}
+                        <div class="open-canvas-body">${e.content || ''}</div>
+                    </section>
+                    ${closingMarkup}
                 </article>`;
         }
 
