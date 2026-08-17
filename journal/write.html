@@ -8,8 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="../shared/rich-text.css">
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
+    <link rel="stylesheet" href="open-canvas-template.css">
 
     <script>
         tailwind.config = {
@@ -208,6 +210,120 @@
                     </div>
                 </div>
 
+                <!-- Open Canvas appearance controls -->
+                <section id="open-canvas-appearance" class="hidden mb-10 pb-10 border-b border-warm-200" aria-label="Open Canvas appearance">
+                    <p class="font-mono text-xs text-warm-500 uppercase tracking-widest mb-5">Appearance</p>
+
+                    <div class="grid md:grid-cols-2 gap-5 mb-6">
+                        <div>
+                            <p class="font-mono text-[10px] text-warm-500 uppercase tracking-widest mb-2">Backdrop image</p>
+                            <input type="file" id="oc-bg-input" accept="image/*" class="hidden"
+                                onchange="handleImageFile(this.files[0], 'canvasBackground')">
+                            <div id="oc-bg-dropzone"
+                                class="w-full h-40 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-5 cursor-pointer select-none"
+                                onclick="document.getElementById('oc-bg-input').click()"
+                                ondragover="event.preventDefault(); this.classList.add('border-orange-400','bg-orange-50/30')"
+                                ondragleave="this.classList.remove('border-orange-400','bg-orange-50/30')"
+                                ondrop="event.preventDefault(); this.classList.remove('border-orange-400','bg-orange-50/30'); handleImageFile(event.dataTransfer.files[0], 'canvasBackground')">
+                                <i id="oc-bg-icon" class="fa-solid fa-mountain-sun text-2xl text-warm-300 mb-2" aria-hidden="true"></i>
+                                <p class="font-mono text-xs font-bold text-warm-600">Drop a backdrop or click to browse</p>
+                                <p id="oc-bg-status" class="font-outfit text-sm text-warm-400 mt-1">Falls back to a dusk gradient</p>
+                                <img id="oc-bg-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Backdrop preview">
+                                <button id="oc-bg-remove" onclick="removeSlotImage(event, 'canvasBackground')" aria-label="Remove backdrop image"
+                                    class="absolute top-2.5 right-2.5 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
+                                    <i class="fa-solid fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="font-mono text-[10px] text-warm-500 uppercase tracking-widest mb-2">Closing artwork</p>
+                            <input type="file" id="oc-art-input" accept="image/*" class="hidden"
+                                onchange="handleImageFile(this.files[0], 'canvasArt')">
+                            <div id="oc-art-dropzone"
+                                class="w-full h-40 border-2 border-dashed border-warm-300 rounded-xl bg-warm-50/50 hover:bg-warm-100/50 transition-colors flex flex-col items-center justify-center relative overflow-hidden text-center p-5 cursor-pointer select-none"
+                                onclick="document.getElementById('oc-art-input').click()"
+                                ondragover="event.preventDefault(); this.classList.add('border-orange-400','bg-orange-50/30')"
+                                ondragleave="this.classList.remove('border-orange-400','bg-orange-50/30')"
+                                ondrop="event.preventDefault(); this.classList.remove('border-orange-400','bg-orange-50/30'); handleImageFile(event.dataTransfer.files[0], 'canvasArt')">
+                                <i id="oc-art-icon" class="fa-solid fa-panorama text-2xl text-warm-300 mb-2" aria-hidden="true"></i>
+                                <p class="font-mono text-xs font-bold text-warm-600">Drop closing art or click to browse</p>
+                                <p id="oc-art-status" class="font-outfit text-sm text-warm-400 mt-1">Optional — omitted when empty</p>
+                                <img id="oc-art-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden z-10" alt="Closing artwork preview">
+                                <button id="oc-art-remove" onclick="removeSlotImage(event, 'canvasArt')" aria-label="Remove closing artwork"
+                                    class="absolute top-2.5 right-2.5 bg-warm-900/50 backdrop-blur text-white w-8 h-8 rounded-full items-center justify-center hidden z-20 hover:bg-red-500 transition-colors flex">
+                                    <i class="fa-solid fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-x-8 gap-y-5">
+                        <div>
+                            <p class="font-mono text-[10px] text-warm-500 uppercase tracking-widest mb-2">Text layout</p>
+                            <div class="flex items-center bg-warm-100/50 p-1 rounded-xl border border-warm-200 shadow-inner w-fit" role="group" aria-label="Text layout">
+                                <button type="button" id="oc-layout-panel" aria-pressed="true"
+                                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900">
+                                    <i class="fa-solid fa-window-maximize mr-1" aria-hidden="true"></i> Panel
+                                </button>
+                                <button type="button" id="oc-layout-bare" aria-pressed="false"
+                                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent">
+                                    <i class="fa-solid fa-align-left mr-1" aria-hidden="true"></i> Bare
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="oc-focal" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">Backdrop focus</label>
+                            <select id="oc-focal"
+                                class="w-full max-w-xs px-3 py-2 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 focus:outline-none focus:border-warm-400">
+                                <option value="center">Centre</option>
+                                <option value="top">Top</option>
+                                <option value="bottom">Bottom</option>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                                <option value="left top">Top left</option>
+                                <option value="right top">Top right</option>
+                                <option value="left bottom">Bottom left</option>
+                                <option value="right bottom">Bottom right</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="oc-scrim" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">
+                                Scrim — <span id="oc-scrim-value">42</span>%
+                            </label>
+                            <input type="range" id="oc-scrim" min="0" max="80" step="1" value="42"
+                                class="w-full max-w-xs accent-orange-600">
+                        </div>
+
+                        <div>
+                            <label for="oc-soften" class="flex items-center gap-2 cursor-pointer select-none w-fit mt-1">
+                                <input type="checkbox" id="oc-soften" checked class="w-4 h-4 accent-orange-600">
+                                <span class="font-mono text-xs text-warm-600">Soften the top edge of closing art</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label for="oc-ink" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">Ink colour</label>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div id="oc-ink-swatches" class="flex items-center gap-1.5" role="group" aria-label="Ink colour presets"></div>
+                                <input type="color" id="oc-ink" value="#f6f2ea"
+                                    class="w-8 h-8 rounded-lg border border-warm-200 bg-white cursor-pointer p-0.5">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="oc-accent" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-2">Accent colour</label>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div id="oc-accent-swatches" class="flex items-center gap-1.5" role="group" aria-label="Accent colour presets"></div>
+                                <input type="color" id="oc-accent" value="#ffd36f"
+                                    class="w-8 h-8 rounded-lg border border-warm-200 bg-white cursor-pointer p-0.5">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Location + Title + authoring mode -->
                 <div class="flex items-center gap-2 mb-6">
                     <i class="fa-solid fa-location-dot text-warm-400"></i>
@@ -336,6 +452,42 @@
                 </section>
             </div>
 
+            <!-- Open Canvas template editor -->
+            <div id="open-canvas-editor" class="open-canvas-template is-editing hidden -mx-8 md:-mx-16"
+                data-layout="panel" data-soften="on">
+                <div id="oc-backdrop" class="open-canvas-backdrop">
+                    <img id="oc-backdrop-image" class="open-canvas-backdrop-media hidden" src="" alt="Entry backdrop preview">
+                </div>
+                <div class="open-canvas-scrim" aria-hidden="true"></div>
+                <div class="open-canvas-grain" aria-hidden="true"></div>
+
+                <section class="open-canvas-shell" aria-label="Editable Open Canvas template">
+                    <div class="open-canvas-meta" aria-label="Entry context">
+                        <span id="open-canvas-date-editor"></span>
+                        <span class="open-canvas-meta-dot" aria-hidden="true"></span>
+                        <span id="open-canvas-time-editor"></span>
+                        <span class="open-canvas-meta-dot" aria-hidden="true"></span>
+                        <span id="open-canvas-location-editor">Location unstamped</span>
+                    </div>
+
+                    <h1 id="open-canvas-title-editor" class="open-canvas-title" contenteditable="true"
+                        role="textbox" aria-label="Entry title" aria-multiline="false" spellcheck="true"
+                        data-placeholder="Name this frame…"></h1>
+
+                    <p id="open-canvas-subtitle-editor" class="open-canvas-subtitle" contenteditable="true"
+                        role="textbox" aria-label="Entry subtitle" aria-multiline="false" spellcheck="true"
+                        data-placeholder="An optional line beneath it…"></p>
+
+                    <div id="open-canvas-body-editor" class="open-canvas-body" contenteditable="true"
+                        role="textbox" aria-label="Journal entry body" aria-multiline="true" spellcheck="true"
+                        data-placeholder="Start writing over the picture…"></div>
+                </section>
+
+                <section id="oc-closing" class="open-canvas-closing" aria-label="Closing artwork" hidden>
+                    <img id="oc-closing-image" class="open-canvas-closing-art" src="" alt="Closing artwork">
+                </section>
+            </div>
+
             <!-- Raw HTML mode -->
             <textarea id="journal-body"
                 placeholder="<p>Start writing your HTML here…</p>"
@@ -395,6 +547,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
+    <!-- Shared rich-text engine — must load before the page script uses RichText -->
+    <script src="../shared/rich-text.js"></script>
+
     <script>
         // ── FIREBASE INIT ──
         const firebaseConfig = {
@@ -416,6 +571,37 @@
         let authoringMode = null;
         let templateId = null;
         let htmlView = 'code';
+        // openCanvasState: the Open Canvas appearance values saved into templateData
+        // inkTouched: suppresses the luminance-based ink suggestion once the author picks a colour
+        const openCanvasState = {
+            backgroundImage: '',
+            closingArt: '',
+            inkColor: '#f6f2ea',
+            accentColor: '#ffd36f',
+            scrimOpacity: 42,
+            layoutMode: 'panel',
+            focalPoint: 'center',
+            softenArtEdge: true
+        };
+        let inkTouched = false;
+
+        const OPEN_CANVAS_INKS = [
+            { name: 'Paper', value: '#f6f2ea' },
+            { name: 'Snow', value: '#ffffff' },
+            { name: 'Mist', value: '#cfd8e3' },
+            { name: 'Sand', value: '#e8d9c0' },
+            { name: 'Ink', value: '#1b1a17' },
+            { name: 'Char', value: '#3a3733' }
+        ];
+
+        const OPEN_CANVAS_ACCENTS = [
+            { name: 'Gold', value: '#ffd36f' },
+            { name: 'Ember', value: '#e38847' },
+            { name: 'Rust', value: '#b15129' },
+            { name: 'Sea', value: '#6fb0c9' },
+            { name: 'Sage', value: '#9bb894' },
+            { name: 'Plum', value: '#a97fb0' }
+        ];
 
         const templateConfigs = {
             'field-note': {
@@ -460,6 +646,37 @@
                 update() {
                     updateOpenSkyContext();
                     updateOpenSkyLength();
+                }
+            },
+            'open-canvas': {
+                label: 'Template · Open Canvas',
+                editorId: 'open-canvas-editor',
+                titleId: 'open-canvas-title-editor',
+                bodyId: 'open-canvas-body-editor',
+                richText: true,
+                populate(entry) {
+                    document.getElementById(this.titleId).textContent = entry.title || '';
+                    document.getElementById(this.bodyId).innerHTML = entry.content || '';
+                    const data = entry.templateData || {};
+                    document.getElementById('open-canvas-subtitle-editor').textContent = data.subtitle || '';
+                    loadOpenCanvasAppearance(data);
+                },
+                collectData() {
+                    return {
+                        subtitle: plainEditableText('open-canvas-subtitle-editor'),
+                        backgroundImage: openCanvasState.backgroundImage,
+                        closingArt: openCanvasState.closingArt,
+                        inkColor: openCanvasState.inkColor,
+                        accentColor: openCanvasState.accentColor,
+                        scrimOpacity: openCanvasState.scrimOpacity,
+                        layoutMode: openCanvasState.layoutMode,
+                        focalPoint: openCanvasState.focalPoint,
+                        softenArtEdge: openCanvasState.softenArtEdge
+                    };
+                },
+                update() {
+                    updateOpenCanvasContext();
+                    applyOpenCanvasAppearance();
                 }
             }
         };
@@ -577,8 +794,8 @@
 
             if (entry.image) {
                 currentImageValue = entry.image;
-                showImagePreview(entry.image);
-                setUploadStatus('done', '✓ Existing image');
+                showSlotPreview(uploadSlots.cover, entry.image);
+                setSlotStatus(uploadSlots.cover, 'done', '✓ Existing image');
             }
 
             document.getElementById('public-toggle').checked = !!entry.isPublic;
@@ -712,6 +929,7 @@
                         </div>`;
                     updateFieldNoteContext();
                     updateOpenSkyContext();
+                    updateOpenCanvasContext();
 
                 } catch (err) {
                     showGeoError('Failed to fetch environment data.');
@@ -727,70 +945,150 @@
         }
 
         // ── IMAGE UPLOAD (Firebase Storage) ──
-        function handleImageFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
+        // Each destination is a slot. reflect() is visual only, so a blob: preview
+        // can never be persisted if the entry is saved mid-upload; commit() is the
+        // only path that writes a value destined for Firestore.
+        const uploadSlots = {
+            cover: {
+                inputId: 'image-file-input', previewId: 'image-preview', removeId: 'remove-img-btn',
+                iconId: 'upload-icon', statusId: 'upload-status',
+                idleIcon: 'fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2',
+                idleText: 'Uploads securely to Firebase Storage',
+                maxEdge: 2200,
+                reflect(src) {
+                    document.getElementById('field-note-cover-image-editor').src = src || '../shared/bg_pattern.jpg';
+                },
+                commit(value) { currentImageValue = value; this.reflect(value); }
+            },
+            canvasBackground: {
+                inputId: 'oc-bg-input', previewId: 'oc-bg-preview', removeId: 'oc-bg-remove',
+                iconId: 'oc-bg-icon', statusId: 'oc-bg-status',
+                idleIcon: 'fa-solid fa-mountain-sun text-2xl text-warm-300 mb-2',
+                idleText: 'Falls back to a dusk gradient',
+                maxEdge: 2400, suggestInk: true,
+                reflect(src) { setCanvasBackdropSrc(src); },
+                commit(value) { openCanvasState.backgroundImage = value; applyOpenCanvasAppearance(); }
+            },
+            canvasArt: {
+                inputId: 'oc-art-input', previewId: 'oc-art-preview', removeId: 'oc-art-remove',
+                iconId: 'oc-art-icon', statusId: 'oc-art-status',
+                idleIcon: 'fa-solid fa-panorama text-2xl text-warm-300 mb-2',
+                idleText: 'Optional — omitted when empty',
+                maxEdge: 2000,
+                reflect(src) { setCanvasArtSrc(src); },
+                commit(value) { openCanvasState.closingArt = value; applyOpenCanvasAppearance(); }
+            }
+        };
 
-            // Immediate local preview
+        async function downscaleImage(file, maxEdge) {
+            if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+            const bitmap = await createImageBitmap(file);
+            const longest = Math.max(bitmap.width, bitmap.height);
+            if (longest <= maxEdge) {
+                if (bitmap.close) bitmap.close();
+                return file;
+            }
+            const scale  = maxEdge / longest;
+            const canvas = document.createElement('canvas');
+            canvas.width  = Math.round(bitmap.width * scale);
+            canvas.height = Math.round(bitmap.height * scale);
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            if (bitmap.close) bitmap.close();
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+            if (!blob || blob.size >= file.size) return file;
+            return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+        }
+
+        async function suggestInkFor(file) {
+            try {
+                const bitmap = await createImageBitmap(file);
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, 1, 1);
+                if (bitmap.close) bitmap.close();
+                const [r, g, b] = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+                const luminance = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+                if (inkTouched) return;
+                setOpenCanvasColor('ink', luminance > 140 ? '#1b1a17' : '#f6f2ea', false);
+            } catch (err) {}
+        }
+
+        async function handleImageFile(file, slotName) {
+            const slot = uploadSlots[slotName || 'cover'];
+            if (!slot || !file || !file.type.startsWith('image/')) return;
+
             const localUrl = URL.createObjectURL(file);
-            showImagePreview(localUrl);
-            setUploadStatus('uploading', 'Uploading… 0%');
+            showSlotPreview(slot, localUrl);
+            setSlotStatus(slot, 'uploading', 'Preparing…');
 
-            const ext      = file.name.split('.').pop().toLowerCase();
+            if (slot.suggestInk) suggestInkFor(file);
+
+            let payload = file;
+            try { payload = await downscaleImage(file, slot.maxEdge); } catch (err) {}
+
+            const ext      = (payload.name.split('.').pop() || 'jpg').toLowerCase();
             const ts       = new Date().toISOString().replace(/\D/g, '').substring(0, 15);
-            const safeName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+            const safeName = payload.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
             const filename = `journal/${ts}_${safeName}.${ext}`;
 
-            const uploadTask = storage.ref(filename).put(file);
+            const uploadTask = storage.ref(filename).put(payload);
 
             uploadTask.on('state_changed',
                 snapshot => {
                     const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
-                    setUploadStatus('uploading', `Uploading… ${pct}%`);
+                    setSlotStatus(slot, 'uploading', `Uploading… ${pct}%`);
                 },
                 err => {
-                    setUploadStatus('error', `Upload failed: ${err.message}`);
-                    currentImageValue = '';
-                    document.getElementById('field-note-cover-image-editor').src = '../shared/bg_pattern.jpg';
+                    setSlotStatus(slot, 'error', `Upload failed: ${err.message}`);
+                    URL.revokeObjectURL(localUrl);
+                    slot.commit('');
                 },
                 async () => {
                     const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                    currentImageValue = downloadURL;
                     URL.revokeObjectURL(localUrl);
-                    showImagePreview(downloadURL);
-                    setUploadStatus('done', '✓ Uploaded');
+                    showSlotPreview(slot, downloadURL);
+                    slot.commit(downloadURL);
+                    setSlotStatus(slot, 'done', '✓ Uploaded');
                 }
             );
         }
 
-        function showImagePreview(src) {
-            const preview   = document.getElementById('image-preview');
-            const removeBtn = document.getElementById('remove-img-btn');
+        function showSlotPreview(slot, src) {
+            const preview   = document.getElementById(slot.previewId);
+            const removeBtn = document.getElementById(slot.removeId);
             preview.src = src;
             preview.classList.remove('hidden');
             removeBtn.classList.remove('hidden');
             removeBtn.style.display = 'flex';
-            document.getElementById('field-note-cover-image-editor').src = src;
+            slot.reflect(src);
         }
 
-        function setUploadStatus(state, message) {
-            const icon   = document.getElementById('upload-icon');
-            const status = document.getElementById('upload-status');
+        function setSlotStatus(slot, state, message) {
+            const icon   = document.getElementById(slot.iconId);
+            const status = document.getElementById(slot.statusId);
             status.textContent = message;
             if (state === 'uploading') icon.className = 'fa-solid fa-circle-notch spin-slow text-2xl text-warm-400 mb-2';
             if (state === 'done')      icon.className = 'fa-solid fa-check-circle text-2xl text-green-500 mb-2';
             if (state === 'error')     icon.className = 'fa-solid fa-triangle-exclamation text-2xl text-red-400 mb-2';
+            if (state === 'idle')      icon.className = slot.idleIcon;
         }
 
-        function removeImage(e) {
-            e.stopPropagation();
-            currentImageValue = '';
-            document.getElementById('image-preview').src = '';
-            document.getElementById('image-preview').classList.add('hidden');
-            document.getElementById('remove-img-btn').classList.add('hidden');
-            document.getElementById('upload-icon').className = 'fa-solid fa-cloud-arrow-up text-2xl text-warm-300 mb-2';
-            document.getElementById('upload-status').textContent = 'Uploads securely to Firebase Storage';
-            document.getElementById('image-file-input').value = '';
-            document.getElementById('field-note-cover-image-editor').src = '../shared/bg_pattern.jpg';
+        function removeSlotImage(event, slotName) {
+            if (event) event.stopPropagation();
+            const slot = uploadSlots[slotName || 'cover'];
+            if (!slot) return;
+            const preview = document.getElementById(slot.previewId);
+            preview.src = '';
+            preview.classList.add('hidden');
+            document.getElementById(slot.removeId).classList.add('hidden');
+            document.getElementById(slot.inputId).value = '';
+            setSlotStatus(slot, 'idle', slot.idleText);
+            slot.commit('');
+        }
+
+        function removeImage(event) {
+            removeSlotImage(event, 'cover');
         }
 
         // ── AUTHORING MODE ──
@@ -812,6 +1110,7 @@
                 document.getElementById(config.editorId).classList.add('hidden');
             });
             coverImageField.classList.remove('hidden');
+            document.getElementById('open-canvas-appearance').classList.add('hidden');
             metadataPanel.classList.remove('lg:w-full');
             metadataPanel.classList.add('lg:w-1/3');
             codeEl.classList.add('hidden');
@@ -826,10 +1125,15 @@
                 htmlTitleField.classList.add('hidden');
                 document.getElementById(config.editorId).classList.remove('hidden');
                 label.textContent = config.label;
-                if (templateId === 'open-sky') {
+                // Both sky templates supply their own imagery, so the shared cover field
+                // would be a second, conflicting source.
+                if (templateId === 'open-sky' || templateId === 'open-canvas') {
                     coverImageField.classList.add('hidden');
                     metadataPanel.classList.remove('lg:w-1/3');
                     metadataPanel.classList.add('lg:w-full');
+                }
+                if (templateId === 'open-canvas') {
+                    document.getElementById('open-canvas-appearance').classList.remove('hidden');
                 }
                 config.update();
                 if (shouldFocus) document.getElementById(config.titleId).focus();
@@ -936,9 +1240,189 @@
             document.getElementById('open-sky-editor').dataset.length = count > 180 ? 'long' : 'short';
         }
 
+        // ── OPEN CANVAS ──
+        const FOCAL_POINTS = new Set([
+            'center', 'top', 'bottom', 'left', 'right',
+            'left top', 'right top', 'left bottom', 'right bottom'
+        ]);
+
+        function clampScrim(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return 42;
+            return Math.min(80, Math.max(0, Math.round(number)));
+        }
+
+        function safeColor(value, fallback) {
+            return RichText.normalizeColor(value) || fallback;
+        }
+
+        function updateOpenCanvasContext() {
+            const locationDetail = document.getElementById('location-detail').value.trim();
+            document.getElementById('open-canvas-date-editor').textContent = formatOpenSkyDate(capturedDate);
+            document.getElementById('open-canvas-time-editor').textContent = formatOpenSkyTime(capturedDate);
+            document.getElementById('open-canvas-location-editor').textContent =
+                locationDetail || capturedLocation || 'Location unstamped';
+        }
+
+        function setCanvasBackdropSrc(src) {
+            const image = document.getElementById('oc-backdrop-image');
+            image.src = src || '';
+            image.classList.toggle('hidden', !src);
+        }
+
+        function setCanvasArtSrc(src) {
+            document.getElementById('oc-closing-image').src = src || '';
+            document.getElementById('oc-closing').hidden = !src;
+        }
+
+        function applyOpenCanvasAppearance() {
+            const editor = document.getElementById('open-canvas-editor');
+            editor.style.setProperty('--oc-ink', safeColor(openCanvasState.inkColor, '#f6f2ea'));
+            editor.style.setProperty('--oc-accent', safeColor(openCanvasState.accentColor, '#ffd36f'));
+            editor.style.setProperty('--oc-scrim', String(clampScrim(openCanvasState.scrimOpacity) / 100));
+            editor.style.setProperty('--oc-focal', FOCAL_POINTS.has(openCanvasState.focalPoint) ? openCanvasState.focalPoint : 'center');
+            editor.dataset.layout = openCanvasState.layoutMode === 'bare' ? 'bare' : 'panel';
+            editor.dataset.soften = openCanvasState.softenArtEdge ? 'on' : 'off';
+
+            setCanvasBackdropSrc(openCanvasState.backgroundImage);
+            setCanvasArtSrc(openCanvasState.closingArt);
+            syncOpenCanvasControls();
+        }
+
+        function setLayoutButtonState(isPanel) {
+            const on  = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-warm-900';
+            const off = 'px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-warm-500 hover:text-warm-900 bg-transparent';
+            const panelBtn = document.getElementById('oc-layout-panel');
+            const bareBtn  = document.getElementById('oc-layout-bare');
+            panelBtn.className = isPanel ? on : off;
+            bareBtn.className  = isPanel ? off : on;
+            panelBtn.setAttribute('aria-pressed', String(isPanel));
+            bareBtn.setAttribute('aria-pressed', String(!isPanel));
+        }
+
+        function markActiveSwatches() {
+            [['oc-ink-swatches', openCanvasState.inkColor], ['oc-accent-swatches', openCanvasState.accentColor]]
+                .forEach(([containerId, current]) => {
+                    const normalized = safeColor(current, '');
+                    document.getElementById(containerId).querySelectorAll('button').forEach(button => {
+                        const active = RichText.normalizeColor(button.dataset.value) === normalized;
+                        button.setAttribute('aria-pressed', String(active));
+                        button.classList.toggle('ring-2', active);
+                        button.classList.toggle('ring-orange-500', active);
+                    });
+                });
+        }
+
+        function syncOpenCanvasControls() {
+            const scrim = clampScrim(openCanvasState.scrimOpacity);
+            document.getElementById('oc-scrim').value = scrim;
+            document.getElementById('oc-scrim-value').textContent = scrim;
+            document.getElementById('oc-focal').value = FOCAL_POINTS.has(openCanvasState.focalPoint) ? openCanvasState.focalPoint : 'center';
+            document.getElementById('oc-soften').checked = !!openCanvasState.softenArtEdge;
+            document.getElementById('oc-ink').value = safeColor(openCanvasState.inkColor, '#f6f2ea');
+            document.getElementById('oc-accent').value = safeColor(openCanvasState.accentColor, '#ffd36f');
+            setLayoutButtonState(openCanvasState.layoutMode !== 'bare');
+            markActiveSwatches();
+        }
+
+        function setOpenCanvasColor(kind, value, touched) {
+            const hex = RichText.normalizeColor(value);
+            if (!hex) return;
+            if (kind === 'ink') {
+                openCanvasState.inkColor = hex;
+                if (touched) inkTouched = true;
+            } else {
+                openCanvasState.accentColor = hex;
+            }
+            applyOpenCanvasAppearance();
+        }
+
+        function renderSwatchRow(containerId, palette, kind) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            palette.forEach(swatch => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'w-6 h-6 rounded-full border border-warm-300 shadow-sm transition-transform hover:scale-110';
+                button.style.background = swatch.value;
+                button.dataset.value = swatch.value;
+                button.setAttribute('aria-label', `${swatch.name} ${kind} colour`);
+                button.setAttribute('aria-pressed', 'false');
+                button.addEventListener('click', () => setOpenCanvasColor(kind, swatch.value, true));
+                container.appendChild(button);
+            });
+        }
+
+        function loadOpenCanvasAppearance(data) {
+            openCanvasState.backgroundImage = typeof data.backgroundImage === 'string' ? data.backgroundImage : '';
+            openCanvasState.closingArt      = typeof data.closingArt === 'string' ? data.closingArt : '';
+            openCanvasState.inkColor        = safeColor(data.inkColor, '#f6f2ea');
+            openCanvasState.accentColor     = safeColor(data.accentColor, '#ffd36f');
+            openCanvasState.scrimOpacity    = clampScrim(data.scrimOpacity);
+            openCanvasState.layoutMode      = data.layoutMode === 'bare' ? 'bare' : 'panel';
+            openCanvasState.focalPoint      = FOCAL_POINTS.has(data.focalPoint) ? data.focalPoint : 'center';
+            openCanvasState.softenArtEdge   = data.softenArtEdge !== false;
+            // A saved entry already carries a deliberate ink choice — don't let an
+            // upload's luminance guess overwrite it.
+            inkTouched = true;
+
+            if (openCanvasState.backgroundImage) {
+                showSlotPreview(uploadSlots.canvasBackground, openCanvasState.backgroundImage);
+                setSlotStatus(uploadSlots.canvasBackground, 'done', '✓ Existing backdrop');
+            }
+            if (openCanvasState.closingArt) {
+                showSlotPreview(uploadSlots.canvasArt, openCanvasState.closingArt);
+                setSlotStatus(uploadSlots.canvasArt, 'done', '✓ Existing artwork');
+            }
+            applyOpenCanvasAppearance();
+        }
+
+        renderSwatchRow('oc-ink-swatches', OPEN_CANVAS_INKS, 'ink');
+        renderSwatchRow('oc-accent-swatches', OPEN_CANVAS_ACCENTS, 'accent');
+
+        document.getElementById('oc-ink').addEventListener('input', event => setOpenCanvasColor('ink', event.target.value, true));
+        document.getElementById('oc-accent').addEventListener('input', event => setOpenCanvasColor('accent', event.target.value, true));
+        document.getElementById('oc-scrim').addEventListener('input', event => {
+            openCanvasState.scrimOpacity = clampScrim(event.target.value);
+            applyOpenCanvasAppearance();
+        });
+        document.getElementById('oc-focal').addEventListener('change', event => {
+            openCanvasState.focalPoint = FOCAL_POINTS.has(event.target.value) ? event.target.value : 'center';
+            applyOpenCanvasAppearance();
+        });
+        document.getElementById('oc-soften').addEventListener('change', event => {
+            openCanvasState.softenArtEdge = event.target.checked;
+            applyOpenCanvasAppearance();
+        });
+        document.getElementById('oc-layout-panel').addEventListener('click', () => {
+            openCanvasState.layoutMode = 'panel';
+            applyOpenCanvasAppearance();
+        });
+        document.getElementById('oc-layout-bare').addEventListener('click', () => {
+            openCanvasState.layoutMode = 'bare';
+            applyOpenCanvasAppearance();
+        });
+
+        document.getElementById('open-canvas-title-editor').addEventListener('input', () => {
+            document.getElementById('entry-title').value = plainEditableText('open-canvas-title-editor');
+        });
+        document.getElementById('open-canvas-title-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'open-canvas-subtitle-editor');
+        });
+        document.getElementById('open-canvas-subtitle-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'open-canvas-body-editor');
+        });
+        document.getElementById('open-canvas-title-editor').addEventListener('paste', pastePlainText);
+        document.getElementById('open-canvas-subtitle-editor').addEventListener('paste', pastePlainText);
+
+        RichText.attach(document.getElementById('open-canvas-body-editor'), {
+            palette: OPEN_CANVAS_ACCENTS.concat(OPEN_CANVAS_INKS.slice(0, 3))
+        });
+
         document.getElementById('location-detail').addEventListener('input', () => {
             updateFieldNoteContext();
             updateOpenSkyContext();
+            updateOpenCanvasContext();
         });
         document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
         document.getElementById('open-sky-body-editor').addEventListener('input', updateOpenSkyLength);
@@ -970,43 +1454,12 @@
         document.getElementById('open-sky-title-editor').addEventListener('paste', pastePlainText);
         document.getElementById('open-sky-subtitle-editor').addEventListener('paste', pastePlainText);
 
-        function sanitizeTemplateContent(html) {
-            const template = document.createElement('template');
-            template.innerHTML = html;
-            const allowedTags = new Set(['P', 'BR', 'H2', 'H3', 'BLOCKQUOTE', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'A', 'HR', 'MARK']);
-            const blockedTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'INPUT', 'BUTTON']);
-
-            function clean(parent) {
-                Array.from(parent.children).forEach(element => {
-                    if (blockedTags.has(element.tagName)) {
-                        element.remove();
-                        return;
-                    }
-                    if (!allowedTags.has(element.tagName)) {
-                        clean(element);
-                        element.replaceWith(...element.childNodes);
-                        return;
-                    }
-
-                    const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
-                    Array.from(element.attributes).forEach(attribute => element.removeAttribute(attribute.name));
-                    if (element.tagName === 'A') {
-                        if (/^(https?:|mailto:|#)/i.test(href)) {
-                            element.setAttribute('href', href);
-                            element.setAttribute('rel', 'noopener noreferrer');
-                        }
-                    }
-                    clean(element);
-                });
-            }
-
-            clean(template.content);
-            return template.innerHTML.trim();
-        }
-
         function getContent() {
             if (authoringMode === 'template') {
-                return sanitizeTemplateContent(document.getElementById(activeTemplateConfig().bodyId).innerHTML);
+                const config = activeTemplateConfig();
+                return RichText.sanitize(document.getElementById(config.bodyId).innerHTML, {
+                    allowColor: !!config.richText
+                });
             }
             return document.getElementById('journal-body').value.trim();
         }
