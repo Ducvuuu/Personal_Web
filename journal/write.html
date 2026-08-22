@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="../shared/rich-text.css">
+    <link rel="stylesheet" href="../shared/editor.css">
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
     <link rel="stylesheet" href="open-canvas-template.css">
@@ -549,6 +550,8 @@
 
     <!-- Shared rich-text engine — must load before the page script uses RichText -->
     <script src="../shared/rich-text.js"></script>
+    <!-- Shared editor component — depends on RichText, owns the capability table -->
+    <script src="../shared/editor.js"></script>
 
     <script>
         // ── FIREBASE INIT ──
@@ -571,6 +574,11 @@
         let authoringMode = null;
         let templateId = null;
         let htmlView = 'code';
+        // autosaveTimer / autosaveReady / isDirty drive the draft autosave. autosaveReady
+        // stays false until an entry has finished loading so populating never saves.
+        let autosaveTimer = null;
+        let autosaveReady = false;
+        let isDirty = false;
         // openCanvasState: the Open Canvas appearance values saved into templateData
         // inkTouched: suppresses the luminance-based ink suggestion once the author picks a colour
         const openCanvasState = {
@@ -653,7 +661,6 @@
                 editorId: 'open-canvas-editor',
                 titleId: 'open-canvas-title-editor',
                 bodyId: 'open-canvas-body-editor',
-                richText: true,
                 populate(entry) {
                     document.getElementById(this.titleId).textContent = entry.title || '';
                     document.getElementById(this.bodyId).innerHTML = entry.content || '';
@@ -763,6 +770,7 @@
             authoringMode = requestedMode;
             templateId = validTemplate ? requestedTemplate : null;
             configureAuthoringMode(true);
+            armAutosave();
         }
 
         function resolveStoredMode(entry) {
@@ -803,6 +811,12 @@
             document.getElementById('featured-toggle').checked = !!entry.featuredOnSite;
             updateFeaturedLabel(true);
             configureAuthoringMode(false);
+
+            if (authoringMode === 'template') {
+                Editor.renderEmbedPreviews(
+                    document.getElementById(activeTemplateConfig().bodyId), scheduleAutosave);
+            }
+            armAutosave();
         }
 
         async function loadEntryForEdit(id) {
@@ -1090,6 +1104,69 @@
         function removeImage(event) {
             removeSlotImage(event, 'cover');
         }
+
+        function setSaveStatus(phase, message) {
+            const icons = {
+                uploading: 'fa-solid fa-circle-notch spin-slow text-warm-400',
+                saving:    'fa-solid fa-circle-notch spin-slow text-warm-400',
+                done:      'fa-solid fa-check text-green-500',
+                error:     'fa-solid fa-triangle-exclamation text-red-500',
+                dirty:     'fa-regular fa-pen-to-square text-warm-400'
+            };
+            const status = document.getElementById('save-status');
+            const icon   = document.createElement('i');
+            icon.className = icons[phase] || icons.done;
+            status.replaceChildren(icon, ' ' + message);
+        }
+
+        // Body photos take the same route as the cover: downscale, upload, and only
+        // then hand back a URL. The editor inserts nothing until this resolves, so a
+        // blob: preview can never be what gets stored.
+        async function uploadBodyImage(file) {
+            if (!file || !file.type.startsWith('image/')) throw new Error('unsupported file');
+
+            let payload = file;
+            try { payload = await downscaleImage(file, 1800); } catch (err) {}
+
+            const ext      = (payload.name.split('.').pop() || 'jpg').toLowerCase();
+            const ts       = new Date().toISOString().replace(/\D/g, '').substring(0, 15);
+            const safeName = payload.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+
+            const task = storage.ref(`journal/${ts}_${safeName}.${ext}`).put(payload);
+            task.on('state_changed', snapshot => {
+                const pct = Math.round(snapshot.bytesTransferred / snapshot.totalBytes * 100);
+                setSaveStatus('uploading', `Uploading photo… ${pct}%`);
+            });
+            await task;
+            return task.snapshot.ref.getDownloadURL();
+        }
+
+        // ── AUTOSAVE ──
+        function scheduleAutosave() {
+            if (!autosaveReady) return;
+            isDirty = true;
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(runAutosave, 2500);
+        }
+
+        // A published entry is never rewritten behind the author's back — editing one
+        // stays an explicit save. Everything else autosaves as a draft.
+        async function runAutosave() {
+            if (!autosaveReady || !isDirty || editId) return;
+            if (!getEntryTitle() && !getContent()) return;
+            await saveDraft(true);
+        }
+
+        function armAutosave() {
+            autosaveReady = true;
+            isDirty = false;
+        }
+
+        window.addEventListener('beforeunload', event => {
+            if (!isDirty) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
 
         // ── AUTHORING MODE ──
         function configureAuthoringMode(shouldFocus) {
@@ -1415,8 +1492,24 @@
         document.getElementById('open-canvas-title-editor').addEventListener('paste', pastePlainText);
         document.getElementById('open-canvas-subtitle-editor').addEventListener('paste', pastePlainText);
 
-        RichText.attach(document.getElementById('open-canvas-body-editor'), {
-            palette: OPEN_CANVAS_ACCENTS.concat(OPEN_CANVAS_INKS.slice(0, 3))
+        // Every template body is the same editor; the template only says what it allows.
+        const BODY_TEMPLATES = {
+            'simple-body': 'field-note',
+            'open-sky-body-editor': 'open-sky',
+            'open-canvas-body-editor': 'open-canvas'
+        };
+
+        Object.keys(BODY_TEMPLATES).forEach(bodyId => {
+            const id = BODY_TEMPLATES[bodyId];
+            Editor.mount(document.getElementById(bodyId), {
+                templateId: id,
+                palette: id === 'open-canvas'
+                    ? OPEN_CANVAS_ACCENTS.concat(OPEN_CANVAS_INKS.slice(0, 3))
+                    : null,
+                uploadImage: uploadBodyImage,
+                onStatus: setSaveStatus,
+                onChange: scheduleAutosave
+            });
         });
 
         document.getElementById('location-detail').addEventListener('input', () => {
@@ -1424,6 +1517,10 @@
             updateOpenSkyContext();
             updateOpenCanvasContext();
         });
+
+        const editorContainer = document.getElementById('editor-container');
+        editorContainer.addEventListener('input', scheduleAutosave);
+        editorContainer.addEventListener('change', scheduleAutosave);
         document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
         document.getElementById('open-sky-body-editor').addEventListener('input', updateOpenSkyLength);
         document.getElementById('field-note-title-editor').addEventListener('input', () => {
@@ -1457,9 +1554,7 @@
         function getContent() {
             if (authoringMode === 'template') {
                 const config = activeTemplateConfig();
-                return RichText.sanitize(document.getElementById(config.bodyId).innerHTML, {
-                    allowColor: !!config.richText
-                });
+                return Editor.sanitizeFor(templateId, document.getElementById(config.bodyId).innerHTML);
             }
             return document.getElementById('journal-body').value.trim();
         }
@@ -1473,16 +1568,17 @@
         }
 
         // ── SAVE DRAFT TO FIRESTORE ──
-        async function saveDraft() {
+        async function saveDraft(silent) {
             const title          = getEntryTitle();
             const content        = getContent();
             const locationDetail = document.getElementById('location-detail').value.trim();
 
             const draftBtn = document.getElementById('draft-btn');
-            const status   = document.getElementById('save-status');
-            draftBtn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Saving…';
-            draftBtn.disabled  = true;
-            status.innerHTML   = '<i class="fa-solid fa-circle-notch spin-slow text-warm-400"></i> Saving draft…';
+            if (!silent) {
+                draftBtn.innerHTML = '<i class="fa-solid fa-circle-notch spin-slow"></i> Saving…';
+                draftBtn.disabled  = true;
+            }
+            setSaveStatus('saving', silent ? 'Saving…' : 'Saving draft…');
 
             try {
                 const data = {
@@ -1513,14 +1609,21 @@
 
                 const now     = new Date();
                 const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                status.innerHTML   = `<i class="fa-solid fa-check text-green-500"></i> Draft saved at ${timeStr}`;
-                draftBtn.innerHTML = '<i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft';
-                draftBtn.disabled  = false;
+                isDirty = false;
+                setSaveStatus('done', `Draft saved at ${timeStr}`);
             } catch (err) {
-                status.innerHTML   = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Draft save failed: ${err.message}`;
+                setSaveStatus('error', `Draft save failed: ${err.message}`);
+            } finally {
                 draftBtn.innerHTML = '<i class="fa-regular fa-floppy-disk text-xs opacity-70"></i> Save Draft';
                 draftBtn.disabled  = false;
             }
+        }
+
+        function leaveTo(url) {
+            isDirty = false;
+            autosaveReady = false;
+            clearTimeout(autosaveTimer);
+            window.location.href = url;
         }
 
         // ── DISCARD ──
@@ -1529,7 +1632,7 @@
                 if (!confirm('Delete this draft? This cannot be undone.')) return;
                 try { await userEntries().doc(draftId).delete(); } catch (e) {}
             }
-            window.location.href = './';
+            leaveTo('./');
         }
 
         // ── SEAL & SAVE TO FIRESTORE ──
@@ -1569,15 +1672,15 @@
                 if (authoringMode === 'template') data.templateData = getTemplateData();
                 if (editId) {
                     await userEntries().doc(editId).update(data);
-                    window.location.href = `entry.html?id=${editId}`;
+                    leaveTo(`entry.html?id=${editId}`);
                 } else if (draftId) {
                     await userEntries().doc(draftId).update(data);
-                    window.location.href = './';
+                    leaveTo('./');
                 } else {
                     Object.assign(data, creationMetadata());
                     data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await userEntries().add(data);
-                    window.location.href = './';
+                    leaveTo('./');
                 }
             } catch (err) {
                 status.innerHTML  = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Save failed: ${err.message}`;
