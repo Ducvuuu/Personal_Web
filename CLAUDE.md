@@ -39,15 +39,32 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - Template selection and editor behavior are dispatched by `templateId` in `journal/write.html`;
   template entry rendering is dispatched by `templateId` in `journal/entry.html`. `entry.html` uses
   `showEntryHost()` to reveal one host and hide the rest — don't hand-hide hosts in a renderer.
-- `shared/rich-text.js` is the shared rich-text engine: `RichText.sanitize()` plus the selection
-  toolbar (`RichText.attach()`). Consumers pass their own palette so colours stay on-brand per
-  surface. Only `open-canvas` uses the toolbar today; Shelf and the home inline editors are the
-  intended next consumers.
+- `shared/rich-text.js` is the low-level rich-text engine: `RichText.sanitize()` plus the selection
+  toolbar (`RichText.attach()`). Consumers pass their own command set and palette so each surface
+  keeps its own character.
+- `shared/editor.js` is the shared writing surface built on it, and the single source of truth for
+  what a template may contain. `Editor.mount()` gives a template body the toolbar, paste
+  normalisation, inline photos and video embeds; `Editor.sanitizeFor(templateId, html)` is used by
+  **both** `write.html` on save and `entry.html` on render. A template declares what it allows in
+  `CAPABILITIES` — it never implements editing. Shelf and the home inline editors are the intended
+  next consumers.
+- Editor toolbar scope is deliberate: Word-style basics (headings, bold/italic/underline/strike,
+  highlight, link, centre, divider, clear) with **no font family, font size or justify controls** —
+  those are the knobs that let an author fight the template's own typography.
 - Template journal content is sanitized by `RichText.sanitize()` when saved **and again when
   rendered**, so entries written under an older allowlist are held to the current one. Raw HTML
   and legacy entries intentionally retain executable-script behavior in `journal/entry.html`.
 - Coloured text spans survive sanitizing only for templates whose config sets `richText: true`.
   Every other template gets the original colourless allowlist, and their spans are unwrapped.
+- Video embeds store **only** `data-embed` (provider) and `data-embed-id` on an empty `<figure>`.
+  The sanitizer empties that figure's children on every save and render, and the player is rebuilt
+  as a sandboxed `youtube-nocookie` iframe by `Editor.hydrateEmbeds()` at render time. Never store
+  an `<iframe>` in an entry, and never widen `PROVIDERS` without an id pattern that a path
+  traversal cannot pass.
+- Inline body photos are `<figure><img><figcaption>` and are restricted to Firebase Storage hosts by
+  `RichText.normalizeImageSrc()`. The figcaption doubles as the image's alt text.
+- `write.html` autosaves drafts on a 2.5s debounce. Editing an **already published** entry never
+  autosaves — that stays an explicit save — and a `beforeunload` guard covers both.
 - Uploads go through the slot registry in `journal/write.html` (`uploadSlots`). A slot's `reflect()`
   is visual only and `commit()` is the only path that writes a persisted value — that split is what
   stops a `blob:` preview being saved if the entry is sealed mid-upload. Images are downscaled to

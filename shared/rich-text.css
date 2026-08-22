@@ -20,10 +20,20 @@
     display: none;
 }
 
+.rt-commands {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .rt-row {
     display: flex;
     align-items: center;
     gap: 4px;
+}
+
+.rt-row[hidden] {
+    display: none;
 }
 
 .rt-colors {
@@ -44,6 +54,14 @@
     font-size: 12px;
     cursor: pointer;
     transition: background 140ms ease, color 140ms ease;
+}
+
+/* Heading buttons name themselves; an icon cannot tell H1 from H2. */
+.rt-btn-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
 }
 
 .rt-btn:hover {

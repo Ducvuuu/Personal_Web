@@ -7,8 +7,10 @@
 ├── shared/
 │   ├── shared.css        # Global styles: body bg, font utilities, sticky-note
 │   ├── components.js     # Nav + footer injection (shared across all pages)
-│   ├── rich-text.js      # Shared sanitizer + contenteditable selection toolbar
+│   ├── rich-text.js      # Sanitizer + contenteditable selection toolbar
 │   ├── rich-text.css     # Selection toolbar chrome
+│   ├── editor.js         # Shared writing surface: capabilities, photos, embeds
+│   ├── editor.css        # Editor media chrome: figures, embeds, insert tray
 │   └── assets/           # Reserved for assets used across multiple pages
 │
 ├── home/
@@ -87,6 +89,47 @@ resolves from `--oc-ink` and `--oc-accent`, so those two values drive the whole 
 
 On upload the backdrop is sampled down to a single pixel to estimate luminance, and the ink is
 switched to light or dark accordingly — but only until the author picks a colour themselves.
+
+### The shared editor — `shared/editor.js`
+
+One writing surface, mounted by every template. Templates say *what they allow*; they never
+implement editing.
+
+```js
+Editor.mount(bodyEl, { templateId, palette, uploadImage, onChange, onStatus });
+Editor.sanitizeFor(templateId, html);   // save AND render both go through this
+Editor.hydrateEmbeds(root);             // render time: build the real players
+```
+
+`CAPABILITIES` is the single source of truth for what a template may contain — `write.html` reads it
+on save and `entry.html` reads it on render, so the two can no longer drift.
+
+| Capability | Meaning |
+|---|---|
+| `commands` | Toolbar groups. Word-style basics only — no font family, size, or justify |
+| `align` | Permits `text-align: center` on a block |
+| `colors` | Permits coloured spans; the palette itself is passed in at mount |
+| `media` | `image` for inline photos, `embed` for video |
+
+**Inline photos** are `<figure><img><figcaption>`, restricted to Firebase Storage hosts by
+`RichText.normalizeImageSrc()`. The URL is inserted only once the upload resolves, so a `blob:`
+preview can never be stored — the same discipline the cover-image slots use. The caption doubles as
+the image's alt text.
+
+**Video embeds** store nothing executable. Saved markup is an inert placeholder:
+
+```html
+<figure data-embed="youtube" data-embed-id="dQw4w9WgXcQ"></figure>
+```
+
+The sanitizer empties that figure's children on every save *and* every render, keeping only a
+provider from `PROVIDERS` and an id its own `valid()` pattern accepts. `Editor.hydrateEmbeds()`
+rebuilds a sandboxed, `youtube-nocookie`, lazy-loaded iframe at render time; the editor shows an
+inert poster card instead. Adding a service means adding one row to `PROVIDERS`.
+
+**Autosave** runs on a 2.5s debounce in `write.html`, reusing `saveDraft()`. Editing an already
+published entry never autosaves — that stays an explicit save — and a `beforeunload` guard covers
+unsaved work in both cases.
 
 ### Rich text — `shared/rich-text.js`
 
@@ -251,17 +294,21 @@ Extend this when adding new pages (e.g. `pathname.includes('/writing') ? 'writin
 
 ## Adding a new journal template
 
-Five files. `journal/index.html` and `writing/index.html` list entries generically and need no change.
+The editor comes for free — you design the look and declare what it allows.
+`journal/index.html` and `writing/index.html` list entries generically and need no change.
 
 1. `journal/<name>-template.css` — define every colour as a custom property on the root class so the
-   template can be recoloured later without a retrofit
-2. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
-3. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry
-   (`editorId`, `titleId`, `bodyId`, `populate`, `collectData`, `update`; `richText: true` to allow
-   coloured text)
-4. `journal/entry.html` — `<link>` the CSS, add a host `<div>`, add a `templateRenderers` entry, and
-   call `showEntryHost('<id>-entry-host')` at the top of the renderer
-5. `CLAUDE.md` + `STRUCTURE.md` — document what the template stores in `templateData`
+   template can be recoloured later without a retrofit. Override the `--ed-*` variables on the body
+   container so shared photos and embeds sit correctly on your surface
+2. `shared/editor.js` — one row in `CAPABILITIES` saying what the template allows
+3. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
+4. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry
+   (`editorId`, `titleId`, `bodyId`, `populate`, `collectData`, `update`) and a `BODY_TEMPLATES` row
+   so the body gets mounted
+5. `journal/entry.html` — `<link>` the CSS, add a host `<div>`, add a `templateRenderers` entry, call
+   `showEntryHost('<id>-entry-host')` at the top of the renderer, and give the body container the
+   `ed-content` class
+6. `CLAUDE.md` + `STRUCTURE.md` — document what the template stores in `templateData`
 
 Validate anything from `templateData` that reaches a `style` or `data-*` attribute before it goes in.
 

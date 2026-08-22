@@ -138,6 +138,14 @@
 }
 
 .open-canvas-body {
+    /* Shared editor media resolves from the author's own ink and accent. */
+    --ed-rule: color-mix(in srgb, var(--oc-ink) 26%, transparent);
+    --ed-caption: color-mix(in srgb, var(--oc-ink) 66%, transparent);
+    --ed-placeholder: color-mix(in srgb, var(--oc-ink) 38%, transparent);
+    --ed-shadow: 0 22px 50px rgba(6, 8, 12, 0.5);
+    --ed-mark-bg: color-mix(in srgb, var(--oc-accent) 30%, transparent);
+    --ed-mark-ink: var(--oc-ink);
+
     max-width: 680px;
     min-height: 150px;
     margin-top: 32px;

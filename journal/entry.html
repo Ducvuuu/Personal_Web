@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
+    <link rel="stylesheet" href="../shared/editor.css">
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
     <link rel="stylesheet" href="open-canvas-template.css">
@@ -319,6 +320,8 @@
 
     <!-- Shared rich-text engine — used here for its sanitizer -->
     <script src="../shared/rich-text.js"></script>
+    <!-- Shared editor component — the capability table decides what may render -->
+    <script src="../shared/editor.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -463,7 +466,7 @@
             // held to the current one rather than trusted from storage.
             const e = isTemplateEntry
                 ? Object.assign({}, entry, {
-                    content: RichText.sanitize(entry.content || '', { allowColor: entry.templateId === 'open-canvas' })
+                    content: Editor.sanitizeFor(entry.templateId, entry.content || '')
                 })
                 : entry;
             const entryContent = document.getElementById('entry-content');
@@ -488,6 +491,7 @@
                     'open-canvas': renderOpenCanvasEntry
                 };
                 (templateRenderers[e.templateId] || renderFieldNoteEntry)(e);
+                Editor.hydrateEmbeds(entryContent);
             } else {
                 renderDefaultEntry(e, isPublicView);
             }
@@ -592,7 +596,7 @@
                                     <h1 class="field-note-title">${escHtml(title)}</h1>
                                     ${subtitle}
                                     ${epigraph}
-                                    <div class="field-note-body">${e.content || ''}</div>
+                                    <div class="field-note-body ed-content">${e.content || ''}</div>
                                     <footer class="field-note-footer">
                                         <span>${wordCount} ${wordCount === 1 ? 'word' : 'words'}</span>
                                         <span class="field-note-mark">Field Note</span>
@@ -637,7 +641,7 @@
                         </div>
                         <h1 class="open-sky-title">${escHtml(title)}</h1>
                         ${subtitle}
-                        <div class="open-sky-body">${e.content || ''}</div>
+                        <div class="open-sky-body ed-content">${e.content || ''}</div>
 
                         <svg class="open-sky-long-detail open-sky-constellation-one" viewBox="0 0 160 120" fill="none" aria-hidden="true">
                             <path d="M18 91L48 52L82 70L112 28L142 47" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 4"/>
@@ -720,7 +724,7 @@
                         </div>
                         <h1 class="open-canvas-title">${escHtml(title)}</h1>
                         ${subtitle}
-                        <div class="open-canvas-body">${e.content || ''}</div>
+                        <div class="open-canvas-body ed-content">${e.content || ''}</div>
                     </section>
                     ${closingMarkup}
                 </article>`;

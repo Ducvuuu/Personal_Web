@@ -1,0 +1,432 @@
+// The shared writing surface. Templates declare what they allow; they never
+// implement editing themselves.
+//
+//   Editor.mount(bodyEl, { templateId, palette, uploadImage, onChange, onStatus });
+//   Editor.sanitizeFor(templateId, html);   // save and render both go through this
+//   Editor.hydrateEmbeds(root);             // render time: build the real players
+//
+// Adding a template means adding one row to CAPABILITIES. Adding a video service
+// means adding one row to PROVIDERS.
+
+(function (global) {
+    'use strict';
+
+    const PROVIDERS = {
+        youtube: {
+            label: 'YouTube',
+            title: 'YouTube video player',
+            valid: id => /^[A-Za-z0-9_-]{11}$/.test(id),
+            frame: id => `https://www.youtube-nocookie.com/embed/${id}?rel=0`,
+            poster: id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+            parse(url) {
+                if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('/')[0] || null;
+                if (!/(^|\.)youtube(-nocookie)?\.com$/.test(url.hostname)) return null;
+                if (url.pathname === '/watch') return url.searchParams.get('v');
+                const match = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
+                return match ? match[1] : null;
+            }
+        },
+        vimeo: {
+            label: 'Vimeo',
+            title: 'Vimeo video player',
+            valid: id => /^[0-9]{6,12}$/.test(id),
+            frame: id => `https://player.vimeo.com/video/${id}`,
+            poster: () => null,
+            parse(url) {
+                if (!/(^|\.)vimeo\.com$/.test(url.hostname)) return null;
+                const match = url.pathname.match(/^\/(?:video\/)?([0-9]{6,12})/);
+                return match ? match[1] : null;
+            }
+        }
+    };
+
+    const PROVIDER_NAMES = Object.keys(PROVIDERS);
+
+    // Word-style basics only. No font family, no font size, no justify — those are
+    // the knobs that let an author fight the template's own typography.
+    const TEXT_COMMANDS = [
+        ['h2', 'h3', 'quote'],
+        ['bold', 'italic', 'underline', 'strike', 'highlight'],
+        ['link', 'alignCenter', 'hr', 'clear']
+    ];
+
+    const CAPABILITIES = {
+        'field-note':  { commands: TEXT_COMMANDS, align: true, colors: false, media: ['image', 'embed'] },
+        'open-sky':    { commands: TEXT_COMMANDS, align: true, colors: false, media: ['image', 'embed'] },
+        'open-canvas': { commands: TEXT_COMMANDS, align: true, colors: true,  media: ['image', 'embed'] }
+    };
+
+    const FALLBACK = CAPABILITIES['field-note'];
+
+    function capabilitiesFor(templateId) {
+        return CAPABILITIES[templateId] || FALLBACK;
+    }
+
+    function allows(capabilities, medium) {
+        return (capabilities.media || []).indexOf(medium) !== -1;
+    }
+
+    // One source of truth for what a template may store, read by the editor on save
+    // and by the reader on render.
+    function sanitizeOptionsFor(templateId) {
+        const capabilities = capabilitiesFor(templateId);
+        return {
+            allowColor:  !!capabilities.colors,
+            allowAlign:  !!capabilities.align,
+            allowImages: allows(capabilities, 'image'),
+            embeds:      allows(capabilities, 'embed') ? PROVIDER_NAMES : []
+        };
+    }
+
+    function sanitizeFor(templateId, html) {
+        return global.RichText.sanitize(html || '', sanitizeOptionsFor(templateId));
+    }
+
+    function parseUrl(value) {
+        try { return new URL(String(value).trim()); } catch (err) { return null; }
+    }
+
+    function detectEmbed(url) {
+        if (!url || url.protocol !== 'https:') return null;
+        for (let index = 0; index < PROVIDER_NAMES.length; index += 1) {
+            const name     = PROVIDER_NAMES[index];
+            const provider = PROVIDERS[name];
+            const id       = provider.parse(url);
+            if (id && provider.valid(id)) return { provider: name, id: id };
+        }
+        return null;
+    }
+
+    function embedFigure(embed) {
+        const figure = document.createElement('figure');
+        figure.setAttribute('data-embed', embed.provider);
+        figure.setAttribute('data-embed-id', embed.id);
+        return figure;
+    }
+
+    function readFigureEmbed(figure) {
+        const name     = figure.getAttribute('data-embed');
+        const id       = figure.getAttribute('data-embed-id') || '';
+        const provider = PROVIDERS[name];
+        if (!provider || !provider.valid(id)) return null;
+        return { provider: name, id: id, definition: provider };
+    }
+
+    // Render time. The stored markup holds no frame at all, so the player is built
+    // here from the two validated values and dropped into a sandbox.
+    function hydrateEmbeds(root) {
+        if (!root) return;
+        root.querySelectorAll('figure[data-embed]').forEach(figure => {
+            const embed = readFigureEmbed(figure);
+            if (!embed) {
+                figure.remove();
+                return;
+            }
+            const frame = document.createElement('iframe');
+            frame.className = 'ed-embed-frame';
+            frame.src = embed.definition.frame(embed.id);
+            frame.title = embed.definition.title;
+            frame.loading = 'lazy';
+            frame.referrerPolicy = 'strict-origin-when-cross-origin';
+            frame.allow = 'accelerometer; encrypted-media; picture-in-picture; fullscreen';
+            frame.setAttribute('allowfullscreen', '');
+            frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
+            figure.className = 'ed-embed';
+            figure.replaceChildren(frame);
+        });
+    }
+
+    // Editor time. A poster card, never a live player: the author is writing, not
+    // watching, and an inert card keeps the caret behaviour sane around it.
+    function renderEmbedPreviews(root, onRemove) {
+        if (!root) return;
+        root.querySelectorAll('figure[data-embed]').forEach(figure => {
+            const embed = readFigureEmbed(figure);
+            if (!embed) {
+                figure.remove();
+                return;
+            }
+            figure.className = 'ed-embed ed-embed-preview';
+            figure.contentEditable = 'false';
+
+            const poster = embed.definition.poster(embed.id);
+            const card   = document.createElement('div');
+            card.className = 'ed-embed-card';
+            card.innerHTML = `
+                ${poster ? `<img class="ed-embed-poster" src="${poster}" alt="">` : ''}
+                <span class="ed-embed-badge" aria-hidden="true"><i class="fa-solid fa-play"></i></span>
+                <span class="ed-embed-label">${embed.definition.label} video</span>`;
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ed-embed-remove';
+            remove.setAttribute('aria-label', `Remove ${embed.definition.label} video`);
+            remove.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+            remove.addEventListener('mousedown', event => {
+                event.preventDefault();
+                figure.remove();
+                if (typeof onRemove === 'function') onRemove();
+            });
+
+            figure.replaceChildren(card, remove);
+        });
+    }
+
+    const state = {
+        activeBody: null,
+        savedRange: null,
+        tray: null,
+        fileInput: null
+    };
+
+    function bodyForNode(node) {
+        const element = node && node.nodeType === 1 ? node : node && node.parentElement;
+        return element ? element.closest('[data-editor-body="on"]') : null;
+    }
+
+    function placeCaret(node) {
+        const selection = document.getSelection();
+        const range     = document.createRange();
+        range.selectNodeContents(node);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    // Media is block level. Dropping it inside the current paragraph produces
+    // invalid nesting, so it goes after the block the caret is sitting in.
+    function insertBlock(body, node) {
+        const block = state.savedRange && body.contains(state.savedRange.startContainer)
+            ? blockAncestor(body, state.savedRange.startContainer)
+            : null;
+
+        if (block) block.after(node);
+        else body.appendChild(node);
+
+        let next = node.nextElementSibling;
+        if (!next) {
+            next = document.createElement('p');
+            next.appendChild(document.createElement('br'));
+            node.after(next);
+        }
+        body.focus();
+        placeCaret(next);
+    }
+
+    function blockAncestor(body, node) {
+        let element = node && node.nodeType === 1 ? node : node && node.parentElement;
+        while (element && element !== body) {
+            if (element.parentElement === body) return element;
+            element = element.parentElement;
+        }
+        return null;
+    }
+
+    function fileInput() {
+        if (state.fileInput) return state.fileInput;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.className = 'ed-file-input';
+        document.body.appendChild(input);
+        state.fileInput = input;
+        return input;
+    }
+
+    function report(options, phase, message) {
+        if (typeof options.onStatus === 'function') options.onStatus(phase, message);
+    }
+
+    function figureFor(url, alt) {
+        const figure  = document.createElement('figure');
+        figure.className = 'ed-figure';
+        const image   = document.createElement('img');
+        image.src = url;
+        image.alt = alt || '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        const caption = document.createElement('figcaption');
+        caption.setAttribute('data-placeholder', 'Add a caption…');
+        figure.append(image, caption);
+        return figure;
+    }
+
+    // The URL is inserted only once the upload resolves, so a blob: preview can
+    // never be the value that reaches Firestore — the same discipline the cover
+    // image slots use.
+    function insertImage(body, options) {
+        const input = fileInput();
+        input.value = '';
+        input.onchange = async () => {
+            const file = input.files && input.files[0];
+            if (!file || typeof options.uploadImage !== 'function') return;
+            report(options, 'uploading', 'Uploading photo…');
+            try {
+                const url = await options.uploadImage(file);
+                if (!url) throw new Error('no download URL');
+                insertBlock(body, figureFor(url, ''));
+                report(options, 'done', '✓ Photo added');
+                if (typeof options.onChange === 'function') options.onChange();
+            } catch (err) {
+                report(options, 'error', `Photo upload failed: ${err.message}`);
+            }
+        };
+        input.click();
+    }
+
+    function insertEmbed(body, embed, options) {
+        const figure = embedFigure(embed);
+        insertBlock(body, figure);
+        renderEmbedPreviews(body, options.onChange);
+        if (typeof options.onChange === 'function') options.onChange();
+    }
+
+    function promptForEmbed(body, options) {
+        const raw = window.prompt('Paste a YouTube or Vimeo link');
+        if (!raw) return;
+        const embed = detectEmbed(parseUrl(raw));
+        if (!embed) {
+            window.alert('That does not look like a YouTube or Vimeo video link.');
+            return;
+        }
+        insertEmbed(body, embed, options);
+    }
+
+    function buildTray() {
+        if (state.tray) return state.tray;
+        const tray = document.createElement('div');
+        tray.className = 'ed-tray';
+        tray.setAttribute('role', 'toolbar');
+        tray.setAttribute('aria-label', 'Insert into entry');
+        tray.hidden = true;
+        document.body.appendChild(tray);
+        state.tray = tray;
+        return tray;
+    }
+
+    function trayButton(icon, text, onActivate) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ed-tray-btn';
+        button.innerHTML = `<i class="${icon}" aria-hidden="true"></i><span>${text}</span>`;
+        button.addEventListener('mousedown', event => {
+            event.preventDefault();
+            onActivate();
+        });
+        return button;
+    }
+
+    function renderTray(body) {
+        const tray = buildTray();
+        const config = body._editorConfig;
+        if (!config || !config.insertions.length) {
+            tray.hidden = true;
+            return;
+        }
+        tray.replaceChildren(...config.insertions.map(entry => trayButton(entry.icon, entry.text, entry.run)));
+        tray.hidden = false;
+    }
+
+    function hideTray() {
+        if (state.tray) state.tray.hidden = true;
+    }
+
+    function handleSelectionChange() {
+        const selection = document.getSelection();
+        if (!selection || !selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        const body  = bodyForNode(range.startContainer);
+        if (!body) return;
+        state.activeBody = body;
+        state.savedRange = range.cloneRange();
+        renderTray(body);
+    }
+
+    function handlePaste(event, body, options) {
+        const data = event.clipboardData;
+        if (!data) return;
+
+        const text  = (data.getData('text/plain') || '').trim();
+        const embed = options.capabilities.embedsAllowed ? detectEmbed(parseUrl(text)) : null;
+        if (embed && !/\s/.test(text)) {
+            event.preventDefault();
+            insertEmbed(body, embed, options);
+            return;
+        }
+
+        const html = data.getData('text/html');
+        if (!html) return;
+        // Pasted markup is held to the template's own allowlist here rather than at
+        // save time, so what lands on screen is what gets stored.
+        event.preventDefault();
+        const clean = sanitizeFor(options.templateId, html);
+        try { document.execCommand('insertHTML', false, clean); } catch (err) {}
+        if (typeof options.onChange === 'function') options.onChange();
+    }
+
+    function mount(body, options) {
+        if (!body) return;
+        const settings     = options || {};
+        const templateId   = settings.templateId;
+        const capabilities = capabilitiesFor(templateId);
+        const imagesOn     = allows(capabilities, 'image') && typeof settings.uploadImage === 'function';
+        const embedsOn     = allows(capabilities, 'embed');
+
+        const context = {
+            templateId: templateId,
+            onChange: settings.onChange,
+            onStatus: settings.onStatus,
+            uploadImage: settings.uploadImage,
+            capabilities: { embedsAllowed: embedsOn }
+        };
+
+        const insertions = [];
+        if (imagesOn) insertions.push({ icon: 'fa-solid fa-image', text: 'Photo', run: () => insertImage(body, context) });
+        if (embedsOn) insertions.push({ icon: 'fa-solid fa-play',  text: 'Video', run: () => promptForEmbed(body, context) });
+
+        body.setAttribute('data-editor-body', 'on');
+        body.classList.add('ed-content');
+        body._editorConfig = { insertions: insertions };
+
+        global.RichText.attach(body, {
+            commands: capabilities.commands,
+            palette: capabilities.colors ? settings.palette : null,
+            onChange: settings.onChange
+        });
+
+        body.addEventListener('paste', event => handlePaste(event, body, context));
+
+        // A photo's caption is also its alt text — one thing to write, not two.
+        body.addEventListener('input', event => {
+            const caption = event.target && event.target.closest
+                ? event.target.closest('figcaption')
+                : null;
+            if (!caption || !body.contains(caption)) return;
+            const image = caption.parentElement && caption.parentElement.querySelector('img');
+            if (image) image.alt = (caption.textContent || '').trim();
+        });
+
+        renderEmbedPreviews(body, settings.onChange);
+
+        if (!mount._bound) {
+            mount._bound = true;
+            document.addEventListener('selectionchange', handleSelectionChange);
+            document.addEventListener('mousedown', event => {
+                if (state.tray && !state.tray.contains(event.target) && !bodyForNode(event.target)) hideTray();
+            });
+        }
+    }
+
+    global.Editor = {
+        mount: mount,
+        capabilitiesFor: capabilitiesFor,
+        sanitizeOptionsFor: sanitizeOptionsFor,
+        sanitizeFor: sanitizeFor,
+        hydrateEmbeds: hydrateEmbeds,
+        renderEmbedPreviews: renderEmbedPreviews,
+        detectEmbed: detectEmbed,
+        parseUrl: parseUrl,
+        providers: PROVIDERS,
+        hideTray: hideTray
+    };
+})(window);

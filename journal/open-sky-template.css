@@ -166,6 +166,14 @@
 }
 
 .open-sky-body {
+    /* Shared editor media takes the night sky's own values. */
+    --ed-rule: rgba(214, 228, 244, 0.24);
+    --ed-caption: rgba(214, 228, 244, 0.6);
+    --ed-placeholder: rgba(214, 228, 244, 0.34);
+    --ed-shadow: 0 20px 46px rgba(2, 8, 22, 0.55);
+    --ed-mark-bg: rgba(255, 227, 154, 0.26);
+    --ed-mark-ink: #fff3bd;
+
     max-width: 650px;
     min-height: 150px;
     margin-top: 34px;
