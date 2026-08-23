@@ -127,6 +127,40 @@ provider from `PROVIDERS` and an id its own `valid()` pattern accepts. `Editor.h
 rebuilds a sandboxed, `youtube-nocookie`, lazy-loaded iframe at render time; the editor shows an
 inert poster card instead. Adding a service means adding one row to `PROVIDERS`.
 
+**The engine no longer uses `document.execCommand`.** Commands mutate the DOM directly — execCommand
+is deprecated, writes browser-specific markup, and cannot be extended. Two mode switches remain in
+`RichText.init()` (`styleWithCSS`, `defaultParagraphSeparator`) because nothing replaces them.
+
+Two consequences worth knowing before touching the engine:
+
+- **Removing a mark needs real element splitting.** `extractContents()` splits an ancestor only when
+  the range boundaries sit at different depths; a selection inside one text node leaves the mark
+  whole. `removeMarkAround()` splits it with `splitBefore`/`splitAfter`, then unwraps. Adding a mark
+  can still extract-and-wrap.
+- **The engine owns undo.** The browser's history does not track mutations it did not make, so
+  `RichText` keeps its own snapshots. Commands record immediately before mutating; typing records on
+  `beforeinput` (never `input` — the character has already landed) and coalesces on a 600ms idle, so
+  one undo removes a burst rather than one letter. Selections are stored as plain text offsets, which
+  survive the element rearrangement that a node reference would not.
+
+```js
+RichText.undo(editor);  RichText.redo(editor);  RichText.record(editor, immediate);
+```
+
+**Typed shortcuts** live in `INPUT_RULES` in `editor.js`: `# ` and `## ` for headings, `> ` for a
+quote, `---` for a divider. They run on `input`, once the marker has landed, and only in a plain
+paragraph. There are no list rules on purpose — lists are absent from the toolbar for the same
+reason, because a diary is prose.
+
+**Photos** arrive three ways: the tray button, a paste, or a drag-and-drop — all through one
+`insertImageFile()`, so the upload-then-insert discipline holds for each. A drop places the caret
+where the cursor was, so the photo lands where it was dropped.
+
+**Focus mode** is a division of labour: the editor sets `data-writing` on the root element while
+typing and clears it on any pause or pointer movement. Each page marks its own chrome with `ed-fade`
+— `editor.css` supplies the fade, the page decides what fades. Reduced motion drops the transition,
+not the dimming.
+
 **Every template must style what the toolbar can produce.** The editor is shared; the typography
 is not. A template whose stylesheet lacks an `h2` rule gets the browser's default heading, which
 reads as a broken feature rather than a design choice — this is exactly how `open-sky` shipped.

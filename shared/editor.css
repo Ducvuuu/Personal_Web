@@ -234,3 +234,42 @@
         transition: none;
     }
 }
+
+/* ── Drag a photo in ── */
+
+.ed-content.ed-dropping {
+    outline: 2px dashed var(--ed-caption);
+    outline-offset: 10px;
+    border-radius: 6px;
+}
+
+/* ── Focus mode ── */
+/* The page decides what counts as chrome; the editor only reports that writing is
+   happening, via data-writing on the root element. */
+
+[data-writing] .ed-tray {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ed-tray,
+.ed-fade {
+    transition: opacity 420ms ease;
+}
+
+[data-writing] .ed-fade {
+    opacity: 0.12;
+}
+
+[data-writing] .ed-fade:focus-within {
+    opacity: 1;
+}
+
+/* Reduced motion drops the fade, not the dimming — the chrome still steps out of
+   the way, it just does so instantly. */
+@media (prefers-reduced-motion: reduce) {
+    .ed-tray,
+    .ed-fade {
+        transition: none;
+    }
+}

@@ -68,6 +68,28 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   traversal cannot pass.
 - Inline body photos are `<figure><img><figcaption>` and are restricted to Firebase Storage hosts by
   `RichText.normalizeImageSrc()`. The figcaption doubles as the image's alt text.
+- **Commands do not use `document.execCommand`.** Every command mutates the DOM directly, because
+  execCommand is deprecated, writes different markup per browser, and cannot be extended. The only
+  two remaining calls are the mode switches in `RichText.init()`, which have no modern replacement.
+- Removing an inline mark cannot use `extractContents()` alone: it splits an ancestor only when the
+  range boundaries sit at different depths, so a selection inside a single text node leaves the mark
+  intact. `removeMarkAround()` splits the mark around the node with `splitBefore`/`splitAfter`, then
+  unwraps it. Adding a mark can still use extract-and-wrap.
+- Because the engine owns its mutations, it owns undo — the browser's native history no longer tracks
+  them. `RichText` keeps snapshots: commands record immediately before mutating, typing is recorded
+  on `beforeinput` and coalesced so one undo removes a burst. Never record on `input` for typing; the
+  character has already landed by then.
+- Selections are saved as plain text offsets, not node references. Formatting rearranges elements but
+  never the characters, so an offset survives a change that a node reference would not.
+- Ctrl/Cmd+B/I/U/K, Ctrl+Z and Ctrl+Shift+Z are intercepted. The browser's own shortcuts would invoke
+  the execCommand behaviour the engine replaced.
+- A caret placed in a childless element does not survive `addRange()` in Chrome. `placeCaretIn()`
+  seeds a `<br>`, and the sanitizer drops a trailing `<br>` once a block has real text.
+- Markdown shortcuts (`# `, `## `, `> `, `---`) live in `INPUT_RULES` in `editor.js` and run on
+  `input`, once the marker character has landed. There are deliberately no list rules — a diary is
+  prose, and lists were left out of the toolbar for the same reason.
+- Focus mode: the editor only reports that typing is happening, by setting `data-writing` on the root
+  element. Each page marks its own chrome with `ed-fade`; the editor never decides what is chrome.
 - `RichText.init()` sets both `styleWithCSS` and `defaultParagraphSeparator` — a page that mounts
   the editor does not need to set them, and must not rely on having done so.
 - Text typed into an empty body lands outside any block, missing every paragraph rule the template
