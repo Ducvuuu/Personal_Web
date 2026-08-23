@@ -246,6 +246,9 @@ Two affordances, each appearing only when the author is in a position to want it
 - **Photos** — insert menu, paste, or drag-and-drop.
 - **Video** — paste a YouTube or Vimeo link, or use the insert menu.
 - **Focus mode** — chrome fades while typing, returns on any pause or pointer movement.
+- **Immersive mode** — the author can deliberately expand the active template or raw-HTML surface
+  over the viewport. Page chrome and setup fields disappear; a compact save status and exit control
+  remain. Escape or Ctrl/Cmd+Shift+F exits without losing the caret or original page position.
 
 ---
 

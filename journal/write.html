@@ -98,6 +98,106 @@
             display: block;
             font-weight: 300;
         }
+
+        /* ── Immersive writing ── */
+        body.immersive-mode { overflow: hidden; }
+
+        body.immersive-mode #editor-nav,
+        body.immersive-mode #entry-fields {
+            display: none !important;
+        }
+
+        body.immersive-mode #editor-container {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: block !important;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 0 !important;
+        }
+
+        body.immersive-mode #editor-container > div {
+            display: block;
+            min-height: 100%;
+            padding: 0 !important;
+        }
+
+        body.immersive-mode #field-note-editor,
+        body.immersive-mode #open-sky-editor,
+        body.immersive-mode #open-canvas-editor,
+        body.immersive-mode #column-editor {
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            margin: 0 !important;
+        }
+
+        body.immersive-mode #column-editor {
+            max-width: none;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        body.immersive-mode #journal-body,
+        body.immersive-mode #journal-preview {
+            width: min(900px, 100%);
+            min-height: 100vh !important;
+            min-height: 100svh !important;
+            margin: 0 auto !important;
+            border: 0;
+            border-radius: 0;
+            padding: clamp(56px, 9vw, 110px) clamp(24px, 8vw, 88px);
+        }
+
+        body.immersive-mode #editor-actions {
+            top: 16px;
+            right: 16px;
+            bottom: auto;
+            left: auto;
+            z-index: 60;
+            display: flex !important;
+            width: auto;
+            padding: 9px 10px;
+            border: 1px solid rgba(245, 211, 179, 0.72);
+            border-radius: 15px;
+            background: rgba(255, 251, 247, 0.88);
+            box-shadow: 0 12px 34px rgba(74, 37, 23, 0.14);
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        body.immersive-mode #editor-actions > div:first-child {
+            gap: 0;
+        }
+
+        body.immersive-mode #editor-actions > div:first-child label,
+        body.immersive-mode #editor-actions button:not(#immersive-btn) {
+            display: none !important;
+        }
+
+        body.immersive-mode #editor-actions > div:last-child {
+            width: auto;
+        }
+
+        body.immersive-mode #save-status {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 640px) {
+            body.immersive-mode #editor-actions {
+                top: 10px;
+                right: 10px;
+                max-width: calc(100% - 20px);
+            }
+
+            body.immersive-mode #save-status {
+                max-width: 115px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
     </style>
 </head>
 
@@ -162,7 +262,7 @@
         <div class="px-8 md:px-16 py-8 flex flex-col flex-1">
 
             <!-- Fields — constrained width for comfortable writing -->
-            <div class="max-w-5xl mx-auto w-full">
+            <div id="entry-fields" class="max-w-5xl mx-auto w-full">
 
                 <!-- Metadata + Cover Photo -->
                 <div class="flex flex-col lg:flex-row gap-8 mb-10 pb-10 border-b border-warm-200">
@@ -538,7 +638,7 @@
     <!-- Action Bar — fixed bottom -->
     <div class="fixed bottom-0 left-0 right-0 z-40 bg-warm-100/80 backdrop-blur-md px-8 py-5 border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4 hidden ed-fade" id="editor-actions">
         <div class="flex flex-col gap-2">
-            <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2">
+            <p id="save-status" class="font-mono text-xs text-warm-400 flex items-center gap-2" aria-live="polite">
                 <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Ready to seal.
             </p>
             <label for="public-toggle" class="flex items-center gap-2 cursor-pointer select-none w-fit">
@@ -561,6 +661,11 @@
             </label>
         </div>
         <div class="flex gap-3 w-full sm:w-auto">
+            <button id="immersive-btn" type="button" aria-pressed="false" aria-label="Enter immersive writing mode"
+                class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 flex items-center justify-center gap-2">
+                <i id="immersive-icon" class="fa-solid fa-expand text-xs opacity-70" aria-hidden="true"></i>
+                <span id="immersive-label">Immersive</span>
+            </button>
             <button onclick="discardEntry()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold font-mono text-sm border border-warm-300 text-warm-700 hover:bg-white transition-colors bg-warm-50 text-center">
                 Discard
             </button>
@@ -612,6 +717,11 @@
         let autosaveTimer = null;
         let autosaveReady = false;
         let isDirty = false;
+        // immersiveMode / immersiveScrollY keep the manual full-screen writing
+        // surface reversible without losing the author's place.
+        let immersiveMode = false;
+        let immersiveScrollY = 0;
+        let immersiveEditorOffset = 0;
         // openCanvasState: the Open Canvas appearance values saved into templateData
         // inkTouched: suppresses the luminance-based ink suggestion once the author picks a colour
         const openCanvasState = {
@@ -797,6 +907,7 @@
                 else              initializeNewEntry();
             } else {
                 currentUid = null;
+                if (immersiveMode) setImmersiveMode(false, false);
                 document.getElementById('auth-gate').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
                 document.getElementById('editor-nav').classList.add('hidden');
@@ -1166,6 +1277,57 @@
             const icon   = document.createElement('i');
             icon.className = icons[phase] || icons.done;
             status.replaceChildren(icon, ' ' + message);
+        }
+
+        function activeWritingSurface() {
+            if (authoringMode === 'template') {
+                return document.getElementById(activeTemplateConfig().editorId);
+            }
+            return document.getElementById(htmlView === 'preview' ? 'journal-preview' : 'journal-body');
+        }
+
+        function setImmersiveMode(enabled, restoreScroll = true) {
+            const next = !!enabled;
+            if (immersiveMode === next) return;
+
+            const container = document.getElementById('editor-container');
+            const surface = activeWritingSurface();
+            const focused = document.activeElement;
+
+            if (next) {
+                immersiveScrollY = window.scrollY;
+                const surfaceTop = surface
+                    ? surface.getBoundingClientRect().top + window.scrollY
+                    : immersiveScrollY;
+                immersiveEditorOffset = Math.max(0, immersiveScrollY - surfaceTop);
+            }
+
+            immersiveMode = next;
+            document.body.classList.toggle('immersive-mode', next);
+
+            const button = document.getElementById('immersive-btn');
+            const icon = document.getElementById('immersive-icon');
+            const label = document.getElementById('immersive-label');
+            button.setAttribute('aria-pressed', String(next));
+            button.setAttribute('aria-label', next ? 'Exit immersive writing mode' : 'Enter immersive writing mode');
+            icon.className = `fa-solid ${next ? 'fa-compress' : 'fa-expand'} text-xs opacity-70`;
+            label.textContent = next ? 'Exit' : 'Immersive';
+
+            requestAnimationFrame(() => {
+                if (next) {
+                    container.scrollTop = immersiveEditorOffset;
+                } else {
+                    container.scrollTop = 0;
+                    if (restoreScroll) window.scrollTo(0, immersiveScrollY);
+                }
+                if (focused && typeof focused.focus === 'function') {
+                    try { focused.focus({ preventScroll: true }); } catch (err) { focused.focus(); }
+                }
+            });
+        }
+
+        function toggleImmersiveMode() {
+            setImmersiveMode(!immersiveMode);
         }
 
         // Body photos take the same route as the cover: downscale, upload, and only
@@ -1598,6 +1760,18 @@
         document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
         document.getElementById('open-sky-body-editor').addEventListener('input', updateOpenSkyLength);
         document.getElementById('column-body-editor').addEventListener('input', updateColumnContext);
+        document.getElementById('immersive-btn').addEventListener('click', toggleImmersiveMode);
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && immersiveMode) {
+                event.preventDefault();
+                setImmersiveMode(false);
+                return;
+            }
+            if (event.code === 'KeyF' && event.shiftKey && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                toggleImmersiveMode();
+            }
+        });
         document.getElementById('field-note-title-editor').addEventListener('input', () => {
             document.getElementById('entry-title').value = plainEditableText('field-note-title-editor');
         });

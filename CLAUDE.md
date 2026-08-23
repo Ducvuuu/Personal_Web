@@ -120,6 +120,9 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   prose, and lists were left out of the toolbar for the same reason.
 - Focus mode: the editor only reports that typing is happening, by setting `data-writing` on the root
   element. Each page marks its own chrome with `ed-fade`; the editor never decides what is chrome.
+- `journal/write.html` also owns a manual immersive mode. It expands the active authoring surface,
+  hides setup chrome, keeps a compact save/exit control, and restores the author's caret and scroll
+  position on Escape or Ctrl/Cmd+Shift+F. This remains page behavior, not an `Editor.mount()` concern.
 - `RichText.init()` sets both `styleWithCSS` and `defaultParagraphSeparator` — a page that mounts
   the editor does not need to set them, and must not rely on having done so.
 - Text typed into an empty body lands outside any block, missing every paragraph rule the template
