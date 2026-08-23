@@ -116,7 +116,7 @@ need no change at all.
 Define every colour as a custom property on the root class, so the template can be
 recoloured later without a retrofit.
 
-**Style everything the toolbar can produce.** This is the contract, and the one that has
+**Style everything the editor can produce.** This is the contract, and the one that has
 actually been broken before: `open-sky` shipped without heading rules and its headings
 fell back to the browser's own serif, which read as a broken feature rather than a design.
 
@@ -125,7 +125,7 @@ fell back to the browser's own serif, which read as a broken feature rather than
 | `p`, `h2`, `h3`, `blockquote` | headings and quote commands |
 | `ul`, `ol`, `li` | pasted content (no list commands exist) |
 | `a`, `mark` | link and highlight commands |
-| `hr` | the divider command and the `---` rule |
+| `hr` | the insert menu's divider and the `---` rule |
 
 Then override the media variables so photos and embeds belong to your surface:
 
