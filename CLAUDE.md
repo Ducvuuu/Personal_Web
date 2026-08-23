@@ -36,6 +36,9 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   `closingArt`, `inkColor`, `accentColor`, `scrimOpacity`, `layoutMode`, `focalPoint`,
   `softenArtEdge` — in `templateData`. Its design lives in `journal/open-canvas-template.css`. It
   ships no bundled artwork: both images are uploaded per entry, and each has a graceful empty state.
+- The `column` template stores its optional subtitle in `templateData`. Its warm editorial design
+  lives in `journal/column-template.css`, uses the bundled background-only travel artwork under
+  `journal/assets/`, and intentionally has no cover-image slot or author row.
 - Template selection and editor behavior are dispatched by `templateId` in `journal/write.html`;
   template entry rendering is dispatched by `templateId` in `journal/entry.html`. `entry.html` uses
   `showEntryHost()` to reveal one host and hide the rest — don't hand-hide hosts in a renderer.

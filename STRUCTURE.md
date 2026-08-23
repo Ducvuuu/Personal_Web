@@ -37,8 +37,10 @@
 │   ├── field-note-template.css # Shared Field Note editor/reader design
 │   ├── open-sky-template.css # Shared Open Sky editor/reader design
 │   ├── open-canvas-template.css # Shared Open Canvas editor/reader design
+│   ├── column-template.css # Shared warm editorial Column editor/reader design
 │   ├── assets/
-│   │   └── open-sky-horizon.png # Open Sky closing landscape artwork
+│   │   ├── open-sky-horizon.png # Open Sky closing landscape artwork
+│   │   └── column-background-decor.png # Column background-only travel artwork
 │   └── migrate.html      # Legacy Firestore collection migration utility
 │
 ├── writing/
@@ -61,7 +63,8 @@ Every new journal entry permanently chooses one authoring mode in `journal/new.h
   height-limited cover on desktop and a fixed-height cover above the paper on mobile. `open-sky`
   provides a borderless night-sky canvas whose illustrated horizon follows the final paragraph.
   `open-canvas` is photographic: the author supplies the backdrop and closing artwork and sets the
-  ink and accent colours, so nothing about its look is bundled.
+  ink and accent colours, so nothing about its look is bundled. `column` is a cover-free editorial
+  layout with a dark teal title field, warm paper body, and bundled background-only travel details.
 - `html` — raw HTML editor with preview. Custom scripts retain the legacy behavior.
 
 New documents store `schemaVersion: 2`, `authoringMode`, and `templateId`. Documents without
@@ -70,7 +73,7 @@ The title, location, weather, visibility, and featured status use the same Fires
 modes. Template-specific values are grouped under `templateData`: Field Note stores subtitle,
 epigraph, and image caption; Open Sky stores its optional subtitle; Open Canvas stores its subtitle
 plus `backgroundImage`, `closingArt`, `inkColor`, `accentColor`, `scrimOpacity`, `layoutMode`,
-`focalPoint` and `softenArtEdge`.
+`focalPoint` and `softenArtEdge`; Column stores its optional subtitle.
 
 ### Open Canvas appearance
 

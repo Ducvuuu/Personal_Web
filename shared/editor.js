@@ -68,7 +68,8 @@
     const CAPABILITIES = {
         'field-note':  { commands: TEXT_COMMANDS, align: true, colors: false, media: ['image', 'embed'] },
         'open-sky':    { commands: TEXT_COMMANDS, align: true, colors: false, media: ['image', 'embed'] },
-        'open-canvas': { commands: TEXT_COMMANDS, align: true, colors: true,  media: ['image', 'embed'] }
+        'open-canvas': { commands: TEXT_COMMANDS, align: true, colors: true,  media: ['image', 'embed'] },
+        'column':      { commands: TEXT_COMMANDS, align: true, colors: false, media: ['image', 'embed'] }
     };
 
     const FALLBACK = CAPABILITIES['field-note'];

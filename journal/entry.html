@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Field Notes — Entry</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="../shared/editor.css">
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
     <link rel="stylesheet" href="open-canvas-template.css">
+    <link rel="stylesheet" href="column-template.css">
 
     <script>
         tailwind.config = {
@@ -254,6 +255,7 @@
             <div id="field-note-entry-host" class="hidden"></div>
             <div id="open-sky-entry-host" class="hidden"></div>
             <div id="open-canvas-entry-host" class="hidden"></div>
+            <div id="column-entry-host" class="hidden"></div>
             <div id="default-entry-layout">
 
             <!-- ── HERO: cover image + overlaid title/receipt ── -->
@@ -451,7 +453,7 @@
 
         const ENTRY_HOSTS = [
             'default-entry-layout', 'field-note-entry-host',
-            'open-sky-entry-host', 'open-canvas-entry-host'
+            'open-sky-entry-host', 'open-canvas-entry-host', 'column-entry-host'
         ];
 
         function showEntryHost(activeId) {
@@ -488,7 +490,8 @@
                 const templateRenderers = {
                     'field-note': renderFieldNoteEntry,
                     'open-sky': renderOpenSkyEntry,
-                    'open-canvas': renderOpenCanvasEntry
+                    'open-canvas': renderOpenCanvasEntry,
+                    'column': renderColumnEntry
                 };
                 (templateRenderers[e.templateId] || renderFieldNoteEntry)(e);
                 Editor.hydrateEmbeds(entryContent);
@@ -727,6 +730,44 @@
                         <div class="open-canvas-body ed-content">${e.content || ''}</div>
                     </section>
                     ${closingMarkup}
+                </article>`;
+        }
+
+        function renderColumnEntry(e) {
+            const host = document.getElementById('column-entry-host');
+            const templateData = e.templateData || {};
+            const title = e.title || '(Untitled)';
+            const subtitle = templateData.subtitle
+                ? `<p class="column-subtitle">${escHtml(templateData.subtitle)}</p>`
+                : '';
+            const date = formatOpenSkyDate(e.date);
+            const location = e.locationDetail || e.location || 'Location unstamped';
+            const weather = formatWeather(e.weather) || 'Weather unstamped';
+            const minutes = Math.max(1, Math.ceil(countHtmlWords(e.content || '') / 220));
+
+            showEntryHost('column-entry-host');
+            host.innerHTML = `
+                <article class="column-template" aria-label="${escHtml(title)}">
+                    <div class="column-decor" aria-hidden="true"></div>
+
+                    <header class="column-hero">
+                        <div class="column-hero-inner">
+                            <p class="column-kicker">Journal entry</p>
+                            <h1 class="column-title">${escHtml(title)}</h1>
+                            ${subtitle}
+                            <div class="column-meta" aria-label="Entry context">
+                                <span>${escHtml(date)}</span>
+                                <span>${escHtml(location)}</span>
+                                <span>${escHtml(weather)}</span>
+                                <span>${minutes} min read</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <section class="column-writing-shell">
+                        <div class="column-body ed-content">${e.content || ''}</div>
+                        <div class="column-end" aria-hidden="true">⁕</div>
+                    </section>
                 </article>`;
         }
 

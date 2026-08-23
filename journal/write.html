@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Write Entry — Journal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
     <link rel="stylesheet" href="../shared/rich-text.css">
@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="field-note-template.css">
     <link rel="stylesheet" href="open-sky-template.css">
     <link rel="stylesheet" href="open-canvas-template.css">
+    <link rel="stylesheet" href="column-template.css">
 
     <script>
         tailwind.config = {
@@ -489,6 +490,38 @@
                 </section>
             </div>
 
+            <!-- Column template editor -->
+            <div id="column-editor" class="column-template is-editing hidden -mx-8 md:-mx-16">
+                <div class="column-decor" aria-hidden="true"></div>
+
+                <header class="column-hero">
+                    <div class="column-hero-inner">
+                        <p class="column-kicker">Journal entry</p>
+                        <h1 id="column-title-editor" class="column-title" contenteditable="true"
+                            role="textbox" aria-label="Entry title" aria-multiline="false" spellcheck="true"
+                            data-placeholder="Give this thought a title…"></h1>
+
+                        <p id="column-subtitle-editor" class="column-subtitle" contenteditable="true"
+                            role="textbox" aria-label="Entry subtitle" aria-multiline="false" spellcheck="true"
+                            data-placeholder="An optional line beneath it…"></p>
+
+                        <div class="column-meta" aria-label="Entry context">
+                            <span id="column-date-editor"></span>
+                            <span id="column-location-editor">Location unstamped</span>
+                            <span id="column-weather-editor">Weather unstamped</span>
+                            <span id="column-length-editor">1 min read</span>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="column-writing-shell" aria-label="Editable Column template">
+                    <div id="column-body-editor" class="column-body" contenteditable="true"
+                        role="textbox" aria-label="Journal entry body" aria-multiline="true" spellcheck="true"
+                        data-placeholder="Start writing…"></div>
+                    <div class="column-end" aria-hidden="true">⁕</div>
+                </section>
+            </div>
+
             <!-- Raw HTML mode -->
             <textarea id="journal-body"
                 placeholder="<p>Start writing your HTML here…</p>"
@@ -684,6 +717,24 @@
                 update() {
                     updateOpenCanvasContext();
                     applyOpenCanvasAppearance();
+                }
+            },
+            'column': {
+                label: 'Template · Column',
+                editorId: 'column-editor',
+                titleId: 'column-title-editor',
+                bodyId: 'column-body-editor',
+                populate(entry) {
+                    document.getElementById(this.titleId).textContent = entry.title || '';
+                    document.getElementById(this.bodyId).innerHTML = entry.content || '';
+                    const data = entry.templateData || {};
+                    document.getElementById('column-subtitle-editor').textContent = data.subtitle || '';
+                },
+                collectData() {
+                    return { subtitle: plainEditableText('column-subtitle-editor') };
+                },
+                update() {
+                    updateColumnContext();
                 }
             }
         };
@@ -1200,9 +1251,9 @@
                 htmlTitleField.classList.add('hidden');
                 document.getElementById(config.editorId).classList.remove('hidden');
                 label.textContent = config.label;
-                // Both sky templates supply their own imagery, so the shared cover field
-                // would be a second, conflicting source.
-                if (templateId === 'open-sky' || templateId === 'open-canvas') {
+                // These templates own their full visual surface, so the shared cover
+                // field would be a second, conflicting source.
+                if (templateId === 'open-sky' || templateId === 'open-canvas' || templateId === 'column') {
                     coverImageField.classList.add('hidden');
                     metadataPanel.classList.remove('lg:w-1/3');
                     metadataPanel.classList.add('lg:w-full');
@@ -1313,6 +1364,18 @@
             const text = (document.getElementById('open-sky-body-editor').innerText || '').trim();
             const count = text ? text.split(/\s+/).filter(Boolean).length : 0;
             document.getElementById('open-sky-editor').dataset.length = count > 180 ? 'long' : 'short';
+        }
+
+        function updateColumnContext() {
+            const locationDetail = document.getElementById('location-detail').value.trim();
+            const bodyText = (document.getElementById('column-body-editor').innerText || '').trim();
+            const wordCount = bodyText ? bodyText.split(/\s+/).filter(Boolean).length : 0;
+            const minutes = Math.max(1, Math.ceil(wordCount / 220));
+            document.getElementById('column-date-editor').textContent = formatOpenSkyDate(capturedDate);
+            document.getElementById('column-location-editor').textContent =
+                locationDetail || capturedLocation || 'Location unstamped';
+            document.getElementById('column-weather-editor').textContent = formatTemplateWeather(capturedWeather);
+            document.getElementById('column-length-editor').textContent = `${minutes} min read`;
         }
 
         // ── OPEN CANVAS ──
@@ -1489,12 +1552,24 @@
         });
         document.getElementById('open-canvas-title-editor').addEventListener('paste', pastePlainText);
         document.getElementById('open-canvas-subtitle-editor').addEventListener('paste', pastePlainText);
+        document.getElementById('column-title-editor').addEventListener('input', () => {
+            document.getElementById('entry-title').value = plainEditableText('column-title-editor');
+        });
+        document.getElementById('column-title-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'column-subtitle-editor');
+        });
+        document.getElementById('column-subtitle-editor').addEventListener('keydown', event => {
+            focusNextOnEnter(event, 'column-body-editor');
+        });
+        document.getElementById('column-title-editor').addEventListener('paste', pastePlainText);
+        document.getElementById('column-subtitle-editor').addEventListener('paste', pastePlainText);
 
         // Every template body is the same editor; the template only says what it allows.
         const BODY_TEMPLATES = {
             'simple-body': 'field-note',
             'open-sky-body-editor': 'open-sky',
-            'open-canvas-body-editor': 'open-canvas'
+            'open-canvas-body-editor': 'open-canvas',
+            'column-body-editor': 'column'
         };
 
         Object.keys(BODY_TEMPLATES).forEach(bodyId => {
@@ -1514,6 +1589,7 @@
             updateFieldNoteContext();
             updateOpenSkyContext();
             updateOpenCanvasContext();
+            updateColumnContext();
         });
 
         const editorContainer = document.getElementById('editor-container');
@@ -1521,6 +1597,7 @@
         editorContainer.addEventListener('change', scheduleAutosave);
         document.getElementById('simple-body').addEventListener('input', updateFieldNoteWordCount);
         document.getElementById('open-sky-body-editor').addEventListener('input', updateOpenSkyLength);
+        document.getElementById('column-body-editor').addEventListener('input', updateColumnContext);
         document.getElementById('field-note-title-editor').addEventListener('input', () => {
             document.getElementById('entry-title').value = plainEditableText('field-note-title-editor');
         });
