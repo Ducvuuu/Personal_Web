@@ -554,6 +554,113 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // ── Random project modal ─────────────────────────────────────────────────
+    const cosmoCard        = document.getElementById('cosmo-project-card');
+    const cosmoModal       = document.getElementById('cosmo-modal');
+    const cosmoDialog      = document.getElementById('cosmo-modal-dialog');
+    const cosmoClose       = document.getElementById('cosmo-modal-close');
+    const cosmoVideo       = document.getElementById('cosmo-intro-video');
+    const cosmoStageImage  = document.getElementById('cosmo-stage-image');
+    const cosmoVideoToggle = document.getElementById('cosmo-video-toggle');
+    const cosmoThumbs      = Array.from(document.querySelectorAll('.cosmo-thumbnail'));
+    const reduceMotion     = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let cosmoLastFocus     = null;
+    let cosmoHideTimer     = null;
+    let cosmoBodyOverflow  = '';
+
+    function syncCosmoVideoToggle() {
+        const paused = cosmoVideo.paused;
+        const icon = cosmoVideoToggle.querySelector('i');
+        const label = cosmoVideoToggle.querySelector('span');
+        icon.classList.toggle('fa-play', paused);
+        icon.classList.toggle('fa-pause', !paused);
+        label.textContent = paused ? 'Play preview' : 'Pause preview';
+        cosmoVideoToggle.setAttribute('aria-label', paused ? 'Play Cosmo preview' : 'Pause Cosmo preview');
+    }
+
+    function showCosmoMedia(button) {
+        cosmoThumbs.forEach(thumb => {
+            const active = thumb === button;
+            thumb.classList.toggle('is-active', active);
+            thumb.setAttribute('aria-pressed', String(active));
+        });
+
+        if (button.dataset.cosmoKind === 'video') {
+            cosmoStageImage.hidden = true;
+            cosmoVideo.hidden = false;
+            cosmoVideoToggle.hidden = false;
+            if (!reduceMotion.matches && cosmoModal.classList.contains('is-open')) {
+                cosmoVideo.play().catch(() => {});
+            }
+            syncCosmoVideoToggle();
+            return;
+        }
+
+        cosmoVideo.pause();
+        cosmoVideo.hidden = true;
+        cosmoVideoToggle.hidden = true;
+        cosmoStageImage.src = button.dataset.cosmoSrc;
+        cosmoStageImage.alt = button.dataset.cosmoAlt;
+        cosmoStageImage.hidden = false;
+    }
+
+    window.openCosmoModal = function () {
+        window.clearTimeout(cosmoHideTimer);
+        cosmoLastFocus = document.activeElement;
+        cosmoBodyOverflow = document.body.style.overflow;
+        cosmoModal.hidden = false;
+        cosmoModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        showCosmoMedia(cosmoThumbs[0]);
+        window.requestAnimationFrame(() => {
+            cosmoModal.classList.add('is-open');
+            cosmoDialog.focus();
+            if (!reduceMotion.matches) cosmoVideo.play().catch(() => {});
+        });
+    };
+
+    window.closeCosmoModal = function () {
+        if (cosmoModal.hidden) return;
+        cosmoModal.classList.remove('is-open');
+        cosmoModal.setAttribute('aria-hidden', 'true');
+        cosmoVideo.pause();
+        document.body.style.overflow = cosmoBodyOverflow;
+        cosmoHideTimer = window.setTimeout(() => {
+            cosmoModal.hidden = true;
+            if (cosmoLastFocus && document.contains(cosmoLastFocus)) cosmoLastFocus.focus();
+        }, reduceMotion.matches ? 0 : 280);
+    };
+
+    cosmoCard.addEventListener('click', window.openCosmoModal);
+    cosmoClose.addEventListener('click', window.closeCosmoModal);
+    cosmoModal.addEventListener('click', event => {
+        if (event.target === cosmoModal) window.closeCosmoModal();
+    });
+    cosmoThumbs.forEach(thumb => thumb.addEventListener('click', () => showCosmoMedia(thumb)));
+    cosmoVideoToggle.addEventListener('click', () => {
+        if (cosmoVideo.paused) cosmoVideo.play().catch(() => {});
+        else cosmoVideo.pause();
+        syncCosmoVideoToggle();
+    });
+    cosmoVideo.addEventListener('play', syncCosmoVideoToggle);
+    cosmoVideo.addEventListener('pause', syncCosmoVideoToggle);
+
+    cosmoModal.addEventListener('keydown', event => {
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(cosmoDialog.querySelectorAll('button:not([hidden]), a[href]'))
+            .filter(element => !element.hasAttribute('disabled'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === cosmoDialog)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
     // ── Promise modal ────────────────────────────────────────────────────────
     const promiseModal        = document.getElementById('promise-modal');
     const promiseModalContent = document.getElementById('promise-modal-content');
@@ -655,6 +762,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.closeShelfModal();
             window.closeChart();
             window.closePromiseModal();
+            window.closeCosmoModal();
         }
     });
 

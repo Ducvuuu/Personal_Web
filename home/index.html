@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
-    <link rel="stylesheet" href="home.css?v=4">
+    <link rel="stylesheet" href="home.css?v=5">
 
     <script>
         tailwind.config = {
@@ -565,6 +565,41 @@
             </div>
         </section>
 
+        <!-- Random Things I Make Section -->
+        <section id="random" class="random-things-section px-8 py-20 md:px-16 border-b border-warm-200">
+            <div class="random-orbit random-orbit-one" aria-hidden="true"></div>
+            <div class="random-orbit random-orbit-two" aria-hidden="true"></div>
+
+            <div class="relative z-10 max-w-6xl mx-auto">
+                <div class="mb-12 max-w-3xl">
+                    <div class="flex flex-wrap items-end gap-x-4 gap-y-2">
+                        <h2 class="font-heavy text-4xl md:text-5xl text-warm-900" data-edit-key="random.heading">Random things I make</h2>
+                        <span class="font-handwriting text-2xl md:text-3xl text-warm-600 transform -rotate-2" data-edit-key="random.subheading">because the idea would not leave me alone</span>
+                    </div>
+                    <p class="mt-5 max-w-2xl text-warm-700 leading-relaxed" data-edit-key="random.intro">Experiments, tiny obsessions, and things made somewhere between curiosity and procrastination.</p>
+                </div>
+
+                <button type="button" id="cosmo-project-card" class="random-project-card group" aria-haspopup="dialog" aria-controls="cosmo-modal">
+                    <span class="random-project-visual" aria-hidden="true">
+                        <img src="assets/cosmo-poster.webp" alt="" loading="lazy">
+                        <span class="random-project-scrim"></span>
+                        <span class="random-project-badge"><i class="fa-brands fa-apple" aria-hidden="true"></i> Live wallpaper</span>
+                        <span class="random-project-play"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
+                    </span>
+
+                    <span class="random-project-copy">
+                        <span class="random-project-number">No. 001 · Creative coding</span>
+                        <span class="random-project-title">Cosmo</span>
+                        <span class="random-project-description">A living watercolor Solar System that turns the macOS desktop into a quiet, astronomical storybook.</span>
+                        <span class="random-project-tags" aria-hidden="true">
+                            <span>Astronomy</span><span>Watercolor</span><span>macOS</span>
+                        </span>
+                        <span class="random-project-open">Look inside <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                    </span>
+                </button>
+            </div>
+        </section>
+
         <!-- Writing Section -->
         <section id="writing" class="bg-warm-100 px-8 py-20 md:px-16 border-b border-warm-200 relative overflow-hidden">
             <div class="absolute -right-20 top-20 w-96 h-96 bg-warm-200 rounded-full mix-blend-multiply opacity-30 blur-3xl"></div>
@@ -762,6 +797,11 @@
                 <span class="absolute left-14 px-3 py-1.5 rounded-lg bg-warm-900 text-warm-50 text-xs font-bold font-mono opacity-0 -translate-x-2 pointer-events-none transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 whitespace-nowrap shadow-lg before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-4 before:border-transparent before:border-r-warm-900">Work</span>
             </a>
 
+            <a href="#random" class="side-nav-link group relative w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-warm-800 shadow-sm border border-white/60 hover:bg-white hover:text-orange-600 transition-all" aria-label="Random things I make section">
+                <i class="fa-solid fa-wand-magic-sparkles text-[15px]" aria-hidden="true"></i>
+                <span class="absolute left-14 px-3 py-1.5 rounded-lg bg-warm-900 text-warm-50 text-xs font-bold font-mono opacity-0 -translate-x-2 pointer-events-none transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 whitespace-nowrap shadow-lg before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-4 before:border-transparent before:border-r-warm-900">Random things I make</span>
+            </a>
+
             <a href="#writing" class="side-nav-link group relative w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-warm-800 shadow-sm border border-white/60 hover:bg-white hover:text-orange-600 transition-all" aria-label="Writing section">
                 <i class="fa-solid fa-pen-nib text-[15px]" aria-hidden="true"></i>
                 <span class="absolute left-14 px-3 py-1.5 rounded-lg bg-warm-900 text-warm-50 text-xs font-bold font-mono opacity-0 -translate-x-2 pointer-events-none transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 whitespace-nowrap shadow-lg before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-4 before:border-transparent before:border-r-warm-900">Writing</span>
@@ -783,6 +823,71 @@
             </a>
         </div>
     </nav>
+
+    <!-- Random Project Modal -->
+    <div id="cosmo-modal" class="random-project-modal" role="dialog" aria-modal="true" aria-labelledby="cosmo-modal-title" aria-hidden="true" hidden>
+        <div id="cosmo-modal-dialog" class="random-project-dialog" tabindex="-1">
+            <span class="random-modal-tape" aria-hidden="true"></span>
+            <button type="button" id="cosmo-modal-close" class="random-modal-close" aria-label="Close Cosmo project details">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+
+            <div class="cosmo-gallery">
+                <div class="cosmo-stage">
+                    <video id="cosmo-intro-video" poster="assets/cosmo-poster.webp" muted loop playsinline preload="metadata" aria-hidden="true">
+                        <source src="assets/cosmo-intro.mp4" type="video/mp4">
+                    </video>
+                    <img id="cosmo-stage-image" src="assets/cosmo-orbits.webp" alt="Close view of Cosmo's watercolor planets and orbital paths" hidden>
+                    <button type="button" id="cosmo-video-toggle" class="cosmo-video-toggle" aria-label="Pause Cosmo preview">
+                        <i class="fa-solid fa-pause" aria-hidden="true"></i><span>Pause preview</span>
+                    </button>
+                </div>
+
+                <div class="cosmo-thumbnails" aria-label="Cosmo preview gallery">
+                    <button type="button" class="cosmo-thumbnail is-active" data-cosmo-kind="video" aria-label="Show wallpaper recording" aria-pressed="true">
+                        <img src="assets/cosmo-poster.webp" alt="" loading="lazy"><span>On the desktop</span>
+                    </button>
+                    <button type="button" class="cosmo-thumbnail" data-cosmo-kind="image" data-cosmo-src="assets/cosmo-orbits.webp" data-cosmo-alt="Close view of Cosmo's watercolor planets and orbital paths" aria-label="Show watercolor planet detail" aria-pressed="false">
+                        <img src="assets/cosmo-orbits.webp" alt="" loading="lazy"><span>Painted worlds</span>
+                    </button>
+                    <button type="button" class="cosmo-thumbnail" data-cosmo-kind="image" data-cosmo-src="assets/cosmo-belt.webp" data-cosmo-alt="Cosmo's illustrated asteroid belt curving between watercolor planets" aria-label="Show asteroid belt detail" aria-pressed="false">
+                        <img src="assets/cosmo-belt.webp" alt="" loading="lazy"><span>Tiny details</span>
+                    </button>
+                </div>
+            </div>
+
+            <article class="cosmo-story">
+                <p class="cosmo-eyebrow">Random thing no. 001 · macOS</p>
+                <h2 id="cosmo-modal-title">Cosmo</h2>
+                <p class="cosmo-dek">A living watercolor Solar System for the desktop.</p>
+
+                <div class="cosmo-story-copy">
+                    <p>I wanted the desktop to feel less like a surface and more like a small window into something alive. Cosmo places a softly painted Solar System behind the icons, moving quietly with real astronomical positions.</p>
+                    <p>It can travel through time, focus closely on Earth and the Moon, or drift into three slower Zen modes. The planets are deliberately illustrative rather than to scale—the astronomy provides the structure, while watercolor keeps it gentle.</p>
+                </div>
+
+                <div class="cosmo-notes" aria-label="Cosmo highlights">
+                    <span><i class="fa-solid fa-earth-asia" aria-hidden="true"></i> Real planetary positions</span>
+                    <span><i class="fa-solid fa-moon" aria-hidden="true"></i> Earth Focus &amp; Zen modes</span>
+                    <span><i class="fa-solid fa-meteor" aria-hidden="true"></i> Small hidden surprises</span>
+                </div>
+
+                <p class="cosmo-hand-note">A tiny universe, mostly made because I wanted one.</p>
+
+                <div class="cosmo-actions">
+                    <a href="https://ducvuuu.github.io/live-macos-wallpaper/" target="_blank" rel="noopener noreferrer" class="cosmo-primary-link">
+                        Open Cosmo <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                    <a href="https://github.com/Ducvuuu/live-macos-wallpaper/releases/latest" target="_blank" rel="noopener noreferrer" class="cosmo-secondary-link">
+                        <i class="fa-brands fa-apple" aria-hidden="true"></i> Get the macOS app
+                    </a>
+                    <a href="https://github.com/Ducvuuu/live-macos-wallpaper" target="_blank" rel="noopener noreferrer" class="cosmo-source-link">
+                        <i class="fa-brands fa-github" aria-hidden="true"></i> View source
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
 
     <!-- Gallery Story Modal -->
     <div id="story-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md transition-opacity duration-300 px-4 opacity-0 pointer-events-none">
@@ -916,6 +1021,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <script src="../shared/components.js"></script>
-    <script src="home.js?v=4"></script>
+    <script src="home.js?v=5"></script>
 </body>
 </html>
