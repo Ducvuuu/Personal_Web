@@ -65,7 +65,7 @@ cannot drift.
 
 ```js
 'my-template': {
-    commands: TEXT_COMMANDS,        // named toolbar rows
+    commands: TEXT_COMMANDS,        // named selection-toolbar rows
     align:    true,                 // permits text-align: center on a block
     colors:   false,                // permits coloured spans
     media:    ['image', 'embed']    // inline photos, video embeds
@@ -93,10 +93,12 @@ const inserts = media.concat(INSERT_COMMANDS);   // Photo, Video, Section divide
 ```
 
 The split is the whole design. A template does not choose it; it only chooses which
-commands it offers on each side.
+commands it offers on the toolbar side.
 
 Give a template its own object to offer less: `{ blocks: [], marks: ['bold', 'italic'],
-actions: ['link', 'clear'] }` is a legitimate minimal surface.
+actions: ['link', 'clear'] }` is a legitimate minimal surface. Dropping `media` drops the
+matching insert-menu entries with it, and a template with no inserts at all simply never
+shows the `+`.
 
 **What is deliberately absent:** no font family, no font size, no justify, no lists.
 The first three let an author fight the template's own typography. Lists were left out
