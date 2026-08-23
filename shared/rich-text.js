@@ -933,60 +933,63 @@
         selection.addRange(state.savedRange);
     }
 
-    function positionToolbar(rect) {
+    // Anchored to the pointer like any context menu: below and right of it when
+    // there is room, flipped back over it when there is not.
+    function positionToolbarAt(x, y) {
         const toolbar = state.toolbar;
         toolbar.hidden = false;
         const bounds = toolbar.getBoundingClientRect();
-        const margin = 10;
-        let left = rect.left + (rect.width / 2) - (bounds.width / 2);
-        left = Math.max(margin, Math.min(left, window.innerWidth - bounds.width - margin));
-        let top = rect.top - bounds.height - margin;
-        if (top < margin) top = rect.bottom + margin;
+        const margin = 8;
+        let left = x + 2;
+        let top  = y + 2;
+        if (left + bounds.width > window.innerWidth - margin) {
+            left = Math.max(margin, x - bounds.width - 2);
+        }
+        if (top + bounds.height > window.innerHeight - margin) {
+            top = Math.max(margin, y - bounds.height - 2);
+        }
         toolbar.style.left = `${Math.round(left)}px`;
         toolbar.style.top  = `${Math.round(top)}px`;
     }
 
-    // A collapsed caret in an empty block has no rectangle of its own, so the
-    // block it sits in stands in for it.
-    function anchorRect(range, editor) {
-        const rect = range.getBoundingClientRect();
-        if (rect.width || rect.height) return rect;
-        const block = blockFor(editor, range.startContainer) || editor;
-        const fallback = block.getBoundingClientRect();
-        return (fallback.width || fallback.height) ? fallback : null;
+    function useEditor(editor) {
+        if (editor === state.activeEditor) return;
+        state.activeEditor = editor;
+        const config = editor._richTextConfig || {};
+        renderCommands(config.commands);
+        renderPalette(config.palette);
     }
 
-    // The toolbar also follows a plain caret, because inserting a photo or a video
-    // is not something you have selected text to do.
+    // Selection tracking only remembers where a command should act. Showing the
+    // toolbar is the context menu's job.
     function handleSelectionChange() {
-        if (!state.toolbar) return;
         const selection = document.getSelection();
-        if (!selection || !selection.rangeCount) {
-            hideToolbar();
-            return;
-        }
-
+        if (!selection || !selection.rangeCount) return;
         const range  = selection.getRangeAt(0);
         const editor = editorForNode(range.commonAncestorContainer);
-        if (!editor || document.documentElement.hasAttribute('data-writing')) {
-            hideToolbar();
-            return;
-        }
-
-        if (editor !== state.activeEditor) {
-            state.activeEditor = editor;
-            const config = editor._richTextConfig || {};
-            renderCommands(config.commands);
-            renderPalette(config.palette);
-        }
-
+        if (!editor) return;
+        useEditor(editor);
         state.savedRange = range.cloneRange();
-        const rect = anchorRect(range, editor);
-        if (!rect) {
-            hideToolbar();
-            return;
+        if (state.toolbar && !state.toolbar.hidden) syncButtonStates();
+    }
+
+    // The toolbar is a context menu: silent until asked for. Shift+right-click falls
+    // through to the browser's own menu, which is where spelling and paste live.
+    function handleContextMenu(event) {
+        if (!state.toolbar || event.shiftKey) return;
+        const editor = editorForNode(event.target);
+        if (!editor) return;
+
+        event.preventDefault();
+        useEditor(editor);
+
+        const selection = document.getSelection();
+        if (selection && selection.rangeCount &&
+            editor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+            state.savedRange = selection.getRangeAt(0).cloneRange();
         }
-        positionToolbar(rect);
+
+        positionToolbarAt(event.clientX, event.clientY);
         syncButtonStates();
     }
 
@@ -1029,26 +1032,25 @@
         element._richTextConfig = config || {};
         historyFor(element);
 
-        element.addEventListener('beforeinput', () => record(element, false));
+        element.addEventListener('beforeinput', () => {
+            hideToolbar();
+            record(element, false);
+        });
         element.addEventListener('keydown', handleKeydown);
 
         if (!attach._bound) {
             attach._bound = true;
             document.addEventListener('selectionchange', handleSelectionChange);
+            document.addEventListener('contextmenu', handleContextMenu);
             window.addEventListener('scroll', hideToolbar, true);
             window.addEventListener('resize', hideToolbar);
+            // Any ordinary click dismisses it, including one inside the editor —
+            // a menu that outlives the click that opened it is the weird part.
             document.addEventListener('mousedown', event => {
-                if (state.toolbar && !state.toolbar.contains(event.target) && !editorForNode(event.target)) {
-                    hideToolbar();
-                }
+                if (state.toolbar && !state.toolbar.contains(event.target)) hideToolbar();
             });
-            document.addEventListener('focusout', event => {
-                if (!editorForNode(event.target)) return;
-                // A toolbar button takes focus for an instant; only a real move away counts.
-                setTimeout(() => {
-                    const active = document.activeElement;
-                    if (state.toolbar && !state.toolbar.contains(active) && !editorForNode(active)) hideToolbar();
-                }, 0);
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') hideToolbar();
             });
         }
     }
@@ -1079,7 +1081,6 @@
         insertHTML: insertHTML,
         blockFor: blockFor,
         editorFor: editorForNode,
-        syncToolbar: syncButtonStates,
-        refresh: handleSelectionChange
+        syncToolbar: syncButtonStates
     };
 })(window);
