@@ -4,8 +4,8 @@ One writing surface, used by every journal template. A template declares **what 
 allows** and **how it looks**. It never implements editing.
 
 ```
-shared/rich-text.js   engine — sanitizer, commands, history, selection toolbar
-shared/rich-text.css  toolbar chrome
+shared/rich-text.js   engine — sanitizer, commands, history, toolbar + insert menu
+shared/rich-text.css  toolbar and insert-menu chrome
 shared/editor.js      writing surface — capabilities, photos, embeds, input rules
 shared/editor.css     media chrome — figures, embeds, drop state, focus fade
 ```
@@ -72,17 +72,28 @@ cannot drift.
 }
 ```
 
-`commands` is three named rows. Media and history buttons are appended automatically —
-photo and video join `blocks`, undo and redo join `actions` — so the toolbar stays three
-rows rather than five.
+`commands` is three named rows, and every one of them **changes text that already
+exists** — which is why they live in the selection toolbar.
 
 ```js
 const TEXT_COMMANDS = {
     blocks:  ['h2', 'h3', 'quote'],
     marks:   ['bold', 'italic', 'underline', 'strike', 'highlight'],
-    actions: ['link', 'alignCenter', 'hr', 'clear']
+    actions: ['link', 'alignCenter', 'clear']
 };
 ```
+
+Anything that brings **new content** into the entry belongs to the insert menu instead.
+`mount()` builds that list per body — photo and video need the mounted element, so they
+cannot be declared in the static table — and passes it as `inserts`:
+
+```js
+const INSERT_COMMANDS = ['hr'];
+const inserts = media.concat(INSERT_COMMANDS);   // Photo, Video, Section divider
+```
+
+The split is the whole design. A template does not choose it; it only chooses which
+commands it offers on each side.
 
 Give a template its own object to offer less: `{ blocks: [], marks: ['bold', 'italic'],
 actions: ['link', 'clear'] }` is a legitimate minimal surface.
@@ -157,8 +168,8 @@ const BODY_TEMPLATES = {
 - In `populate()`, after setting `innerHTML`, call `Editor.renderEmbedPreviews(bodyEl)`
   and `Editor.ensureParagraph(bodyEl)`.
 - Mark page chrome that should fade while writing with the `ed-fade` class.
-- Nothing else is needed for the toolbar: it binds to `contextmenu` at the document level
-  and finds its editor from the event target.
+- Nothing else is needed for the toolbar or the `+`: both bind at the document level and
+  find their editor from the current selection.
 
 ### 5. `journal/entry.html` — the renderer
 
@@ -215,14 +226,23 @@ Engine-level, from `rich-text.js`: `RichText.sanitize`, `RichText.normalizeColor
 
 ## What the author gets
 
-- **Toolbar** — a context menu. It stays out of the way until you **right-click**, either
-  on a selection or at the caret, and opens anchored to the pointer. An ordinary click,
-  Escape, typing, or scrolling dismisses it. **Shift+right-click** falls through to the
-  browser's own menu, which is where spelling suggestions and paste live.
-- **Shortcuts** — Ctrl/Cmd+B, I, U, K; Ctrl+Z and Ctrl+Shift+Z.
+Two affordances, each appearing only when the author is in a position to want it.
+
+- **Selection toolbar** — select text and it appears above the selection: headings,
+  quote, bold, italic, underline, strike, highlight, link, centre, clear. It goes away
+  when the selection collapses, and it waits for the mouse button to come up rather than
+  chasing the selection mid-drag. Typing, Escape, or scrolling dismisses it.
+- **Insert menu** — a `+` follows the caret onto any **empty** block and opens a labelled
+  menu: photo, video, section divider. One placement rule serves every template — just
+  left of the caret, which lands in the gutter where a template has one and beside the
+  caret where it does not.
+- **Right-click belongs to the browser again.** Spelling suggestions and paste are back
+  where authors expect them; nothing intercepts `contextmenu`.
+- **Shortcuts** — Ctrl/Cmd+B, I, U, K; Ctrl+Z and Ctrl+Shift+Z. Undo and redo are
+  keyboard-only: they are not selection commands, so they are not in the selection toolbar.
 - **Markdown** — `# ` and `## ` for headings, `> ` for a quote, `---` for a divider.
-- **Photos** — toolbar button, paste, or drag-and-drop.
-- **Video** — paste a YouTube or Vimeo link, or use the toolbar.
+- **Photos** — insert menu, paste, or drag-and-drop.
+- **Video** — paste a YouTube or Vimeo link, or use the insert menu.
 - **Focus mode** — chrome fades while typing, returns on any pause or pointer movement.
 
 ---
@@ -255,9 +275,16 @@ Engine-level, from `rich-text.js`: `RichText.sanitize`, `RichText.normalizeColor
   `input`, where the character has already landed — and coalesces on a 600ms idle.
 - Selections are saved as plain text offsets, not node references. Formatting rearranges
   elements but never the characters.
-- The toolbar opens on `contextmenu` only. `selectionchange` tracks which editor and range
-  a command should act on, but never shows it — a panel that appears on its own while you
-  are reading or selecting is the behaviour this replaced.
+- The toolbar shows only for a **non-collapsed** selection, and the `+` only for an
+  **empty** block. The two can never be on screen together, which is what keeps a
+  self-appearing panel from being noise: each one means the author is already in the
+  situation it serves.
+- Showing the toolbar is deferred while a drag is in progress. `selectionchange` fires on
+  every mouse move during a drag, and a toolbar that re-anchored on each one is unreadable
+  until the button comes up. Keyboard selection has no such phase and is not deferred.
+- Both panels are dismissed on `beforeinput`, scroll, resize, Escape, and a blur that
+  lands outside them. The blur check is deferred a tick: clicking the toolbar blurs the
+  editor before the command runs, so an immediate hide would eat the click.
 - A caret placed in a childless element does not survive `addRange()` in Chrome.
   `placeCaretIn()` seeds a `<br>`; the sanitizer drops a trailing `<br>` once the block
   has real text.
@@ -279,6 +306,9 @@ scratch page that loads `rich-text.js` and `editor.js`, asserting on the resulti
 
 Worth re-checking after any engine change:
 
+- The toolbar appearing on a mouse drag and on shift+arrow, and staying away mid-drag.
+- The `+` appearing on an empty block, going once the block has text, and returning on
+  the next empty one — including on a template with no left gutter.
 - Bold a word, mid-word, and across two paragraphs.
 - Unbold from *inside* a longer bold run — this is the case that silently did nothing
   before the mark-splitting fix.
