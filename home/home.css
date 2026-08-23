@@ -239,6 +239,10 @@ body.edit-mode-active [data-edit-key]:focus {
 #edit-mode-toggle[aria-pressed="true"] {
     background-color: #d56a31;
 }
+body.edit-mode-active .random-project-card [data-edit-key],
+body.edit-mode-active .random-project-dialog [data-edit-key] {
+    cursor: text;
+}
 
 /* ── Random things I make ── */
 .random-things-section {

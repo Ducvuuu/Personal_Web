@@ -631,12 +631,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }, reduceMotion.matches ? 0 : 280);
     };
 
-    cosmoCard.addEventListener('click', window.openCosmoModal);
+    cosmoCard.addEventListener('click', event => {
+        if (editModeOn && event.target.closest('[data-edit-key]')) return;
+        window.openCosmoModal();
+    });
     cosmoClose.addEventListener('click', window.closeCosmoModal);
     cosmoModal.addEventListener('click', event => {
         if (event.target === cosmoModal) window.closeCosmoModal();
     });
-    cosmoThumbs.forEach(thumb => thumb.addEventListener('click', () => showCosmoMedia(thumb)));
+    cosmoThumbs.forEach(thumb => thumb.addEventListener('click', event => {
+        if (editModeOn && event.target.closest('[data-edit-key]')) return;
+        showCosmoMedia(thumb);
+    }));
+    cosmoDialog.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', event => {
+            if (editModeOn && event.target.closest('[data-edit-key]')) event.preventDefault();
+        });
+    });
     cosmoVideoToggle.addEventListener('click', () => {
         if (cosmoVideo.paused) cosmoVideo.play().catch(() => {});
         else cosmoVideo.pause();

@@ -23,6 +23,13 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - **epub.js** renders the book in an iframe inside `#viewer`.
 - **RSVP engine** lives entirely in the `<!-- ── RSVP INTEGRATION ── -->` script block at the bottom of `reader.html`. Do not split it out unless the user explicitly asks to refactor files.
 - `shared/components.js` injects the site nav and footer. Do not duplicate nav/footer HTML.
+- The home page has an owner-only edit toggle backed by the `siteContent/home` Firestore document.
+  Every piece of user-facing home-page copy added in `home/index.html` or rendered by `home/home.js`
+  must have a unique, stable `data-edit-key`, including copy inside cards and modals. The shared home
+  edit functions apply saved HTML, toggle `contenteditable`, and save all such elements. If editable
+  copy sits inside a button or link, its click handler must not activate that control when the keyed
+  text itself is clicked in edit mode. Re-rendered content must call `applyContentOverrides()` and
+  restore `contenteditable` while `editModeOn` is true.
 - `library/RSVP.md` is the technical reference for the RSVP feature. Update it if you change the RSVP architecture.
 - `journal/new.html` is the only creation gateway for journal entries. It permanently selects
   `template` or `html`; do not add an editor control that switches an existing entry between them.
