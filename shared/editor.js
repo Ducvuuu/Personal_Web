@@ -44,12 +44,13 @@
 
     // Word-style basics only. No font family, no font size, no justify — those are
     // the knobs that let an author fight the template's own typography.
-    const TEXT_COMMANDS = [
-        ['h2', 'h3', 'quote'],
-        ['bold', 'italic', 'underline', 'strike', 'highlight'],
-        ['link', 'alignCenter', 'hr', 'clear'],
-        ['undo', 'redo']
-    ];
+    const TEXT_COMMANDS = {
+        blocks:  ['h2', 'h3', 'quote'],
+        marks:   ['bold', 'italic', 'underline', 'strike', 'highlight'],
+        actions: ['link', 'alignCenter', 'hr', 'clear']
+    };
+
+    const HISTORY_COMMANDS = ['undo', 'redo'];
 
     // Typed shortcuts for the same commands the toolbar offers. Lists are absent
     // from both on purpose — a diary is prose.
@@ -194,7 +195,6 @@
     const state = {
         activeBody: null,
         savedRange: null,
-        tray: null,
         fileInput: null
     };
 
@@ -435,7 +435,9 @@
         if (focus.on === on) return;
         focus.on = on;
         document.documentElement.toggleAttribute('data-writing', on);
-        if (on) hideTray();
+        // Typing hides the toolbar; the pause that ends focus mode brings it back.
+        if (!on && global.RichText.refresh) global.RichText.refresh();
+        else if (on) global.RichText.hide();
     }
 
     function noteTyping() {
@@ -481,45 +483,6 @@
         insertEmbed(body, embed, options);
     }
 
-    function buildTray() {
-        if (state.tray) return state.tray;
-        const tray = document.createElement('div');
-        tray.className = 'ed-tray';
-        tray.setAttribute('role', 'toolbar');
-        tray.setAttribute('aria-label', 'Insert into entry');
-        tray.hidden = true;
-        document.body.appendChild(tray);
-        state.tray = tray;
-        return tray;
-    }
-
-    function trayButton(icon, text, onActivate) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'ed-tray-btn';
-        button.innerHTML = `<i class="${icon}" aria-hidden="true"></i><span>${text}</span>`;
-        button.addEventListener('mousedown', event => {
-            event.preventDefault();
-            onActivate();
-        });
-        return button;
-    }
-
-    function renderTray(body) {
-        const tray = buildTray();
-        const config = body._editorConfig;
-        if (!config || !config.insertions.length) {
-            tray.hidden = true;
-            return;
-        }
-        tray.replaceChildren(...config.insertions.map(entry => trayButton(entry.icon, entry.text, entry.run)));
-        tray.hidden = false;
-    }
-
-    function hideTray() {
-        if (state.tray) state.tray.hidden = true;
-    }
-
     function handleSelectionChange() {
         const selection = document.getSelection();
         if (!selection || !selection.rangeCount) return;
@@ -528,7 +491,6 @@
         if (!body) return;
         state.activeBody = body;
         state.savedRange = range.cloneRange();
-        renderTray(body);
     }
 
     function handlePaste(event, body, options) {
@@ -576,16 +538,25 @@
             capabilities: { embedsAllowed: embedsOn }
         };
 
-        const insertions = [];
-        if (imagesOn) insertions.push({ icon: 'fa-solid fa-image', text: 'Photo', run: () => insertImage(body, context) });
-        if (embedsOn) insertions.push({ icon: 'fa-solid fa-play',  text: 'Video', run: () => promptForEmbed(body, context) });
+        // Media commands close over this body, so they are built per mount rather
+        // than declared in the static capability table.
+        const media = [];
+        if (imagesOn) media.push({ icon: 'fa-solid fa-image', label: 'Insert photo', run: () => insertImage(body, context) });
+        if (embedsOn) media.push({ icon: 'fa-solid fa-play',  label: 'Insert video', run: () => promptForEmbed(body, context) });
+
+        const rows = capabilities.commands;
+        const commands = [
+            rows.blocks.concat(media),
+            rows.marks.slice(),
+            rows.actions.concat(HISTORY_COMMANDS)
+        ].filter(row => row.length);
 
         body.setAttribute('data-editor-body', 'on');
         body.classList.add('ed-content');
-        body._editorConfig = { insertions: insertions };
+        body._editorConfig = { commands: commands };
 
         global.RichText.attach(body, {
-            commands: capabilities.commands,
+            commands: commands,
             palette: capabilities.colors ? settings.palette : null,
             onChange: settings.onChange
         });
@@ -613,9 +584,6 @@
         if (!mount._bound) {
             mount._bound = true;
             document.addEventListener('selectionchange', handleSelectionChange);
-            document.addEventListener('mousedown', event => {
-                if (state.tray && !state.tray.contains(event.target) && !bodyForNode(event.target)) hideTray();
-            });
         }
     }
 
@@ -630,7 +598,6 @@
         renderEmbedPreviews: renderEmbedPreviews,
         detectEmbed: detectEmbed,
         parseUrl: parseUrl,
-        providers: PROVIDERS,
-        hideTray: hideTray
+        providers: PROVIDERS
     };
 })(window);
