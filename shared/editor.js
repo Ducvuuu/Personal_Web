@@ -74,12 +74,21 @@
             allowColor:  !!capabilities.colors,
             allowAlign:  !!capabilities.align,
             allowImages: allows(capabilities, 'image'),
-            embeds:      allows(capabilities, 'embed') ? PROVIDER_NAMES : []
+            embeds:      allows(capabilities, 'embed') ? PROVIDER_NAMES : [],
+            wrapLoose:   true
         };
     }
 
     function sanitizeFor(templateId, html) {
         return global.RichText.sanitize(html || '', sanitizeOptionsFor(templateId));
+    }
+
+    // A seeded empty paragraph is not writing, and a lone photo or video is.
+    function isEmpty(html) {
+        const holder = document.createElement('div');
+        holder.innerHTML = html || '';
+        if (holder.querySelector('img, figure[data-embed], hr')) return false;
+        return !(holder.textContent || '').trim();
     }
 
     function parseUrl(value) {
@@ -220,6 +229,14 @@
             element = element.parentElement;
         }
         return null;
+    }
+
+    function ensureParagraph(body) {
+        if (body.querySelector('p, h2, h3, blockquote, ul, ol, figure, hr')) return;
+        if ((body.textContent || '').trim()) return;
+        const paragraph = document.createElement('p');
+        paragraph.appendChild(document.createElement('br'));
+        body.replaceChildren(paragraph);
     }
 
     function fileInput() {
@@ -406,7 +423,10 @@
             if (image) image.alt = (caption.textContent || '').trim();
         });
 
+        body.addEventListener('focus', () => ensureParagraph(body));
+
         renderEmbedPreviews(body, settings.onChange);
+        ensureParagraph(body);
 
         if (!mount._bound) {
             mount._bound = true;
@@ -422,6 +442,8 @@
         capabilitiesFor: capabilitiesFor,
         sanitizeOptionsFor: sanitizeOptionsFor,
         sanitizeFor: sanitizeFor,
+        ensureParagraph: ensureParagraph,
+        isEmpty: isEmpty,
         hydrateEmbeds: hydrateEmbeds,
         renderEmbedPreviews: renderEmbedPreviews,
         detectEmbed: detectEmbed,

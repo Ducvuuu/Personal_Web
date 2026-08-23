@@ -18,6 +18,7 @@
     const ALIGNABLE    = new Set(['P', 'H2', 'H3', 'BLOCKQUOTE', 'FIGCAPTION']);
     const BLOCK_TAGS   = new Set(['P', 'H2', 'H3', 'BLOCKQUOTE', 'LI', 'FIGCAPTION']);
     const EMBED_ID     = /^[A-Za-z0-9_-]{1,64}$/;
+    const ROOT_BLOCKS  = new Set(['P', 'H2', 'H3', 'BLOCKQUOTE', 'UL', 'OL', 'HR', 'FIGURE']);
     const IMAGE_HOSTS  = ['firebasestorage.googleapis.com', 'storage.googleapis.com'];
 
     let colorProbe  = null;
@@ -145,7 +146,26 @@
         }
 
         clean(holder.content);
+        if (settings.wrapLoose) wrapLooseText(holder.content);
         return holder.innerHTML.trim();
+    }
+
+    // Consecutive loose nodes join one paragraph, so an unwrapped line keeps its
+    // inline formatting instead of being split into a paragraph per fragment.
+    function wrapLooseText(root) {
+        let paragraph = null;
+        Array.from(root.childNodes).forEach(node => {
+            if (node.nodeType === 1 && ROOT_BLOCKS.has(node.tagName)) {
+                paragraph = null;
+                return;
+            }
+            if (node.nodeType === 3 && !node.textContent.trim()) return;
+            if (!paragraph) {
+                paragraph = document.createElement('p');
+                node.before(paragraph);
+            }
+            paragraph.appendChild(node);
+        });
     }
 
     const state = {
@@ -166,6 +186,9 @@
         // Without this some browsers still emit deprecated <font> tags, which the
         // sanitizer unwraps — the colour would vanish on save.
         try { document.execCommand('styleWithCSS', false, true); } catch (err) {}
+        // And without this, Enter produces <div>, which the sanitizer unwraps — the
+        // paragraph break would be lost on save.
+        try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (err) {}
     }
 
     function editorForNode(node) {

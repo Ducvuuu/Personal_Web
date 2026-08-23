@@ -127,6 +127,27 @@ provider from `PROVIDERS` and an id its own `valid()` pattern accepts. `Editor.h
 rebuilds a sandboxed, `youtube-nocookie`, lazy-loaded iframe at render time; the editor shows an
 inert poster card instead. Adding a service means adding one row to `PROVIDERS`.
 
+**Every template must style what the toolbar can produce.** The editor is shared; the typography
+is not. A template whose stylesheet lacks an `h2` rule gets the browser's default heading, which
+reads as a broken feature rather than a design choice — this is exactly how `open-sky` shipped.
+
+| Must be styled under the body class | Comes from |
+|---|---|
+| `p`, `h2`, `h3`, `blockquote`, `ul`, `ol`, `li` | headings, quote and list commands |
+| `a`, `mark` | link and highlight commands |
+| `hr` | the divider command |
+| `--ed-rule`, `--ed-caption`, `--ed-placeholder`, `--ed-shadow`, `--ed-mark-bg`, `--ed-mark-ink` | photos and embeds, styled by `editor.css` |
+
+**Paragraph discipline.** Typing into an empty `contenteditable` produces a bare text node with no
+block of its own, so it misses every paragraph rule — and the drop cap with it. Two defences:
+`Editor.ensureParagraph()` seeds one paragraph on mount and focus, and the sanitizer's `wrapLoose`
+wraps any loose text that still arrives, which also repairs older entries on render.
+`RichText.init()` owns `defaultParagraphSeparator`, so Enter yields `<p>` rather than a `<div>` the
+sanitizer would unwrap.
+
+`Editor.isEmpty(html)` answers "did the author write anything?" — the seeded paragraph counts as
+empty, a lone photo or video does not. Testing `!content` instead will always look non-empty.
+
 **Autosave** runs on a 2.5s debounce in `write.html`, reusing `saveDraft()`. Editing an already
 published entry never autosaves — that stays an explicit save — and a `beforeunload` guard covers
 unsaved work in both cases.
@@ -298,8 +319,9 @@ The editor comes for free — you design the look and declare what it allows.
 `journal/index.html` and `writing/index.html` list entries generically and need no change.
 
 1. `journal/<name>-template.css` — define every colour as a custom property on the root class so the
-   template can be recoloured later without a retrofit. Override the `--ed-*` variables on the body
-   container so shared photos and embeds sit correctly on your surface
+   template can be recoloured later without a retrofit. Style every element in the table above, and
+   override the `--ed-*` variables on the body container so shared photos and embeds sit correctly
+   on your surface
 2. `shared/editor.js` — one row in `CAPABILITIES` saying what the template allows
 3. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
 4. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry

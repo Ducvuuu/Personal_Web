@@ -729,9 +729,6 @@
             return db.collection('users').doc(currentUid).collection('entries');
         }
 
-        // Ensure Enter in contenteditable produces <p> not <div>
-        try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch(e) {}
-
         // ── AUTH STATE ──
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -813,8 +810,9 @@
             configureAuthoringMode(false);
 
             if (authoringMode === 'template') {
-                Editor.renderEmbedPreviews(
-                    document.getElementById(activeTemplateConfig().bodyId), scheduleAutosave);
+                const bodyEl = document.getElementById(activeTemplateConfig().bodyId);
+                Editor.renderEmbedPreviews(bodyEl, scheduleAutosave);
+                Editor.ensureParagraph(bodyEl);
             }
             armAutosave();
         }
@@ -1153,7 +1151,7 @@
         // stays an explicit save. Everything else autosaves as a draft.
         async function runAutosave() {
             if (!autosaveReady || !isDirty || editId) return;
-            if (!getEntryTitle() && !getContent()) return;
+            if (!getEntryTitle() && isBodyEmpty()) return;
             await saveDraft(true);
         }
 
@@ -1559,6 +1557,12 @@
             return document.getElementById('journal-body').value.trim();
         }
 
+        function isBodyEmpty() {
+            return authoringMode === 'template'
+                ? Editor.isEmpty(getContent())
+                : !getContent();
+        }
+
         function creationMetadata() {
             return {
                 schemaVersion: 2,
@@ -1642,7 +1646,7 @@
             const locationDetail = document.getElementById('location-detail').value.trim();
             const imageFilename  = currentImageValue;
 
-            if (!title && !content) {
+            if (!title && isBodyEmpty()) {
                 document.getElementById('save-status').innerHTML =
                     '<i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Write something first.';
                 return;

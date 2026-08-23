@@ -48,6 +48,11 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   **both** `write.html` on save and `entry.html` on render. A template declares what it allows in
   `CAPABILITIES` — it never implements editing. Shelf and the home inline editors are the intended
   next consumers.
+- **A template must style everything the toolbar can produce.** The toolbar is shared, the
+  typography is not: if a template's stylesheet has no `h2` rule, its headings fall back to the
+  browser's own and read as a bug. The required set is `p, h2, h3, blockquote, ul, ol, li, a, mark,
+  hr` under the body class, plus the `--ed-*` overrides for figures and embeds. `open-sky` shipped
+  without any of them and its headings were visibly broken until they were added.
 - Editor toolbar scope is deliberate: Word-style basics (headings, bold/italic/underline/strike,
   highlight, link, centre, divider, clear) with **no font family, font size or justify controls** —
   those are the knobs that let an author fight the template's own typography.
@@ -63,6 +68,15 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   traversal cannot pass.
 - Inline body photos are `<figure><img><figcaption>` and are restricted to Firebase Storage hosts by
   `RichText.normalizeImageSrc()`. The figcaption doubles as the image's alt text.
+- `RichText.init()` sets both `styleWithCSS` and `defaultParagraphSeparator` — a page that mounts
+  the editor does not need to set them, and must not rely on having done so.
+- Text typed into an empty body lands outside any block, missing every paragraph rule the template
+  defines. `Editor.ensureParagraph()` seeds one paragraph so the caret always starts inside a block,
+  and the sanitizer's `wrapLoose` wraps any loose text that still reaches it — including in entries
+  written before this existed.
+- Use `Editor.isEmpty(html)` to ask whether an author actually wrote something. A seeded empty
+  paragraph is not writing; a lone photo or video is. Never test `!content` — the seeded paragraph
+  makes that always true.
 - `write.html` autosaves drafts on a 2.5s debounce. Editing an **already published** entry never
   autosaves — that stays an explicit save — and a `beforeunload` guard covers both.
 - Uploads go through the slot registry in `journal/write.html` (`uploadSlots`). A slot's `reflect()`

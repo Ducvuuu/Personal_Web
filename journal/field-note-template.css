@@ -238,7 +238,10 @@
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
     line-height: 1.25;
+    letter-spacing: -0.015em;
 }
+.field-note-template .field-note-body h2 { font-size: 1.5em; }
+.field-note-template .field-note-body h3 { font-size: 1.22em; }
 .field-note-template .field-note-body blockquote {
     margin: 1.5rem 0;
     padding-left: 1rem;
