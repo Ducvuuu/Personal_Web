@@ -47,7 +47,17 @@
     const TEXT_COMMANDS = [
         ['h2', 'h3', 'quote'],
         ['bold', 'italic', 'underline', 'strike', 'highlight'],
-        ['link', 'alignCenter', 'hr', 'clear']
+        ['link', 'alignCenter', 'hr', 'clear'],
+        ['undo', 'redo']
+    ];
+
+    // Typed shortcuts for the same commands the toolbar offers. Lists are absent
+    // from both on purpose — a diary is prose.
+    const INPUT_RULES = [
+        { pattern: /^#\s$/,  tag: 'H2' },
+        { pattern: /^##\s$/, tag: 'H3' },
+        { pattern: /^>\s$/,  tag: 'BLOCKQUOTE' },
+        { pattern: /^---$/,  tag: 'HR', trigger: 'any' }
     ];
 
     const CAPABILITIES = {
@@ -74,12 +84,21 @@
             allowColor:  !!capabilities.colors,
             allowAlign:  !!capabilities.align,
             allowImages: allows(capabilities, 'image'),
-            embeds:      allows(capabilities, 'embed') ? PROVIDER_NAMES : []
+            embeds:      allows(capabilities, 'embed') ? PROVIDER_NAMES : [],
+            wrapLoose:   true
         };
     }
 
     function sanitizeFor(templateId, html) {
         return global.RichText.sanitize(html || '', sanitizeOptionsFor(templateId));
+    }
+
+    // A seeded empty paragraph is not writing, and a lone photo or video is.
+    function isEmpty(html) {
+        const holder = document.createElement('div');
+        holder.innerHTML = html || '';
+        if (holder.querySelector('img, figure[data-embed], hr')) return false;
+        return !(holder.textContent || '').trim();
     }
 
     function parseUrl(value) {
@@ -222,6 +241,14 @@
         return null;
     }
 
+    function ensureParagraph(body) {
+        if (body.querySelector('p, h2, h3, blockquote, ul, ol, figure, hr')) return;
+        if ((body.textContent || '').trim()) return;
+        const paragraph = document.createElement('p');
+        paragraph.appendChild(document.createElement('br'));
+        body.replaceChildren(paragraph);
+    }
+
     function fileInput() {
         if (state.fileInput) return state.fileInput;
         const input = document.createElement('input');
@@ -257,21 +284,183 @@
     function insertImage(body, options) {
         const input = fileInput();
         input.value = '';
-        input.onchange = async () => {
+        input.onchange = () => {
             const file = input.files && input.files[0];
-            if (!file || typeof options.uploadImage !== 'function') return;
-            report(options, 'uploading', 'Uploading photo…');
-            try {
-                const url = await options.uploadImage(file);
-                if (!url) throw new Error('no download URL');
-                insertBlock(body, figureFor(url, ''));
-                report(options, 'done', '✓ Photo added');
-                if (typeof options.onChange === 'function') options.onChange();
-            } catch (err) {
-                report(options, 'error', `Photo upload failed: ${err.message}`);
-            }
+            if (file) insertImageFile(body, file, options);
         };
         input.click();
+    }
+
+    // The replacement is built here rather than through a selection-driven command:
+    // the marker text is gone by this point, so there is no selection left to drive one.
+    function applyRule(rule, block) {
+        if (rule.tag === 'HR') {
+            const divider = document.createElement('hr');
+            const paragraph = document.createElement('p');
+            paragraph.appendChild(document.createElement('br'));
+            block.replaceWith(divider);
+            divider.after(paragraph);
+            placeCaretIn(paragraph);
+            return;
+        }
+        const replacement = document.createElement(rule.tag);
+        block.replaceWith(replacement);
+        placeCaretIn(replacement);
+    }
+
+    // The marker is removed before the block command runs, so the rule never leaves
+    // its own syntax behind in the entry.
+    function applyInputRules(body, event, options) {
+        if (event.inputType !== 'insertText') return;
+        const range = document.getSelection().rangeCount
+            ? document.getSelection().getRangeAt(0) : null;
+        if (!range || !range.collapsed) return;
+        const block = RichText.blockFor(body, range.startContainer);
+        if (!block) return;
+
+        const text = block.textContent || '';
+        for (let index = 0; index < INPUT_RULES.length; index += 1) {
+            const rule = INPUT_RULES[index];
+            if (rule.trigger !== 'any' && event.data !== ' ') continue;
+            if (!rule.pattern.test(text)) continue;
+            if (block.tagName !== 'P') continue;
+            RichText.record(body, true);
+            block.textContent = '';
+            applyRule(rule, block);
+            if (typeof options.onChange === 'function') options.onChange();
+            return;
+        }
+    }
+
+    // A range inside a childless element does not survive addRange in Chrome, so an
+    // empty text node gives the caret something to hold on to.
+    function placeCaretIn(node) {
+        const selection = document.getSelection();
+        const caret = document.createRange();
+        if (node.nodeType === 1 && !node.firstChild) {
+            node.appendChild(document.createElement('br'));
+            caret.setStart(node, 0);
+        } else {
+            caret.selectNodeContents(node);
+        }
+        caret.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(caret);
+    }
+
+    function imageFilesFrom(transfer) {
+        if (!transfer) return [];
+        const files = Array.from(transfer.files || []);
+        return files.filter(file => file.type.startsWith('image/'));
+    }
+
+    async function insertImageFile(body, file, options) {
+        if (typeof options.uploadImage !== 'function') return;
+        report(options, 'uploading', 'Uploading photo…');
+        try {
+            const url = await options.uploadImage(file);
+            if (!url) throw new Error('no download URL');
+            RichText.record(body, true);
+            insertBlock(body, figureFor(url, ''));
+            report(options, 'done', '✓ Photo added');
+            if (typeof options.onChange === 'function') options.onChange();
+        } catch (err) {
+            report(options, 'error', `Photo upload failed: ${err.message}`);
+        }
+    }
+
+    async function insertImageFiles(body, files, options) {
+        for (let index = 0; index < files.length; index += 1) {
+            await insertImageFile(body, files[index], options);
+        }
+    }
+
+    function bindDropTarget(body, options) {
+        if (typeof options.uploadImage !== 'function') return;
+        let depth = 0;
+
+        body.addEventListener('dragenter', event => {
+            if (!imageFilesFrom(event.dataTransfer).length &&
+                !Array.from(event.dataTransfer.types || []).includes('Files')) return;
+            event.preventDefault();
+            depth += 1;
+            body.classList.add('ed-dropping');
+        });
+        body.addEventListener('dragover', event => {
+            if (!Array.from(event.dataTransfer.types || []).includes('Files')) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        });
+        body.addEventListener('dragleave', () => {
+            depth = Math.max(0, depth - 1);
+            if (!depth) body.classList.remove('ed-dropping');
+        });
+        body.addEventListener('drop', event => {
+            const files = imageFilesFrom(event.dataTransfer);
+            depth = 0;
+            body.classList.remove('ed-dropping');
+            if (!files.length) return;
+            event.preventDefault();
+            // The caret follows the cursor, so a photo lands where it was dropped.
+            const caret = caretFromPoint(event.clientX, event.clientY);
+            if (caret) {
+                const selection = document.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(caret);
+                state.savedRange = caret.cloneRange();
+                state.activeBody = body;
+            }
+            insertImageFiles(body, files, options);
+        });
+    }
+
+    function caretFromPoint(x, y) {
+        if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y);
+        if (document.caretPositionFromPoint) {
+            const position = document.caretPositionFromPoint(x, y);
+            if (!position) return null;
+            const range = document.createRange();
+            range.setStart(position.offsetNode, position.offset);
+            range.collapse(true);
+            return range;
+        }
+        return null;
+    }
+
+    // ── FOCUS MODE ──
+    // Typing dims the page chrome; any pause or pointer movement brings it back.
+    const focus = { timer: null, on: false };
+
+    function setWriting(on) {
+        if (focus.on === on) return;
+        focus.on = on;
+        document.documentElement.toggleAttribute('data-writing', on);
+        if (on) hideTray();
+    }
+
+    function noteTyping() {
+        setWriting(true);
+        clearTimeout(focus.timer);
+        focus.timer = setTimeout(() => setWriting(false), 2600);
+    }
+
+    function bindFocusMode(body) {
+        body.addEventListener('keydown', event => {
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key && event.key.length > 1 && event.key !== 'Backspace' && event.key !== 'Enter') return;
+            noteTyping();
+        });
+        body.addEventListener('blur', () => setWriting(false));
+
+        if (!bindFocusMode._bound) {
+            bindFocusMode._bound = true;
+            ['mousemove', 'pointerdown', 'wheel'].forEach(name => {
+                window.addEventListener(name, () => {
+                    clearTimeout(focus.timer);
+                    setWriting(false);
+                }, { passive: true });
+            });
+        }
     }
 
     function insertEmbed(body, embed, options) {
@@ -346,6 +535,13 @@
         const data = event.clipboardData;
         if (!data) return;
 
+        const images = imageFilesFrom(data);
+        if (images.length) {
+            event.preventDefault();
+            insertImageFiles(body, images, options);
+            return;
+        }
+
         const text  = (data.getData('text/plain') || '').trim();
         const embed = options.capabilities.embedsAllowed ? detectEmbed(parseUrl(text)) : null;
         if (embed && !/\s/.test(text)) {
@@ -395,6 +591,9 @@
         });
 
         body.addEventListener('paste', event => handlePaste(event, body, context));
+        body.addEventListener('input', event => applyInputRules(body, event, context));
+        bindDropTarget(body, context);
+        bindFocusMode(body);
 
         // A photo's caption is also its alt text — one thing to write, not two.
         body.addEventListener('input', event => {
@@ -406,7 +605,10 @@
             if (image) image.alt = (caption.textContent || '').trim();
         });
 
+        body.addEventListener('focus', () => ensureParagraph(body));
+
         renderEmbedPreviews(body, settings.onChange);
+        ensureParagraph(body);
 
         if (!mount._bound) {
             mount._bound = true;
@@ -422,6 +624,8 @@
         capabilitiesFor: capabilitiesFor,
         sanitizeOptionsFor: sanitizeOptionsFor,
         sanitizeFor: sanitizeFor,
+        ensureParagraph: ensureParagraph,
+        isEmpty: isEmpty,
         hydrateEmbeds: hydrateEmbeds,
         renderEmbedPreviews: renderEmbedPreviews,
         detectEmbed: detectEmbed,

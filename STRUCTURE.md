@@ -127,6 +127,61 @@ provider from `PROVIDERS` and an id its own `valid()` pattern accepts. `Editor.h
 rebuilds a sandboxed, `youtube-nocookie`, lazy-loaded iframe at render time; the editor shows an
 inert poster card instead. Adding a service means adding one row to `PROVIDERS`.
 
+**The engine no longer uses `document.execCommand`.** Commands mutate the DOM directly — execCommand
+is deprecated, writes browser-specific markup, and cannot be extended. Two mode switches remain in
+`RichText.init()` (`styleWithCSS`, `defaultParagraphSeparator`) because nothing replaces them.
+
+Two consequences worth knowing before touching the engine:
+
+- **Removing a mark needs real element splitting.** `extractContents()` splits an ancestor only when
+  the range boundaries sit at different depths; a selection inside one text node leaves the mark
+  whole. `removeMarkAround()` splits it with `splitBefore`/`splitAfter`, then unwraps. Adding a mark
+  can still extract-and-wrap.
+- **The engine owns undo.** The browser's history does not track mutations it did not make, so
+  `RichText` keeps its own snapshots. Commands record immediately before mutating; typing records on
+  `beforeinput` (never `input` — the character has already landed) and coalesces on a 600ms idle, so
+  one undo removes a burst rather than one letter. Selections are stored as plain text offsets, which
+  survive the element rearrangement that a node reference would not.
+
+```js
+RichText.undo(editor);  RichText.redo(editor);  RichText.record(editor, immediate);
+```
+
+**Typed shortcuts** live in `INPUT_RULES` in `editor.js`: `# ` and `## ` for headings, `> ` for a
+quote, `---` for a divider. They run on `input`, once the marker has landed, and only in a plain
+paragraph. There are no list rules on purpose — lists are absent from the toolbar for the same
+reason, because a diary is prose.
+
+**Photos** arrive three ways: the tray button, a paste, or a drag-and-drop — all through one
+`insertImageFile()`, so the upload-then-insert discipline holds for each. A drop places the caret
+where the cursor was, so the photo lands where it was dropped.
+
+**Focus mode** is a division of labour: the editor sets `data-writing` on the root element while
+typing and clears it on any pause or pointer movement. Each page marks its own chrome with `ed-fade`
+— `editor.css` supplies the fade, the page decides what fades. Reduced motion drops the transition,
+not the dimming.
+
+**Every template must style what the toolbar can produce.** The editor is shared; the typography
+is not. A template whose stylesheet lacks an `h2` rule gets the browser's default heading, which
+reads as a broken feature rather than a design choice — this is exactly how `open-sky` shipped.
+
+| Must be styled under the body class | Comes from |
+|---|---|
+| `p`, `h2`, `h3`, `blockquote`, `ul`, `ol`, `li` | headings, quote and list commands |
+| `a`, `mark` | link and highlight commands |
+| `hr` | the divider command |
+| `--ed-rule`, `--ed-caption`, `--ed-placeholder`, `--ed-shadow`, `--ed-mark-bg`, `--ed-mark-ink` | photos and embeds, styled by `editor.css` |
+
+**Paragraph discipline.** Typing into an empty `contenteditable` produces a bare text node with no
+block of its own, so it misses every paragraph rule — and the drop cap with it. Two defences:
+`Editor.ensureParagraph()` seeds one paragraph on mount and focus, and the sanitizer's `wrapLoose`
+wraps any loose text that still arrives, which also repairs older entries on render.
+`RichText.init()` owns `defaultParagraphSeparator`, so Enter yields `<p>` rather than a `<div>` the
+sanitizer would unwrap.
+
+`Editor.isEmpty(html)` answers "did the author write anything?" — the seeded paragraph counts as
+empty, a lone photo or video does not. Testing `!content` instead will always look non-empty.
+
 **Autosave** runs on a 2.5s debounce in `write.html`, reusing `saveDraft()`. Editing an already
 published entry never autosaves — that stays an explicit save — and a `beforeunload` guard covers
 unsaved work in both cases.
@@ -298,8 +353,9 @@ The editor comes for free — you design the look and declare what it allows.
 `journal/index.html` and `writing/index.html` list entries generically and need no change.
 
 1. `journal/<name>-template.css` — define every colour as a custom property on the root class so the
-   template can be recoloured later without a retrofit. Override the `--ed-*` variables on the body
-   container so shared photos and embeds sit correctly on your surface
+   template can be recoloured later without a retrofit. Style every element in the table above, and
+   override the `--ed-*` variables on the body container so shared photos and embeds sit correctly
+   on your surface
 2. `shared/editor.js` — one row in `CAPABILITIES` saying what the template allows
 3. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
 4. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry

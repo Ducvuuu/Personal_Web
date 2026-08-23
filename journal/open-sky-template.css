@@ -187,6 +187,58 @@
     margin: 0 0 1.25em;
 }
 
+/* The shared toolbar can produce all of these, so the night sky styles all of
+   them — an unstyled heading falls back to the browser's own serif and reads as
+   a bug rather than a design. */
+.open-sky-body h2,
+.open-sky-body h3 {
+    margin: 1.9em 0 0.6em;
+    color: #fff8e2;
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+}
+
+.open-sky-body h2 { font-size: 1.55em; }
+.open-sky-body h3 { font-size: 1.24em; }
+
+.open-sky-body blockquote {
+    margin: 1.8em 0;
+    padding-left: 1.2em;
+    border-left: 2px solid var(--open-sky-gold);
+    color: var(--open-sky-soft-ink);
+    font-style: italic;
+}
+
+.open-sky-body ul,
+.open-sky-body ol {
+    margin: 0 0 1.25em;
+    padding-left: 1.4em;
+}
+
+.open-sky-body li { margin: 0 0 0.4em; }
+
+.open-sky-body a {
+    color: var(--open-sky-gold);
+    text-decoration-color: rgba(255, 227, 154, 0.45);
+    text-underline-offset: 0.18em;
+}
+
+.open-sky-body mark {
+    padding: 0.05em 0.3em;
+    border-radius: 0.3em;
+    background: rgba(255, 227, 154, 0.24);
+    color: #fff3bd;
+}
+
+.open-sky-body hr {
+    margin: 2.4em auto;
+    width: 42%;
+    border: none;
+    border-top: 1px solid rgba(214, 228, 244, 0.26);
+}
+
 .open-sky-body p:first-child::first-letter,
 .open-sky-body > div:first-child::first-letter {
     float: left;
