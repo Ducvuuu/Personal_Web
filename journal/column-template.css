@@ -287,8 +287,11 @@
 }
 
 .column-template.is-editing [contenteditable="true"] {
+    position: relative;
+    z-index: 1;
     outline: none;
     caret-color: var(--column-amber);
+    cursor: text;
 }
 
 .column-template.is-editing [contenteditable="true"]:empty::before {
@@ -299,6 +302,21 @@
 
 .column-template.is-editing .column-body[contenteditable="true"]:empty::before {
     color: rgba(24, 62, 59, 0.36);
+}
+
+.column-template.is-editing .column-body {
+    min-height: clamp(280px, 42vh, 520px);
+}
+
+/* Editor.ensureParagraph() seeds <p><br></p>, so :empty no longer matches even
+   though the author has not typed. Keep the invitation visible for that state. */
+.column-template.is-editing .column-body:has(> p:only-child > br:only-child)::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: rgba(24, 62, 59, 0.36);
+    content: attr(data-placeholder);
+    pointer-events: none;
 }
 
 @media (max-width: 640px) {
