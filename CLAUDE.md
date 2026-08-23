@@ -42,6 +42,10 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - `shared/rich-text.js` is the low-level rich-text engine: `RichText.sanitize()` plus the selection
   toolbar (`RichText.attach()`). Consumers pass their own command set and palette so each surface
   keeps its own character.
+- **`shared/EDITOR.md` is the reference for the editor** — the capability table, the API,
+  the storage contracts, and a step-by-step recipe for putting the editor in a new template
+  or on a new surface. Read it before changing the editor or adding a template; update it
+  when the component's behaviour changes.
 - `shared/editor.js` is the shared writing surface built on it, and the single source of truth for
   what a template may contain. `Editor.mount()` gives a template body the toolbar, paste
   normalisation, inline photos and video embeds; `Editor.sanitizeFor(templateId, html)` is used by
@@ -56,6 +60,13 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - Editor toolbar scope is deliberate: Word-style basics (headings, bold/italic/underline/strike,
   highlight, link, centre, divider, clear) with **no font family, font size or justify controls** —
   those are the knobs that let an author fight the template's own typography.
+- `CAPABILITIES.commands` is three named rows — `blocks`, `marks`, `actions`. `mount()` appends the
+  photo and video commands to `blocks` and undo/redo to `actions`, so the floating toolbar stays
+  three rows rather than five.
+- Insert actions live **in the toolbar**, not in a separate floating tray. A tray pinned to the
+  viewport collided with the page's own fixed action bar. The toolbar therefore also appears on a
+  plain caret — inserting a photo is not something you have selected text to do — and hides while
+  typing, returning on the pause that ends focus mode.
 - Template journal content is sanitized by `RichText.sanitize()` when saved **and again when
   rendered**, so entries written under an older allowlist are held to the current one. Raw HTML
   and legacy entries intentionally retain executable-script behavior in `journal/entry.html`.

@@ -10,7 +10,8 @@
 │   ├── rich-text.js      # Sanitizer + contenteditable selection toolbar
 │   ├── rich-text.css     # Selection toolbar chrome
 │   ├── editor.js         # Shared writing surface: capabilities, photos, embeds
-│   ├── editor.css        # Editor media chrome: figures, embeds, insert tray
+│   ├── editor.css        # Editor media chrome: figures, embeds, drop state, fade
+│   ├── EDITOR.md         # Editor reference + recipe for new templates/surfaces
 │   └── assets/           # Reserved for assets used across multiple pages
 │
 ├── home/
@@ -92,6 +93,10 @@ switched to light or dark accordingly — but only until the author picks a colo
 
 ### The shared editor — `shared/editor.js`
 
+> **Full reference and integration recipe: [`shared/EDITOR.md`](shared/EDITOR.md).**
+> That file is the place to look when adding a template or reusing the editor elsewhere.
+> What follows is the short version.
+
 One writing surface, mounted by every template. Templates say *what they allow*; they never
 implement editing.
 
@@ -106,7 +111,7 @@ on save and `entry.html` reads it on render, so the two can no longer drift.
 
 | Capability | Meaning |
 |---|---|
-| `commands` | Toolbar groups. Word-style basics only — no font family, size, or justify |
+| `commands` | Three named toolbar rows: `blocks`, `marks`, `actions`. Word-style basics only — no font family, size, or justify |
 | `align` | Permits `text-align: center` on a block |
 | `colors` | Permits coloured spans; the palette itself is passed in at mount |
 | `media` | `image` for inline photos, `embed` for video |
@@ -155,6 +160,12 @@ reason, because a diary is prose.
 **Photos** arrive three ways: the tray button, a paste, or a drag-and-drop — all through one
 `insertImageFile()`, so the upload-then-insert discipline holds for each. A drop places the caret
 where the cursor was, so the photo lands where it was dropped.
+
+**Insert actions live in the toolbar.** Photo and video are appended to the `blocks` row and
+undo/redo to `actions`, so the panel stays three rows. An earlier floating tray was pinned to the
+viewport and collided with the page's own fixed action bar. Because inserting a photo is not
+something you have selected text to do, the toolbar also appears on a plain caret; it hides while
+typing and returns on the pause that ends focus mode.
 
 **Focus mode** is a division of labour: the editor sets `data-writing` on the root element while
 typing and clears it on any pause or pointer movement. Each page marks its own chrome with `ed-fade`
@@ -357,6 +368,7 @@ The editor comes for free — you design the look and declare what it allows.
    override the `--ed-*` variables on the body container so shared photos and embeds sit correctly
    on your surface
 2. `shared/editor.js` — one row in `CAPABILITIES` saying what the template allows
+   (see [`shared/EDITOR.md`](shared/EDITOR.md) for the full walkthrough)
 3. `journal/new.html` — a card in the grid linking to `write.html?mode=template&template=<id>`
 4. `journal/write.html` — `<link>` the CSS, add the editor markup, add a `templateConfigs` entry
    (`editorId`, `titleId`, `bodyId`, `populate`, `collectData`, `update`) and a `BODY_TEMPLATES` row

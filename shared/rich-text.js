@@ -946,17 +946,29 @@
         toolbar.style.top  = `${Math.round(top)}px`;
     }
 
+    // A collapsed caret in an empty block has no rectangle of its own, so the
+    // block it sits in stands in for it.
+    function anchorRect(range, editor) {
+        const rect = range.getBoundingClientRect();
+        if (rect.width || rect.height) return rect;
+        const block = blockFor(editor, range.startContainer) || editor;
+        const fallback = block.getBoundingClientRect();
+        return (fallback.width || fallback.height) ? fallback : null;
+    }
+
+    // The toolbar also follows a plain caret, because inserting a photo or a video
+    // is not something you have selected text to do.
     function handleSelectionChange() {
         if (!state.toolbar) return;
         const selection = document.getSelection();
-        if (!selection || !selection.rangeCount || selection.isCollapsed) {
+        if (!selection || !selection.rangeCount) {
             hideToolbar();
             return;
         }
 
         const range  = selection.getRangeAt(0);
         const editor = editorForNode(range.commonAncestorContainer);
-        if (!editor) {
+        if (!editor || document.documentElement.hasAttribute('data-writing')) {
             hideToolbar();
             return;
         }
@@ -969,8 +981,8 @@
         }
 
         state.savedRange = range.cloneRange();
-        const rect = range.getBoundingClientRect();
-        if (!rect.width && !rect.height) {
+        const rect = anchorRect(range, editor);
+        if (!rect) {
             hideToolbar();
             return;
         }
@@ -1030,6 +1042,14 @@
                     hideToolbar();
                 }
             });
+            document.addEventListener('focusout', event => {
+                if (!editorForNode(event.target)) return;
+                // A toolbar button takes focus for an instant; only a real move away counts.
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    if (state.toolbar && !state.toolbar.contains(active) && !editorForNode(active)) hideToolbar();
+                }, 0);
+            });
         }
     }
 
@@ -1059,6 +1079,7 @@
         insertHTML: insertHTML,
         blockFor: blockFor,
         editorFor: editorForNode,
-        syncToolbar: syncButtonStates
+        syncToolbar: syncButtonStates,
+        refresh: handleSelectionChange
     };
 })(window);
