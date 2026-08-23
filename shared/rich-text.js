@@ -1146,7 +1146,9 @@
         }
 
         hideToolbar();
-        const block = emptyBlockAt(editor, range.startContainer);
+        const block = state.insertsAvailable
+            ? emptyBlockAt(editor, range.startContainer)
+            : null;
         if (!block) {
             hideInsert();
             return;

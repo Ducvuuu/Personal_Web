@@ -7,8 +7,8 @@
 ├── shared/
 │   ├── shared.css        # Global styles: body bg, font utilities, sticky-note
 │   ├── components.js     # Nav + footer injection (shared across all pages)
-│   ├── rich-text.js      # Sanitizer + contenteditable selection toolbar
-│   ├── rich-text.css     # Selection toolbar chrome
+│   ├── rich-text.js      # Sanitizer + selection toolbar and caret insert menu
+│   ├── rich-text.css     # Toolbar and insert-menu chrome
 │   ├── editor.js         # Shared writing surface: capabilities, photos, embeds
 │   ├── editor.css        # Editor media chrome: figures, embeds, drop state, fade
 │   ├── EDITOR.md         # Editor reference + recipe for new templates/surfaces
@@ -111,10 +111,14 @@ on save and `entry.html` reads it on render, so the two can no longer drift.
 
 | Capability | Meaning |
 |---|---|
-| `commands` | Three named toolbar rows: `blocks`, `marks`, `actions`. Word-style basics only — no font family, size, or justify |
+| `commands` | Three named selection-toolbar rows: `blocks`, `marks`, `actions` — all of them change existing text. Word-style basics only — no font family, size, or justify |
 | `align` | Permits `text-align: center` on a block |
 | `colors` | Permits coloured spans; the palette itself is passed in at mount |
 | `media` | `image` for inline photos, `embed` for video |
+
+The insert menu is not in that table. `mount()` builds its list per body — photo and video close over
+the mounted element, so they cannot be declared statically — and passes it to `RichText.attach()` as
+`inserts` alongside the toolbar's `commands`.
 
 **Inline photos** are `<figure><img><figcaption>`, restricted to Firebase Storage hosts by
 `RichText.normalizeImageSrc()`. The URL is inserted only once the upload resolves, so a `blob:`
@@ -157,26 +161,42 @@ quote, `---` for a divider. They run on `input`, once the marker has landed, and
 paragraph. There are no list rules on purpose — lists are absent from the toolbar for the same
 reason, because a diary is prose.
 
-**Photos** arrive three ways: the tray button, a paste, or a drag-and-drop — all through one
+**Photos** arrive three ways: the insert menu, a paste, or a drag-and-drop — all through one
 `insertImageFile()`, so the upload-then-insert discipline holds for each. A drop places the caret
 where the cursor was, so the photo lands where it was dropped.
 
-**The toolbar is a context menu.** It stays silent until the author right-clicks — on a selection
-or at the caret — and opens anchored to the pointer. An ordinary click, Escape, typing or a scroll
-dismisses it; shift+right-click is left to the browser, where spelling suggestions and paste live.
-`selectionchange` still tracks which editor and range a command should act on, but never shows the
-panel.
+**Two affordances, split by the question the author is asking.** Commands that change text that
+already exists live in the selection toolbar; commands that bring in new content live in the insert
+menu. Neither is ever summoned — each appears when the author is already in the situation it serves.
 
-**Insert actions live in it too.** Photo and video are appended to the `blocks` row and undo/redo to
-`actions`, so the panel stays three rows. An earlier floating tray was pinned to the viewport and
-collided with the page's own fixed action bar.
+**The selection toolbar** shows for a non-collapsed range only, anchored above the selection, and
+hides the moment the selection collapses. Showing is deferred until `mouseup`: `selectionchange`
+fires on every mouse move during a drag, and a toolbar that re-anchored on each one is unreadable
+until the button comes up. Keyboard selection has no drag phase and is not deferred.
+
+**The `+`** follows the caret onto any empty block and opens a labelled menu — photo, video, section
+divider. One placement rule serves every template: just left of the caret, clamped to the viewport,
+which lands in the gutter where a template has one and beside the caret where it does not. An
+earlier floating tray was pinned to the viewport and collided with the page's own fixed action bar;
+the `+` avoids that by being caret-anchored and transient rather than persistent.
+
+The two can never be on screen together — one needs a selection, the other an empty block — which is
+what keeps a self-appearing panel from becoming noise.
+
+**Right-click belongs to the browser.** Nothing intercepts `contextmenu`, so spelling suggestions
+and paste stay where authors expect them. An earlier version opened the toolbar on right-click; it
+fought the browser's own menu and hid the whole feature behind a gesture nobody expects in a text
+field.
+
+**Undo and redo are keyboard-only** (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z). They are not selection commands,
+so they have no place in a selection toolbar.
 
 **Focus mode** is a division of labour: the editor sets `data-writing` on the root element while
 typing and clears it on any pause or pointer movement. Each page marks its own chrome with `ed-fade`
 — `editor.css` supplies the fade, the page decides what fades. Reduced motion drops the transition,
 not the dimming.
 
-**Every template must style what the toolbar can produce.** The editor is shared; the typography
+**Every template must style what the editor can produce.** The editor is shared; the typography
 is not. A template whose stylesheet lacks an `h2` rule gets the browser's default heading, which
 reads as a broken feature rather than a design choice — this is exactly how `open-sky` shipped.
 
@@ -184,7 +204,7 @@ reads as a broken feature rather than a design choice — this is exactly how `o
 |---|---|
 | `p`, `h2`, `h3`, `blockquote`, `ul`, `ol`, `li` | headings, quote and list commands |
 | `a`, `mark` | link and highlight commands |
-| `hr` | the divider command |
+| `hr` | the insert menu's divider and the `---` rule |
 | `--ed-rule`, `--ed-caption`, `--ed-placeholder`, `--ed-shadow`, `--ed-mark-bg`, `--ed-mark-ink` | photos and embeds, styled by `editor.css` |
 
 **Paragraph discipline.** Typing into an empty `contenteditable` produces a bare text node with no
@@ -203,13 +223,20 @@ unsaved work in both cases.
 
 ### Rich text — `shared/rich-text.js`
 
-A selection toolbar (bold, italic, link, clear, colour swatches, custom picker) plus the sanitizer
-used by every template.
+Both writing affordances — the selection toolbar and the caret `+` with its insert menu — plus the
+sanitizer used by every template. Consumers supply their own commands, inserts and palette, so each
+surface keeps its own character.
 
 ```js
-RichText.attach(el, { palette: [{ name, value }], onChange });
+RichText.attach(el, {
+    commands: [['h2', 'h3'], ['bold', 'italic']],   // selection toolbar rows
+    inserts:  ['hr', { icon, label, run }],         // the + menu
+    palette:  [{ name, value }],
+    onChange
+});
 RichText.sanitize(html, { allowColor: true });
 RichText.normalizeColor(value);   // '#rrggbb' or null
+RichText.hide();                  // dismiss both panels
 ```
 
 The engine and sanitizer are shared; the **palette is per-surface** so colours stay on-brand.
