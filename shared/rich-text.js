@@ -1,9 +1,14 @@
-// Shared rich-text engine: a selection toolbar for contenteditable surfaces,
-// plus the sanitizer that decides what survives a save.
+// Shared rich-text engine: the two writing affordances for contenteditable
+// surfaces, plus the sanitizer that decides what survives a save.
+//
+// A selection toolbar appears over selected text and carries the commands that
+// change what is already written. A "+" follows the caret onto empty blocks and
+// opens the menu of things that can be added. The split is by question asked, not
+// by convenience: nothing appears until the author is in a position to want it.
 //
 // Consumers supply their own command set and palette so each surface keeps its
 // own character:
-//   RichText.attach(el, { commands: [['bold','italic'], [custom]], palette, onChange });
+//   RichText.attach(el, { commands: [['bold','italic'], [custom]], inserts, palette, onChange });
 //   RichText.sanitize(html, { allowColor: true, allowImages: true, embeds: ['youtube'] });
 //
 // Every command mutates the DOM directly. document.execCommand is deprecated,
@@ -766,7 +771,11 @@
         customInput: null,
         activeEditor: null,
         savedRange: null,
-        buttons: []
+        buttons: [],
+        insertButton: null,
+        insertMenu: null,
+        insertBlock: null,
+        selecting: false
     };
 
     let initialized = false;
@@ -863,6 +872,135 @@
         return toolbar;
     }
 
+    // The insert affordance: a "+" that follows the caret onto any empty block, and
+    // the menu it opens. Separate from the toolbar because the two answer different
+    // questions — the toolbar changes text that exists, this adds something new.
+    function buildInsertUI() {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'rt-insert';
+        button.hidden = true;
+        button.setAttribute('aria-label', 'Insert');
+        button.setAttribute('aria-expanded', 'false');
+        button.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i>';
+
+        const menu = document.createElement('div');
+        menu.className = 'rt-menu';
+        menu.hidden = true;
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', 'Insert');
+
+        // mousedown, not click: the default action blurs the editor and drops the
+        // caret before the menu could act on it.
+        button.addEventListener('mousedown', event => {
+            event.preventDefault();
+            if (menu.hidden) openInsertMenu();
+            else closeInsertMenu();
+        });
+
+        state.insertButton = button;
+        state.insertMenu   = menu;
+
+        document.body.appendChild(button);
+        document.body.appendChild(menu);
+    }
+
+    function makeMenuItem(definition) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'rt-menu-item';
+        item.setAttribute('role', 'menuitem');
+        const label = definition.menuLabel || definition.label;
+        item.innerHTML = `<i class="${definition.icon}" aria-hidden="true"></i><span>${label}</span>`;
+        item.addEventListener('mousedown', event => {
+            event.preventDefault();
+            closeInsertMenu();
+            restoreSelection();
+            definition.run();
+            global.setTimeout(refresh, 0);
+        });
+        return item;
+    }
+
+    function renderInserts(inserts) {
+        const menu = state.insertMenu;
+        menu.innerHTML = '';
+        (inserts || []).forEach(entry => {
+            const definition = typeof entry === 'string' ? COMMANDS[entry] : entry;
+            if (!definition || typeof definition.run !== 'function' || !definition.icon) return;
+            menu.appendChild(makeMenuItem(definition));
+        });
+        state.insertsAvailable = !!menu.children.length;
+    }
+
+    function openInsertMenu() {
+        if (!state.insertsAvailable) return;
+        const menu   = state.insertMenu;
+        const anchor = state.insertButton.getBoundingClientRect();
+        menu.hidden = false;
+        state.insertButton.setAttribute('aria-expanded', 'true');
+
+        const bounds = menu.getBoundingClientRect();
+        const margin = 8;
+        let left = anchor.left;
+        let top  = anchor.bottom + 6;
+        if (left + bounds.width > window.innerWidth - margin) {
+            left = Math.max(margin, window.innerWidth - bounds.width - margin);
+        }
+        if (top + bounds.height > window.innerHeight - margin) {
+            top = Math.max(margin, anchor.top - bounds.height - 6);
+        }
+        menu.style.left = `${Math.round(left)}px`;
+        menu.style.top  = `${Math.round(top)}px`;
+    }
+
+    function closeInsertMenu() {
+        if (!state.insertMenu) return;
+        state.insertMenu.hidden = true;
+        if (state.insertButton) state.insertButton.setAttribute('aria-expanded', 'false');
+    }
+
+    function hideInsert() {
+        closeInsertMenu();
+        if (state.insertButton) state.insertButton.hidden = true;
+        state.insertBlock = null;
+    }
+
+    // Only a block with nothing in it gets the affordance. A caption or a list item
+    // is part of something the author already made, so inserting into it is wrong.
+    function emptyBlockAt(editor, node) {
+        const block = blockFor(editor, node);
+        if (!block) return null;
+        if (block.tagName === 'LI' || block.tagName === 'FIGCAPTION') return null;
+        return (block.textContent || '').trim() ? null : block;
+    }
+
+    // One placement rule for every template: just left of the caret, which lands in
+    // the gutter where a template has one and beside the caret where it does not.
+    function positionInsertAt(block) {
+        const button = state.insertButton;
+        button.hidden = false;
+
+        const rect   = block.getBoundingClientRect();
+        const size   = button.getBoundingClientRect();
+        const styles = global.getComputedStyle(block);
+        const margin = 8;
+
+        let line = parseFloat(styles.lineHeight);
+        if (!line) line = (parseFloat(styles.fontSize) || 16) * 1.5;
+        line = Math.min(line, rect.height || line);
+
+        let left = rect.left - size.width - 10;
+        if (left < margin) left = rect.left + 2;
+        let top = rect.top + line / 2 - size.height / 2;
+
+        left = Math.min(left, window.innerWidth - size.width - margin);
+        top  = Math.min(Math.max(top, margin), window.innerHeight - size.height - margin);
+
+        button.style.left = `${Math.round(left)}px`;
+        button.style.top  = `${Math.round(top)}px`;
+    }
+
     // A flat list is one row; an array of arrays is one row per group.
     function normalizeGroups(commands) {
         if (!commands || !commands.length) return [DEFAULT_COMMANDS];
@@ -926,6 +1064,11 @@
         if (state.toolbar) state.toolbar.hidden = true;
     }
 
+    function hideAll() {
+        hideToolbar();
+        hideInsert();
+    }
+
     function restoreSelection() {
         if (!state.savedRange) return;
         const selection = document.getSelection();
@@ -933,21 +1076,31 @@
         selection.addRange(state.savedRange);
     }
 
-    // Anchored to the pointer like any context menu: below and right of it when
-    // there is room, flipped back over it when there is not.
-    function positionToolbarAt(x, y) {
+    // A collapsed range in an empty block reports no rectangle of its own, so the
+    // caller falls back to the block. For a real selection the first rect is the
+    // first line, which is where the toolbar should sit.
+    function rectFor(range) {
+        const bounds = range.getBoundingClientRect();
+        if (bounds.width || bounds.height) return bounds;
+        const rects = range.getClientRects();
+        return rects.length ? rects[0] : null;
+    }
+
+    // Above the selection, centred on it, flipped underneath when the selection is
+    // near the top of the viewport.
+    function positionToolbarOver(rect) {
         const toolbar = state.toolbar;
         toolbar.hidden = false;
         const bounds = toolbar.getBoundingClientRect();
         const margin = 8;
-        let left = x + 2;
-        let top  = y + 2;
-        if (left + bounds.width > window.innerWidth - margin) {
-            left = Math.max(margin, x - bounds.width - 2);
-        }
-        if (top + bounds.height > window.innerHeight - margin) {
-            top = Math.max(margin, y - bounds.height - 2);
-        }
+
+        let left = rect.left + rect.width / 2 - bounds.width / 2;
+        let top  = rect.top - bounds.height - 10;
+        if (top < margin) top = rect.bottom + 10;
+
+        left = Math.min(Math.max(left, margin), window.innerWidth - bounds.width - margin);
+        top  = Math.min(Math.max(top, margin), window.innerHeight - bounds.height - margin);
+
         toolbar.style.left = `${Math.round(left)}px`;
         toolbar.style.top  = `${Math.round(top)}px`;
     }
@@ -958,39 +1111,60 @@
         const config = editor._richTextConfig || {};
         renderCommands(config.commands);
         renderPalette(config.palette);
+        renderInserts(config.inserts);
     }
 
-    // Selection tracking only remembers where a command should act. Showing the
-    // toolbar is the context menu's job.
-    function handleSelectionChange() {
+    // The two affordances are mutually exclusive by construction: one needs text
+    // selected, the other needs an empty block, and a selection is never both.
+    function refresh() {
         const selection = document.getSelection();
-        if (!selection || !selection.rangeCount) return;
-        const range  = selection.getRangeAt(0);
-        const editor = editorForNode(range.commonAncestorContainer);
-        if (!editor) return;
-        useEditor(editor);
-        state.savedRange = range.cloneRange();
-        if (state.toolbar && !state.toolbar.hidden) syncButtonStates();
-    }
-
-    // The toolbar is a context menu: silent until asked for. Shift+right-click falls
-    // through to the browser's own menu, which is where spelling and paste live.
-    function handleContextMenu(event) {
-        if (!state.toolbar || event.shiftKey) return;
-        const editor = editorForNode(event.target);
-        if (!editor) return;
-
-        event.preventDefault();
-        useEditor(editor);
-
-        const selection = document.getSelection();
-        if (selection && selection.rangeCount &&
-            editor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
-            state.savedRange = selection.getRangeAt(0).cloneRange();
+        if (!selection || !selection.rangeCount) {
+            hideAll();
+            return;
         }
 
-        positionToolbarAt(event.clientX, event.clientY);
-        syncButtonStates();
+        const range  = selection.getRangeAt(0);
+        const editor = editorForNode(range.commonAncestorContainer);
+        if (!editor || editor !== document.activeElement) {
+            hideAll();
+            return;
+        }
+
+        useEditor(editor);
+        state.savedRange = range.cloneRange();
+
+        if (!range.collapsed) {
+            hideInsert();
+            const rect = rectFor(range);
+            if (!rect) {
+                hideToolbar();
+                return;
+            }
+            positionToolbarOver(rect);
+            syncButtonStates();
+            return;
+        }
+
+        hideToolbar();
+        const block = emptyBlockAt(editor, range.startContainer);
+        if (!block) {
+            hideInsert();
+            return;
+        }
+        if (block !== state.insertBlock) closeInsertMenu();
+        state.insertBlock = block;
+        positionInsertAt(block);
+    }
+
+    // Mid-drag the selection changes on every mouse move; a toolbar that chased it
+    // would be unreadable until the button came up. Keyboard selection has no such
+    // phase, so it is not deferred.
+    function handleSelectionChange() {
+        if (state.selecting) {
+            hideAll();
+            return;
+        }
+        refresh();
     }
 
     // The browser's own shortcuts would call the editing commands this engine
@@ -1027,30 +1201,53 @@
         if (!element) return;
         init();
         if (!state.toolbar) buildToolbar();
+        if (!state.insertButton) buildInsertUI();
 
         element.setAttribute('data-rich-text', 'on');
         element._richTextConfig = config || {};
         historyFor(element);
 
         element.addEventListener('beforeinput', () => {
-            hideToolbar();
+            hideAll();
             record(element, false);
         });
         element.addEventListener('keydown', handleKeydown);
+        element.addEventListener('blur', () => {
+            // A click on the toolbar blurs the editor before the command runs; the
+            // panel must survive that, so only a blur away from it dismisses.
+            global.setTimeout(() => {
+                const focused = document.activeElement;
+                if (state.toolbar && state.toolbar.contains(focused)) return;
+                if (state.insertMenu && state.insertMenu.contains(focused)) return;
+                if (focused === state.insertButton) return;
+                if (editorForNode(focused)) return;
+                hideAll();
+            }, 0);
+        });
 
         if (!attach._bound) {
             attach._bound = true;
             document.addEventListener('selectionchange', handleSelectionChange);
-            document.addEventListener('contextmenu', handleContextMenu);
-            window.addEventListener('scroll', hideToolbar, true);
-            window.addEventListener('resize', hideToolbar);
-            // Any ordinary click dismisses it, including one inside the editor —
-            // a menu that outlives the click that opened it is the weird part.
+            window.addEventListener('scroll', hideAll, true);
+            window.addEventListener('resize', hideAll);
+
             document.addEventListener('mousedown', event => {
-                if (state.toolbar && !state.toolbar.contains(event.target)) hideToolbar();
+                if (state.toolbar && state.toolbar.contains(event.target)) return;
+                if (state.insertButton === event.target ||
+                    (state.insertButton && state.insertButton.contains(event.target))) return;
+                if (state.insertMenu && state.insertMenu.contains(event.target)) {
+                    return;
+                }
+                closeInsertMenu();
+                if (editorForNode(event.target)) state.selecting = true;
+            });
+            document.addEventListener('mouseup', () => {
+                if (!state.selecting) return;
+                state.selecting = false;
+                refresh();
             });
             document.addEventListener('keydown', event => {
-                if (event.key === 'Escape') hideToolbar();
+                if (event.key === 'Escape') hideAll();
             });
         }
     }
@@ -1061,7 +1258,7 @@
         delete element._richTextConfig;
         if (state.activeEditor === element) {
             state.activeEditor = null;
-            hideToolbar();
+            hideAll();
         }
     }
 
@@ -1071,7 +1268,8 @@
         normalizeImageSrc: normalizeImageSrc,
         attach: attach,
         detach: detach,
-        hide: hideToolbar,
+        hide: hideAll,
+        refresh: refresh,
         imageHosts: IMAGE_HOSTS,
         undo: undo,
         redo: redo,

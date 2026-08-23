@@ -44,13 +44,17 @@
 
     // Word-style basics only. No font family, no font size, no justify — those are
     // the knobs that let an author fight the template's own typography.
+    //
+    // Everything here changes text that already exists, which is why it lives in the
+    // selection toolbar. Anything that brings new content into the entry belongs to
+    // the insert menu instead.
     const TEXT_COMMANDS = {
         blocks:  ['h2', 'h3', 'quote'],
         marks:   ['bold', 'italic', 'underline', 'strike', 'highlight'],
-        actions: ['link', 'alignCenter', 'hr', 'clear']
+        actions: ['link', 'alignCenter', 'clear']
     };
 
-    const HISTORY_COMMANDS = ['undo', 'redo'];
+    const INSERT_COMMANDS = ['hr'];
 
     // Typed shortcuts for the same commands the toolbar offers. Lists are absent
     // from both on purpose — a diary is prose.
@@ -539,22 +543,24 @@
         // Media commands close over this body, so they are built per mount rather
         // than declared in the static capability table.
         const media = [];
-        if (imagesOn) media.push({ icon: 'fa-solid fa-image', label: 'Insert photo', run: () => insertImage(body, context) });
-        if (embedsOn) media.push({ icon: 'fa-solid fa-play',  label: 'Insert video', run: () => promptForEmbed(body, context) });
+        if (imagesOn) media.push({ icon: 'fa-solid fa-image', label: 'Photo', run: () => insertImage(body, context) });
+        if (embedsOn) media.push({ icon: 'fa-solid fa-play',  label: 'Video', run: () => promptForEmbed(body, context) });
 
         const rows = capabilities.commands;
         const commands = [
-            rows.blocks.concat(media),
+            rows.blocks.slice(),
             rows.marks.slice(),
-            rows.actions.concat(HISTORY_COMMANDS)
+            rows.actions.slice()
         ].filter(row => row.length);
+        const inserts = media.concat(INSERT_COMMANDS);
 
         body.setAttribute('data-editor-body', 'on');
         body.classList.add('ed-content');
-        body._editorConfig = { commands: commands };
+        body._editorConfig = { commands: commands, inserts: inserts };
 
         global.RichText.attach(body, {
             commands: commands,
+            inserts: inserts,
             palette: capabilities.colors ? settings.palette : null,
             onChange: settings.onChange
         });
