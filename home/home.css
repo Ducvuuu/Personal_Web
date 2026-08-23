@@ -244,6 +244,40 @@ body.edit-mode-active .random-project-dialog [data-edit-key] {
     cursor: text;
 }
 
+/* ── Personality bedroom sticker ── */
+.personality-bedroom-sticker {
+    position: absolute;
+    z-index: 0;
+    top: -2.8rem;
+    right: -1rem;
+    display: none;
+    width: 20rem;
+    height: auto;
+    opacity: 0.88;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    user-select: none;
+}
+
+@media (min-width: 768px) {
+    .personality-bedroom-sticker { display: block; }
+}
+
+@media (min-width: 1024px) {
+    .personality-bedroom-sticker {
+        top: -3.4rem;
+        right: -13rem;
+        width: 25rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .personality-bedroom-sticker {
+        right: -16rem;
+        width: 28rem;
+    }
+}
+
 /* ── Random things I make ── */
 .random-things-section {
     position: relative;
