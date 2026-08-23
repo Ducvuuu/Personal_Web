@@ -161,11 +161,15 @@ reason, because a diary is prose.
 `insertImageFile()`, so the upload-then-insert discipline holds for each. A drop places the caret
 where the cursor was, so the photo lands where it was dropped.
 
-**Insert actions live in the toolbar.** Photo and video are appended to the `blocks` row and
-undo/redo to `actions`, so the panel stays three rows. An earlier floating tray was pinned to the
-viewport and collided with the page's own fixed action bar. Because inserting a photo is not
-something you have selected text to do, the toolbar also appears on a plain caret; it hides while
-typing and returns on the pause that ends focus mode.
+**The toolbar is a context menu.** It stays silent until the author right-clicks — on a selection
+or at the caret — and opens anchored to the pointer. An ordinary click, Escape, typing or a scroll
+dismisses it; shift+right-click is left to the browser, where spelling suggestions and paste live.
+`selectionchange` still tracks which editor and range a command should act on, but never shows the
+panel.
+
+**Insert actions live in it too.** Photo and video are appended to the `blocks` row and undo/redo to
+`actions`, so the panel stays three rows. An earlier floating tray was pinned to the viewport and
+collided with the page's own fixed action bar.
 
 **Focus mode** is a division of labour: the editor sets `data-writing` on the root element while
 typing and clears it on any pause or pointer movement. Each page marks its own chrome with `ed-fade`

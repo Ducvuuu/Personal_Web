@@ -157,6 +157,8 @@ const BODY_TEMPLATES = {
 - In `populate()`, after setting `innerHTML`, call `Editor.renderEmbedPreviews(bodyEl)`
   and `Editor.ensureParagraph(bodyEl)`.
 - Mark page chrome that should fade while writing with the `ed-fade` class.
+- Nothing else is needed for the toolbar: it binds to `contextmenu` at the document level
+  and finds its editor from the event target.
 
 ### 5. `journal/entry.html` — the renderer
 
@@ -207,15 +209,16 @@ on both save and render. Omit `uploadImage` and leave `media: []` for a text-onl
 
 Engine-level, from `rich-text.js`: `RichText.sanitize`, `RichText.normalizeColor`,
 `RichText.normalizeImageSrc`, `RichText.undo`, `RichText.redo`, `RichText.record`,
-`RichText.setBlock`, `RichText.insertHTML`, `RichText.blockFor`, `RichText.refresh`.
+`RichText.setBlock`, `RichText.insertHTML`, `RichText.blockFor`, `RichText.hide`.
 
 ---
 
 ## What the author gets
 
-- **Toolbar** — appears on a selection *and* on a plain caret, so inserting a photo does
-  not require selecting text first. It hides while typing and returns on the pause that
-  ends focus mode.
+- **Toolbar** — a context menu. It stays out of the way until you **right-click**, either
+  on a selection or at the caret, and opens anchored to the pointer. An ordinary click,
+  Escape, typing, or scrolling dismisses it. **Shift+right-click** falls through to the
+  browser's own menu, which is where spelling suggestions and paste live.
 - **Shortcuts** — Ctrl/Cmd+B, I, U, K; Ctrl+Z and Ctrl+Shift+Z.
 - **Markdown** — `# ` and `## ` for headings, `> ` for a quote, `---` for a divider.
 - **Photos** — toolbar button, paste, or drag-and-drop.
@@ -252,6 +255,9 @@ Engine-level, from `rich-text.js`: `RichText.sanitize`, `RichText.normalizeColor
   `input`, where the character has already landed — and coalesces on a 600ms idle.
 - Selections are saved as plain text offsets, not node references. Formatting rearranges
   elements but never the characters.
+- The toolbar opens on `contextmenu` only. `selectionchange` tracks which editor and range
+  a command should act on, but never shows it — a panel that appears on its own while you
+  are reading or selecting is the behaviour this replaced.
 - A caret placed in a childless element does not survive `addRange()` in Chrome.
   `placeCaretIn()` seeds a `<br>`; the sanitizer drops a trailing `<br>` once the block
   has real text.

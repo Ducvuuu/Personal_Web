@@ -64,9 +64,12 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   photo and video commands to `blocks` and undo/redo to `actions`, so the floating toolbar stays
   three rows rather than five.
 - Insert actions live **in the toolbar**, not in a separate floating tray. A tray pinned to the
-  viewport collided with the page's own fixed action bar. The toolbar therefore also appears on a
-  plain caret — inserting a photo is not something you have selected text to do — and hides while
-  typing, returning on the pause that ends focus mode.
+  viewport collided with the page's own fixed action bar.
+- **The toolbar is a context menu.** It opens only on `contextmenu` — right-click on a selection or
+  at the caret — anchored to the pointer, and closes on an ordinary click, Escape, typing or scroll.
+  Shift+right-click is left to the browser so spelling and paste stay reachable. `selectionchange`
+  tracks the target editor and range but never shows the panel: appearing on its own while the
+  author was reading or selecting is exactly the behaviour this replaced.
 - Template journal content is sanitized by `RichText.sanitize()` when saved **and again when
   rendered**, so entries written under an older allowlist are held to the current one. Raw HTML
   and legacy entries intentionally retain executable-script behavior in `journal/entry.html`.

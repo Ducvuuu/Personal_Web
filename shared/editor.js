@@ -435,9 +435,7 @@
         if (focus.on === on) return;
         focus.on = on;
         document.documentElement.toggleAttribute('data-writing', on);
-        // Typing hides the toolbar; the pause that ends focus mode brings it back.
-        if (!on && global.RichText.refresh) global.RichText.refresh();
-        else if (on) global.RichText.hide();
+        if (on) global.RichText.hide();
     }
 
     function noteTyping() {
