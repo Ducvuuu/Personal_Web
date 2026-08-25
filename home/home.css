@@ -1,7 +1,7 @@
 /* ── HOME PAGE STYLES ── */
 
 .hero-bg {
-    background-image: url('https://i.imgur.com/F84s0sb.jpeg');
+    background-image: url('assets/hero-background.webp');
     background-size: cover;
     background-position: center bottom;
 }

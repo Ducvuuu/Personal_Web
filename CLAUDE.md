@@ -30,6 +30,10 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   copy sits inside a button or link, its click handler must not activate that control when the keyed
   text itself is clicked in edit mode. Re-rendered content must call `applyContentOverrides()` and
   restore `contenteditable` while `editModeOn` is true.
+- Keep homepage imagery performance-conscious: the above-the-fold hero is a preloaded local WebP;
+  images below the fold use `loading="lazy"` and `decoding="async"`; modal video uses
+  `preload="none"`. Gallery display and modal URLs should point to the optimized local WebP assets,
+  not full-resolution originals or eager third-party copies.
 - `library/RSVP.md` is the technical reference for the RSVP feature. Update it if you change the RSVP architecture.
 - `journal/new.html` is the only creation gateway for journal entries. It permanently selects
   `template` or `html`; do not add an editor control that switches an existing entry between them.
