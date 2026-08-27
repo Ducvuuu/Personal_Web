@@ -677,9 +677,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const pathsModal  = document.getElementById('paths-modal');
     const pathsDialog = document.getElementById('paths-modal-dialog');
     const pathsClose  = document.getElementById('paths-modal-close');
+    const pathsVideo  = document.getElementById('paths-intro-video');
+    const pathsVideoToggle = document.getElementById('paths-video-toggle');
     let pathsLastFocus    = null;
     let pathsHideTimer    = null;
     let pathsBodyOverflow = '';
+
+    function syncPathsVideoToggle() {
+        const paused = pathsVideo.paused;
+        const icon = pathsVideoToggle.querySelector('i');
+        const label = pathsVideoToggle.querySelector('span');
+        icon.classList.toggle('fa-play', paused);
+        icon.classList.toggle('fa-pause', !paused);
+        label.textContent = paused ? 'Play preview' : 'Pause preview';
+        pathsVideoToggle.setAttribute('aria-label', paused ? 'Play Little Paths preview' : 'Pause Little Paths preview');
+    }
 
     window.openPathsModal = function () {
         window.clearTimeout(pathsHideTimer);
@@ -691,6 +703,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.requestAnimationFrame(() => {
             pathsModal.classList.add('is-open');
             pathsDialog.focus();
+            if (!reduceMotion.matches) pathsVideo.play().catch(() => {});
         });
     };
 
@@ -698,6 +711,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (pathsModal.hidden) return;
         pathsModal.classList.remove('is-open');
         pathsModal.setAttribute('aria-hidden', 'true');
+        pathsVideo.pause();
         document.body.style.overflow = pathsBodyOverflow;
         pathsHideTimer = window.setTimeout(() => {
             pathsModal.hidden = true;
@@ -713,6 +727,14 @@ document.addEventListener('DOMContentLoaded', function () {
     pathsModal.addEventListener('click', event => {
         if (event.target === pathsModal) window.closePathsModal();
     });
+    pathsVideoToggle.addEventListener('click', () => {
+        if (pathsVideo.paused) pathsVideo.play().catch(() => {});
+        else pathsVideo.pause();
+        syncPathsVideoToggle();
+    });
+    pathsVideo.addEventListener('play', syncPathsVideoToggle);
+    pathsVideo.addEventListener('pause', syncPathsVideoToggle);
+    syncPathsVideoToggle();
     pathsDialog.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', event => {
             if (editModeOn && event.target.closest('[data-edit-key]')) event.preventDefault();

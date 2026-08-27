@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
-    <link rel="stylesheet" href="home.css?v=9">
+    <link rel="stylesheet" href="home.css?v=10">
     <link rel="preload" as="image" href="assets/hero-background.webp" type="image/webp" fetchpriority="high">
 
     <script>
@@ -584,24 +584,10 @@
 
                 <button type="button" id="paths-project-card" class="random-project-card paths-project-card group" aria-haspopup="dialog" aria-controls="paths-modal">
                     <span class="random-project-visual paths-project-visual" aria-hidden="true">
-                        <span class="paths-map-grid"></span>
-                        <span class="paths-map-road paths-map-road-one"></span>
-                        <span class="paths-map-road paths-map-road-two"></span>
-                        <span class="paths-map-road paths-map-road-three"></span>
-                        <span class="paths-route paths-route-one"></span>
-                        <span class="paths-route paths-route-two"></span>
-                        <span class="paths-route paths-route-three"></span>
-                        <span class="paths-route paths-route-four"></span>
-                        <span class="paths-stop paths-stop-start"></span>
-                        <span class="paths-stop paths-stop-mid"></span>
-                        <span class="paths-stop paths-stop-end"></span>
-                        <span class="paths-plane"><i class="fa-solid fa-paper-plane"></i></span>
-                        <span class="paths-map-window">
-                            <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-                            <span data-edit-key="random.paths.card.map_label">one ordinary day</span>
-                        </span>
+                        <img src="assets/little-paths-poster.jpg" alt="" loading="lazy" decoding="async">
+                        <span class="random-project-scrim paths-project-scrim"></span>
                         <span class="random-project-badge paths-project-badge"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-edit-key="random.paths.card.badge">Private map story</span></span>
-                        <span class="random-project-play paths-project-open-icon"><i class="fa-solid fa-route" aria-hidden="true"></i></span>
+                        <span class="random-project-play paths-project-open-icon"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
                     </span>
 
                     <span class="random-project-copy">
@@ -915,33 +901,14 @@
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
 
-            <div class="paths-gallery">
-                <div class="paths-preview" aria-hidden="true">
-                    <div class="paths-preview-topbar">
-                        <span class="paths-preview-brand"><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> <span data-edit-key="random.paths.preview.brand">little paths</span></span>
-                        <span class="paths-preview-date" data-edit-key="random.paths.preview.date">a quiet Tuesday</span>
-                    </div>
-                    <div class="paths-preview-map">
-                        <span class="paths-preview-grid"></span>
-                        <span class="paths-preview-road paths-preview-road-one"></span>
-                        <span class="paths-preview-road paths-preview-road-two"></span>
-                        <span class="paths-preview-road paths-preview-road-three"></span>
-                        <span class="paths-preview-route paths-preview-route-one"></span>
-                        <span class="paths-preview-route paths-preview-route-two"></span>
-                        <span class="paths-preview-route paths-preview-route-three"></span>
-                        <span class="paths-preview-route paths-preview-route-four"></span>
-                        <span class="paths-preview-stop paths-preview-stop-one"></span>
-                        <span class="paths-preview-stop paths-preview-stop-two"></span>
-                        <span class="paths-preview-stop paths-preview-stop-three"></span>
-                        <span class="paths-preview-plane"><i class="fa-solid fa-paper-plane"></i></span>
-                        <span class="paths-place-card paths-place-home"><i></i><span data-edit-key="random.paths.preview.place1">home · 8:42</span></span>
-                        <span class="paths-place-card paths-place-wander"><i></i><span data-edit-key="random.paths.preview.place2">a small detour</span></span>
-                    </div>
-                    <div class="paths-preview-player">
-                        <span class="paths-preview-play"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
-                        <span class="paths-preview-progress"><i></i></span>
-                        <span class="paths-preview-time" data-edit-key="random.paths.preview.time">18:06</span>
-                    </div>
+            <div class="cosmo-gallery paths-video-gallery">
+                <div class="cosmo-stage paths-video-stage">
+                    <video id="paths-intro-video" poster="assets/little-paths-poster.jpg" muted loop playsinline preload="none" aria-hidden="true">
+                        <source src="assets/little-paths-demo.mp4" type="video/mp4">
+                    </video>
+                    <button type="button" id="paths-video-toggle" class="cosmo-video-toggle paths-video-toggle" aria-label="Pause Little Paths preview">
+                        <i class="fa-solid fa-pause" aria-hidden="true"></i><span>Pause preview</span>
+                    </button>
                 </div>
                 <p class="paths-privacy-note"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> <span data-edit-key="random.paths.preview.privacy">Your Timeline stays in your browser.</span></p>
             </div>
@@ -1108,6 +1075,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <script src="../shared/components.js"></script>
-    <script src="home.js?v=7"></script>
+    <script src="home.js?v=8"></script>
 </body>
 </html>
