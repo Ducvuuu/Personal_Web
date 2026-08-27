@@ -387,6 +387,10 @@ after a settle delay:
 | `setFont()` | Reader switched serif/sans |
 | `handleViewportResize()` | Entering or leaving immersive fullscreen, or device rotation |
 
+`handleViewportResize()` passes the CFI into `rendition.resize(w, h, cfi)` rather than calling
+`display()` separately, and marks the resulting relocation as a reflow so it does not rewrite the
+saved bookmark.
+
 Any new control that changes the rendered layout must do the same.
 
 ### Visibility detection (`reportVisibleWords`)
