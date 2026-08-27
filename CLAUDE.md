@@ -40,6 +40,21 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   edit mode, trap focus inside the open modal, restore focus on close, and prefer lightweight CSS
   previews or lazy media over eager videos and large poster images.
 - `library/RSVP.md` is the technical reference for the RSVP feature. Update it if you change the RSVP architecture.
+- The site is installable: `manifest.json` at the repo root, linked from both library pages, with
+  icons in `shared/assets/`. It is deliberately `display: "standalone"` rather than `"fullscreen"` —
+  the status bar stays while you browse the shelf, and the reader removes it on demand instead.
+- The reader's immersive mode is the Fullscreen API on `<html>`, so it can only ever be entered
+  from a user gesture. A remembered preference (`lib_immersive`) is therefore *re-armed*, not
+  replayed: the next tap enters it. Taps inside the epub iframe never reach the document, so
+  `armImmersive()` listens on the rendition as well.
+- Anything that changes the rendered viewport must repaginate deliberately. `handleViewportResize()`
+  re-displays the current CFI (otherwise the reader silently jumps pages) and re-seeds the RSVP page
+  anchor. Never add a layout-changing control without both — see the table in `RSVP.md`.
+- `<meta name="theme-color">` tracks the reading theme through `applyBodyTheme()`, so the Android
+  status bar matches the page instead of sitting against it.
+- The reader bars auto-hide after 4s. Only a tap in the top or bottom `CHROME_BAND` of the page
+  brings them back — the middle is reserved for reading — and the timer is held off while the
+  settings panel, TOC, RSVP prep modal, or RSVP mode is open.
 - `journal/new.html` is the only creation gateway for journal entries. It permanently selects
   `template` or `html`; do not add an editor control that switches an existing entry between them.
 - Journal entries created by the new flow store `schemaVersion: 2`, `authoringMode`, and
