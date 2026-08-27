@@ -30,6 +30,10 @@ let wakeLock         = null;    // screen wake lock sentinel, null when not held
 let immersiveOn      = localStorage.getItem('lib_immersive') === '1';
 let chromeTimer      = null;    // pending auto-hide of the reader bars
 let resizeTimer      = null;    // debounce for viewport/fullscreen repagination
+let reflowing        = false;   // a relocation we caused by repaginating, not by reading
+let reflowTimer      = null;    // safety release for `reflowing`
+let lastViewW        = 0;       // last viewer size, to skip no-op repagination
+let lastViewH        = 0;
 
 
 // ── AUTH ──
@@ -169,6 +173,8 @@ async function initReader(url) {
     updateImmersiveButton();
     acquireWakeLock();
     showChrome();
+    lastViewW = document.getElementById('viewer').offsetWidth;
+    lastViewH = document.getElementById('viewer').offsetHeight;
     armImmersive();
 
     // Releasing the shield is gated on `restored`. When a saved position exists
@@ -218,6 +224,18 @@ async function initReader(url) {
 
     // ── EVENTS ──
     rendition.on('relocated', location => {
+        // A reflow is not reading progress. The same text is still on screen; a taller
+        // viewport just means the page starts earlier, so location.start moves backwards.
+        // Saving that rewinds the bookmark, and overwriting lastCleanCfi would make the
+        // rewind compound on every subsequent toggle. The RSVP anchor is re-seeded by
+        // handleViewportResize itself.
+        if (reflowing) {
+            reflowing = false;
+            clearTimeout(reflowTimer);
+            updateProgress(location);
+            return;
+        }
+
         if (location?.start?.cfi) {
             lastCleanCfi = location.start.cfi;
         }
@@ -930,19 +948,30 @@ function updateImmersiveButton() {
         on ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
 }
 
-// Entering fullscreen changes the viewport, which repaginates the book. Re-display
-// the current CFI or the reader silently jumps pages, and re-seed the RSVP page
-// anchor (same reason as changeFontSize/setFont) or playback flips at the wrong word.
+// Entering fullscreen changes the viewport, which repaginates the book. epub.js
+// restores the position itself in onResized, so the CFI is passed *into* resize()
+// rather than displayed separately — calling display() as well renders the page
+// twice and fires two relocated events for one toggle. Re-seed the RSVP page anchor
+// too (same reason as changeFontSize/setFont) or playback flips at the wrong word.
 function handleViewportResize() {
     if (!rendition || isInitialDisplay) return;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
         const cfi      = lastCleanCfi || rendition.currentLocation()?.start?.cfi;
         const viewerEl = document.getElementById('viewer');
-        if (viewerEl.offsetWidth && viewerEl.offsetHeight) {
-            rendition.resize(viewerEl.offsetWidth, viewerEl.offsetHeight);
-        }
-        if (cfi) rendition.display(cfi).catch(() => {});
+        const w = viewerEl.offsetWidth, h = viewerEl.offsetHeight;
+        if (!w || !h) return;
+
+        // A resize that doesn't change the stage repaginates nothing, so epub.js emits
+        // no relocation. Bailing here keeps `reflowing` from being raised with nothing
+        // to lower it, which would swallow the next genuine save.
+        if (w === lastViewW && h === lastViewH) return;
+        lastViewW = w; lastViewH = h;
+
+        reflowing = true;
+        clearTimeout(reflowTimer);
+        reflowTimer = setTimeout(() => { reflowing = false; }, 2000);
+        rendition.resize(w, h, cfi || undefined);
 
         if (typeof rsvpActive !== 'undefined' && rsvpActive) {
             rsvpPageEndGlobal = -1;
@@ -1012,6 +1041,14 @@ function showChrome() {
 ['top-nav', 'bottom-nav', 'settings-panel', 'toc-panel'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('pointerdown', showChrome);
+});
+
+// The strips reserved for the bars sit outside the epub iframe, and iframe events
+// never bubble out, so a tap exactly where the bars live — the natural place to
+// look for progress — otherwise reaches no handler at all and appears dead.
+document.getElementById('reader-area').addEventListener('pointerdown', () => {
+    if (typeof rsvpActive !== 'undefined' && rsvpActive) return;
+    if (chromeHidden()) showChrome();
 });
 
 // ── HELPERS ──

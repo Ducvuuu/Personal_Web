@@ -48,8 +48,18 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   replayed: the next tap enters it. Taps inside the epub iframe never reach the document, so
   `armImmersive()` listens on the rendition as well.
 - Anything that changes the rendered viewport must repaginate deliberately. `handleViewportResize()`
-  re-displays the current CFI (otherwise the reader silently jumps pages) and re-seeds the RSVP page
+  passes the current CFI *into* `rendition.resize()` — epub.js restores position itself in
+  `onResized`, so calling `display()` as well renders the page twice — and re-seeds the RSVP page
   anchor. Never add a layout-changing control without both — see the table in `RSVP.md`.
+- **A reflow is not reading progress.** Repagination moves `location.start` backwards (a taller
+  viewport fits more text, so the page begins earlier), so saving that relocation rewinds the
+  bookmark, and letting it overwrite `lastCleanCfi` makes the rewind compound on every toggle. The
+  `reflowing` flag skips the save for a relocation the reader caused itself, alongside the existing
+  `isInitialDisplay` and `rsvpExiting` guards. `handleViewportResize()` also bails when the stage
+  size is unchanged, so the flag is never raised with no relocation coming to lower it.
+- The strips reserved for the top and bottom bars sit outside the epub iframe, and iframe events do
+  not bubble out, so `#reader-area` carries its own listener to bring the bars back. Without it a
+  tap exactly where the bars live — the obvious place to check progress — reaches no handler.
 - `<meta name="theme-color">` tracks the reading theme through `applyBodyTheme()`, so the Android
   status bar matches the page instead of sitting against it.
 - The reader bars auto-hide after 4s. Only a tap in the top or bottom `CHROME_BAND` of the page
