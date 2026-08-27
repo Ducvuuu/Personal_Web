@@ -374,6 +374,21 @@ parent receives rsvp-page-words:
   if rsvpWaitingForPage: resume rsvpLoop()
 ```
 
+### Anchor invalidation on relayout
+
+Anything that repaginates the epub invalidates the page anchors — the word ranges were measured
+against the old column layout, so a stale anchor makes the loop flip pages at the wrong word.
+Three call sites in `reader.js` reset `rsvpPageEndGlobal = -1` and re-send `rsvp-get-page`
+after a settle delay:
+
+| Site | Trigger |
+|---|---|
+| `changeFontSize()` | Reader changed the type size |
+| `setFont()` | Reader switched serif/sans |
+| `handleViewportResize()` | Entering or leaving immersive fullscreen, or device rotation |
+
+Any new control that changes the rendered layout must do the same.
+
 ### Visibility detection (`reportVisibleWords`)
 
 ```js

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fdfcf6" id="theme-color-meta">
+    <link rel="manifest" href="../manifest.json">
     <title>Reading — The Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -194,6 +196,10 @@
             <button onclick="toggleRsvpMode()" id="rsvp-btn" aria-label="Toggle RSVP speed reading" aria-pressed="false"
                 class="text-warm-400 hover:text-warm-800 transition-colors text-base">
                 <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+            </button>
+            <button onclick="toggleImmersive()" id="immersive-btn" aria-label="Immersive full screen" aria-pressed="false"
+                class="hidden text-warm-400 hover:text-warm-800 transition-colors text-base">
+                <i class="fa-solid fa-expand" id="immersive-icon" aria-hidden="true"></i>
             </button>
             <div class="h-4 w-px bg-warm-300"></div>
             <button onclick="toggleSettings()" aria-label="Appearance settings"

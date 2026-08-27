@@ -26,6 +26,10 @@ let currentFont   = localStorage.getItem('lib_font')   || 'serif';
 let lastCleanCfi  = null;
 let isInitialDisplay = true;
 let rsvpExiting      = false;
+let wakeLock         = null;    // screen wake lock sentinel, null when not held
+let immersiveOn      = localStorage.getItem('lib_immersive') === '1';
+let chromeTimer      = null;    // pending auto-hide of the reader bars
+let resizeTimer      = null;    // debounce for viewport/fullscreen repagination
 
 
 // ── AUTH ──
@@ -161,6 +165,12 @@ async function initReader(url) {
 
     showLoading(null);
 
+    if (fullscreenSupported()) document.getElementById('immersive-btn').classList.remove('hidden');
+    updateImmersiveButton();
+    acquireWakeLock();
+    showChrome();
+    armImmersive();
+
     // Releasing the shield is gated on `restored`. When a saved position exists
     // but we never managed to display it, keep the shield up for the whole
     // session: on mobile a stray relocate/resize or the visibilitychange save
@@ -235,9 +245,16 @@ async function initReader(url) {
 
     (bookDoc.highlights || []).forEach(h => paintHighlight(h.cfi));
 
-    rendition.on('click', () => {
+    rendition.on('click', e => {
         document.getElementById('settings-panel').classList.add('hidden');
-        if (!rsvpActive) document.body.classList.toggle('reading-mode');
+        if (rsvpActive) return;
+
+        // Coordinates are relative to the epub iframe, which fills the page area.
+        const h      = e.view?.innerHeight || window.innerHeight;
+        const inBand = e.clientY <= h * CHROME_BAND || e.clientY >= h * (1 - CHROME_BAND);
+
+        if (inBand && chromeHidden()) showChrome();
+        else                          hideChrome();
     });
 
     document.addEventListener('keydown', e => {
@@ -802,10 +819,15 @@ function setTheme(theme) {
     updateThemeButtons();
 }
 
+const THEME_COLORS = { sepia: '#fdfcf6', light: '#ffffff', dark: '#1a1612' };
+
 function applyBodyTheme(theme) {
     document.body.classList.remove('theme-light', 'theme-dark');
     if (theme === 'light') document.body.classList.add('theme-light');
     if (theme === 'dark')  document.body.classList.add('theme-dark');
+
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) meta.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.sepia);
 }
 
 function updateThemeButtons() {
@@ -851,6 +873,146 @@ function updateFontButtons() {
     document.getElementById('btn-sans').className =
         `flex-1 py-2 rounded-xl font-outfit text-sm transition-colors ${!isSerif ? 'bg-warm-200 text-warm-900' : 'text-warm-600 hover:bg-warm-100'}`;
 }
+
+// ── IMMERSIVE MODE ──
+// Android hides the status bar and gesture bar only for a fullscreen element, and
+// only from a user gesture — so this can never be entered on load, just re-armed.
+
+function fullscreenSupported() {
+    return typeof document.documentElement.requestFullscreen === 'function';
+}
+
+function isFullscreen() {
+    return document.fullscreenElement != null;
+}
+
+async function toggleImmersive() {
+    if (isFullscreen()) {
+        immersiveOn = false;
+        localStorage.setItem('lib_immersive', '0');
+        try { await document.exitFullscreen(); } catch {}
+        return;
+    }
+    try {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+        immersiveOn = true;
+        localStorage.setItem('lib_immersive', '1');
+    } catch {
+        immersiveOn = false;   // browser refused (no gesture, or unsupported)
+    }
+    updateImmersiveButton();
+}
+
+// Fullscreen needs a user gesture, so a remembered preference can only be re-armed:
+// the next tap enters it. Taps inside the epub iframe never reach the document, so
+// the rendition's own click is armed too.
+function armImmersive() {
+    if (!immersiveOn || !fullscreenSupported()) return;
+    const enter = ev => {
+        // The button runs toggleImmersive() itself; firing here too would enter
+        // and immediately exit, so the tap would appear to do nothing.
+        if (ev?.target?.closest?.('#immersive-btn')) return;
+        document.removeEventListener('pointerdown', enter);
+        if (rendition && typeof rendition.off === 'function') rendition.off('click', enter);
+        if (!isFullscreen()) toggleImmersive();
+    };
+    document.addEventListener('pointerdown', enter);
+    if (rendition) rendition.on('click', enter);
+}
+
+function updateImmersiveButton() {
+    const btn = document.getElementById('immersive-btn');
+    if (!btn) return;
+    const on = isFullscreen();
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-label', on ? 'Exit full screen' : 'Immersive full screen');
+    document.getElementById('immersive-icon').className =
+        on ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+}
+
+// Entering fullscreen changes the viewport, which repaginates the book. Re-display
+// the current CFI or the reader silently jumps pages, and re-seed the RSVP page
+// anchor (same reason as changeFontSize/setFont) or playback flips at the wrong word.
+function handleViewportResize() {
+    if (!rendition || isInitialDisplay) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        const cfi      = lastCleanCfi || rendition.currentLocation()?.start?.cfi;
+        const viewerEl = document.getElementById('viewer');
+        if (viewerEl.offsetWidth && viewerEl.offsetHeight) {
+            rendition.resize(viewerEl.offsetWidth, viewerEl.offsetHeight);
+        }
+        if (cfi) rendition.display(cfi).catch(() => {});
+
+        if (typeof rsvpActive !== 'undefined' && rsvpActive) {
+            rsvpPageEndGlobal = -1;
+            setTimeout(() => rsvpSendToEpub({ type: 'rsvp-get-page' }), 300);
+        }
+    }, 250);
+}
+
+document.addEventListener('fullscreenchange', () => {
+    updateImmersiveButton();
+    handleViewportResize();
+});
+window.addEventListener('resize', handleViewportResize);
+
+// ── WAKE LOCK ──
+// A dimming screen mid-paragraph is the moment attention leaves the book.
+
+async function acquireWakeLock() {
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch { /* denied, low battery, or unsupported — reading still works */ }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') acquireWakeLock();
+});
+
+// ── READER CHROME AUTO-HIDE ──
+// The bars retreat on their own; only a tap in the top or bottom band brings them
+// back, so the middle of the page stays purely for reading.
+
+const CHROME_IDLE_MS = 4000;
+const CHROME_BAND    = 0.22;
+// Only touch devices auto-hide. On desktop the page-turn arrows are chrome too, and
+// having them vanish mid-read is worse than the bars staying put.
+const CHROME_AUTO_HIDE = window.matchMedia('(pointer: coarse)').matches;
+
+function chromeHidden() {
+    return document.body.classList.contains('reading-mode');
+}
+
+function hideChrome() {
+    clearTimeout(chromeTimer);
+    if (typeof rsvpActive !== 'undefined' && rsvpActive) return;
+    document.body.classList.add('reading-mode');
+}
+
+function showChrome() {
+    document.body.classList.remove('reading-mode');
+    clearTimeout(chromeTimer);
+    if (!CHROME_AUTO_HIDE) return;
+    chromeTimer = setTimeout(() => {
+        // Don't retreat out from under anything the reader is still using. The RSVP
+        // panel is positioned against the bars, so it needs them present too.
+        const settingsOpen = !document.getElementById('settings-panel').classList.contains('hidden');
+        const tocOpen      = document.getElementById('toc-panel').classList.contains('open');
+        const prepOpen     = !document.getElementById('rsvp-prep-modal').classList.contains('hidden');
+        const rsvp         = typeof rsvpActive !== 'undefined' && rsvpActive;
+        if (settingsOpen || tocOpen || prepOpen || rsvp) { showChrome(); return; }
+        hideChrome();
+    }, CHROME_IDLE_MS);
+}
+
+// Keep the bars up while they're being used.
+['top-nav', 'bottom-nav', 'settings-panel', 'toc-panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('pointerdown', showChrome);
+});
 
 // ── HELPERS ──
 function showLoading(text) {

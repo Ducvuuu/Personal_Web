@@ -55,6 +55,11 @@
     └── RSVP.md           # Technical reference for the RSVP feature
 ```
 
+`manifest.json` sits at the repo root and makes the site installable; its icons live in
+`shared/assets/`. It uses `display: "standalone"`, so an installed app loses the browser chrome
+but keeps the status bar — the reader's immersive mode removes that separately, via the
+Fullscreen API, and restores it on exit.
+
 ### Journal authoring modes
 
 Every new journal entry permanently chooses one authoring mode in `journal/new.html`:
