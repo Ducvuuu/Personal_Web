@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
-    <link rel="stylesheet" href="home.css?v=8">
+    <link rel="stylesheet" href="home.css?v=9">
     <link rel="preload" as="image" href="assets/hero-background.webp" type="image/webp" fetchpriority="high">
 
     <script>
@@ -562,6 +562,7 @@
                     <p class="mt-5 max-w-2xl text-warm-700 leading-relaxed" data-edit-key="random.intro">Experiments, tiny obsessions, and things made somewhere between curiosity and procrastination.</p>
                 </div>
 
+                <div class="random-project-list">
                 <button type="button" id="cosmo-project-card" class="random-project-card group" aria-haspopup="dialog" aria-controls="cosmo-modal">
                     <span class="random-project-visual" aria-hidden="true">
                         <img src="assets/cosmo-poster.webp" alt="" loading="lazy" decoding="async">
@@ -580,6 +581,40 @@
                         <span class="random-project-open"><span data-edit-key="random.cosmo.card.open_label">Look inside</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
                     </span>
                 </button>
+
+                <button type="button" id="paths-project-card" class="random-project-card paths-project-card group" aria-haspopup="dialog" aria-controls="paths-modal">
+                    <span class="random-project-visual paths-project-visual" aria-hidden="true">
+                        <span class="paths-map-grid"></span>
+                        <span class="paths-map-road paths-map-road-one"></span>
+                        <span class="paths-map-road paths-map-road-two"></span>
+                        <span class="paths-map-road paths-map-road-three"></span>
+                        <span class="paths-route paths-route-one"></span>
+                        <span class="paths-route paths-route-two"></span>
+                        <span class="paths-route paths-route-three"></span>
+                        <span class="paths-route paths-route-four"></span>
+                        <span class="paths-stop paths-stop-start"></span>
+                        <span class="paths-stop paths-stop-mid"></span>
+                        <span class="paths-stop paths-stop-end"></span>
+                        <span class="paths-plane"><i class="fa-solid fa-paper-plane"></i></span>
+                        <span class="paths-map-window">
+                            <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                            <span data-edit-key="random.paths.card.map_label">one ordinary day</span>
+                        </span>
+                        <span class="random-project-badge paths-project-badge"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span data-edit-key="random.paths.card.badge">Private map story</span></span>
+                        <span class="random-project-play paths-project-open-icon"><i class="fa-solid fa-route" aria-hidden="true"></i></span>
+                    </span>
+
+                    <span class="random-project-copy">
+                        <span class="random-project-number" data-edit-key="random.paths.card.number">No. 002 · Personal data</span>
+                        <span class="random-project-title" data-edit-key="random.paths.card.title">Little Paths</span>
+                        <span class="random-project-description" data-edit-key="random.paths.card.description">A soft, animated map that turns the places you went into a small keepsake of the day.</span>
+                        <span class="random-project-tags" aria-hidden="true">
+                            <span data-edit-key="random.paths.card.tag1">Maps</span><span data-edit-key="random.paths.card.tag2">Memory</span><span data-edit-key="random.paths.card.tag3">Private</span>
+                        </span>
+                        <span class="random-project-open"><span data-edit-key="random.paths.card.open_label">Follow the path</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                    </span>
+                </button>
+                </div>
             </div>
         </section>
 
@@ -872,6 +907,75 @@
         </div>
     </div>
 
+    <!-- Little Paths Project Modal -->
+    <div id="paths-modal" class="random-project-modal paths-project-modal" role="dialog" aria-modal="true" aria-labelledby="paths-modal-title" aria-hidden="true" hidden>
+        <div id="paths-modal-dialog" class="random-project-dialog" tabindex="-1">
+            <span class="random-modal-tape paths-modal-tape" aria-hidden="true"></span>
+            <button type="button" id="paths-modal-close" class="random-modal-close paths-modal-close" aria-label="Close Little Paths project details">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+
+            <div class="paths-gallery">
+                <div class="paths-preview" aria-hidden="true">
+                    <div class="paths-preview-topbar">
+                        <span class="paths-preview-brand"><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> <span data-edit-key="random.paths.preview.brand">little paths</span></span>
+                        <span class="paths-preview-date" data-edit-key="random.paths.preview.date">a quiet Tuesday</span>
+                    </div>
+                    <div class="paths-preview-map">
+                        <span class="paths-preview-grid"></span>
+                        <span class="paths-preview-road paths-preview-road-one"></span>
+                        <span class="paths-preview-road paths-preview-road-two"></span>
+                        <span class="paths-preview-road paths-preview-road-three"></span>
+                        <span class="paths-preview-route paths-preview-route-one"></span>
+                        <span class="paths-preview-route paths-preview-route-two"></span>
+                        <span class="paths-preview-route paths-preview-route-three"></span>
+                        <span class="paths-preview-route paths-preview-route-four"></span>
+                        <span class="paths-preview-stop paths-preview-stop-one"></span>
+                        <span class="paths-preview-stop paths-preview-stop-two"></span>
+                        <span class="paths-preview-stop paths-preview-stop-three"></span>
+                        <span class="paths-preview-plane"><i class="fa-solid fa-paper-plane"></i></span>
+                        <span class="paths-place-card paths-place-home"><i></i><span data-edit-key="random.paths.preview.place1">home · 8:42</span></span>
+                        <span class="paths-place-card paths-place-wander"><i></i><span data-edit-key="random.paths.preview.place2">a small detour</span></span>
+                    </div>
+                    <div class="paths-preview-player">
+                        <span class="paths-preview-play"><i class="fa-solid fa-play" aria-hidden="true"></i></span>
+                        <span class="paths-preview-progress"><i></i></span>
+                        <span class="paths-preview-time" data-edit-key="random.paths.preview.time">18:06</span>
+                    </div>
+                </div>
+                <p class="paths-privacy-note"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> <span data-edit-key="random.paths.preview.privacy">Your Timeline stays in your browser.</span></p>
+            </div>
+
+            <article class="cosmo-story paths-story">
+                <p class="cosmo-eyebrow" data-edit-key="random.paths.modal.eyebrow">Random thing no. 002 · Web</p>
+                <h2 id="paths-modal-title" data-edit-key="random.paths.modal.title">Little Paths</h2>
+                <p class="cosmo-dek paths-dek" data-edit-key="random.paths.modal.dek">Turn a day you lived into a softly moving map.</p>
+
+                <div class="cosmo-story-copy">
+                    <p data-edit-key="random.paths.modal.body1">Little Paths reads a Google Timeline export and redraws where you went as a gentle, fading trail across a quiet map.</p>
+                    <p data-edit-key="random.paths.modal.body2">Choose one day or a longer stretch, press play, and watch the route unfold at its own pace. It is less a dashboard and more a tiny atlas of ordinary life.</p>
+                </div>
+
+                <div class="cosmo-notes paths-notes" aria-label="Little Paths highlights">
+                    <span><i class="fa-solid fa-user-shield" aria-hidden="true"></i> <span data-edit-key="random.paths.modal.highlight1">Timeline data never leaves your browser</span></span>
+                    <span><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> <span data-edit-key="random.paths.modal.highlight2">Day and range playback</span></span>
+                    <span><i class="fa-solid fa-camera" aria-hidden="true"></i> <span data-edit-key="random.paths.modal.highlight3">A clean view for keepsake screenshots</span></span>
+                </div>
+
+                <p class="cosmo-hand-note paths-hand-note" data-edit-key="random.paths.modal.note">A small atlas of all the places between things.</p>
+
+                <div class="cosmo-actions">
+                    <a href="https://ducvuuu.github.io/little-paths/" target="_blank" rel="noopener noreferrer" class="cosmo-primary-link paths-primary-link">
+                        <span data-edit-key="random.paths.modal.open_label">Open Little Paths</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                    <a href="https://github.com/Ducvuuu/little-paths" target="_blank" rel="noopener noreferrer" class="cosmo-source-link">
+                        <i class="fa-brands fa-github" aria-hidden="true"></i> <span data-edit-key="random.paths.modal.source_label">View source</span>
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
+
     <!-- Gallery Story Modal -->
     <div id="story-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md transition-opacity duration-300 px-4 opacity-0 pointer-events-none">
         <button onclick="closeStory()" aria-label="Close" class="absolute top-6 right-6 md:top-10 md:right-10 text-warm-300 hover:text-white transition-colors text-4xl p-2 z-50">
@@ -1004,6 +1108,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <script src="../shared/components.js"></script>
-    <script src="home.js?v=6"></script>
+    <script src="home.js?v=7"></script>
 </body>
 </html>

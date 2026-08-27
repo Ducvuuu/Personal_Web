@@ -672,6 +672,73 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // ── Little Paths project modal ─────────────────────────────────────────
+    const pathsCard   = document.getElementById('paths-project-card');
+    const pathsModal  = document.getElementById('paths-modal');
+    const pathsDialog = document.getElementById('paths-modal-dialog');
+    const pathsClose  = document.getElementById('paths-modal-close');
+    let pathsLastFocus    = null;
+    let pathsHideTimer    = null;
+    let pathsBodyOverflow = '';
+
+    window.openPathsModal = function () {
+        window.clearTimeout(pathsHideTimer);
+        pathsLastFocus = document.activeElement;
+        pathsBodyOverflow = document.body.style.overflow;
+        pathsModal.hidden = false;
+        pathsModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        window.requestAnimationFrame(() => {
+            pathsModal.classList.add('is-open');
+            pathsDialog.focus();
+        });
+    };
+
+    window.closePathsModal = function () {
+        if (pathsModal.hidden) return;
+        pathsModal.classList.remove('is-open');
+        pathsModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = pathsBodyOverflow;
+        pathsHideTimer = window.setTimeout(() => {
+            pathsModal.hidden = true;
+            if (pathsLastFocus && document.contains(pathsLastFocus)) pathsLastFocus.focus();
+        }, reduceMotion.matches ? 0 : 280);
+    };
+
+    pathsCard.addEventListener('click', event => {
+        if (editModeOn && event.target.closest('[data-edit-key]')) return;
+        window.openPathsModal();
+    });
+    pathsClose.addEventListener('click', window.closePathsModal);
+    pathsModal.addEventListener('click', event => {
+        if (event.target === pathsModal) window.closePathsModal();
+    });
+    pathsDialog.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', event => {
+            if (editModeOn && event.target.closest('[data-edit-key]')) event.preventDefault();
+        });
+    });
+    pathsModal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            window.closePathsModal();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(pathsDialog.querySelectorAll('button:not([hidden]), a[href]'))
+            .filter(element => !element.hasAttribute('disabled'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === pathsDialog)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
     // ── Promise modal ────────────────────────────────────────────────────────
     const promiseModal        = document.getElementById('promise-modal');
     const promiseModalContent = document.getElementById('promise-modal-content');

@@ -34,6 +34,11 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
   images below the fold use `loading="lazy"` and `decoding="async"`; modal video uses
   `preload="none"`. Gallery display and modal URLs should point to the optimized local WebP assets,
   not full-resolution originals or eager third-party copies.
+- Each item in the home page's “Random things I make” section has a keyboard-accessible project
+  card and a matching `random-project-modal`. Keep new entries inside `.random-project-list`, give
+  every visible label a `data-edit-key`, suppress card/link activation when keyed copy is clicked in
+  edit mode, trap focus inside the open modal, restore focus on close, and prefer lightweight CSS
+  previews or lazy media over eager videos and large poster images.
 - `library/RSVP.md` is the technical reference for the RSVP feature. Update it if you change the RSVP architecture.
 - `journal/new.html` is the only creation gateway for journal entries. It permanently selects
   `template` or `html`; do not add an editor control that switches an existing entry between them.
