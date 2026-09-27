@@ -761,6 +761,136 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // ── Star Cabin project modal ───────────────────────────────────────────
+    // The 3D house (model-viewer from the CDN, a ~2 MB model) loads only the
+    // first time the modal opens; until then the stage shows the poster.
+    const MODEL_VIEWER_SRC = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js';
+    const cabinCard   = document.getElementById('cabin-project-card');
+    const cabinModal  = document.getElementById('cabin-modal');
+    const cabinDialog = document.getElementById('cabin-modal-dialog');
+    const cabinClose  = document.getElementById('cabin-modal-close');
+    const cabinStage  = document.getElementById('cabin-stage');
+    const cabinStatus = document.getElementById('cabin-stage-status');
+    let cabinViewer       = null;
+    let cabinLastFocus    = null;
+    let cabinHideTimer    = null;
+    let cabinBodyOverflow = '';
+
+    function loadCabinViewer() {
+        if (cabinViewer) return;
+        if (!customElements.get('model-viewer') && !document.querySelector('script[data-model-viewer]')) {
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = MODEL_VIEWER_SRC;
+            script.dataset.modelViewer = '';
+            script.addEventListener('error', () => { cabinStatus.textContent = 'The 3D view could not load.'; });
+            document.head.appendChild(script);
+        }
+        cabinViewer = document.createElement('model-viewer');
+        const attrs = {
+            src: 'assets/star-cabin.glb',
+            alt: 'A 3D model of Star Cabin at golden hour that you can spin around',
+            'skybox-image': 'assets/star-cabin-sky.webp',
+            'camera-controls': '',
+            'touch-action': 'pan-y',
+            'interaction-prompt': 'none',
+            'camera-orbit': '-128deg 64deg 46m',
+            'camera-target': '0m 2m 0m',
+            'min-camera-orbit': 'auto 22deg 16m',
+            'max-camera-orbit': 'auto 82deg 70m',
+            'tone-mapping': 'none',
+            'shadow-intensity': '0',
+        };
+        if (!reduceMotion.matches) {
+            Object.assign(attrs, { 'auto-rotate': '', 'auto-rotate-delay': '2500', 'rotation-per-second': '6deg' });
+        }
+        Object.entries(attrs).forEach(([name, value]) => cabinViewer.setAttribute(name, value));
+        cabinStatus.textContent = 'Loading the house…';
+        cabinViewer.addEventListener('progress', event => {
+            const pct = Math.round(event.detail.totalProgress * 100);
+            cabinStatus.textContent = pct < 100 ? `Loading the house… ${pct}%` : '';
+        });
+        cabinViewer.addEventListener('load', () => {
+            cabinStatus.textContent = '';
+            cabinStage.classList.add('is-ready');
+            document.getElementById('cabin-stage-poster').setAttribute('aria-hidden', 'true');
+        });
+        cabinViewer.addEventListener('error', () => { cabinStatus.textContent = 'The 3D view could not load.'; });
+        cabinStage.appendChild(cabinViewer);
+        fitCabinView();
+        new ResizeObserver(fitCabinView).observe(cabinStage);
+    }
+
+    // Keep the whole house in view (about 46° across) whatever the stage's
+    // shape. model-viewer's field of view spans the stage's shorter side.
+    function fitCabinView() {
+        if (!cabinViewer || !cabinStage.clientHeight) return;
+        const aspect = cabinStage.clientWidth / cabinStage.clientHeight;
+        const halfWide = Math.tan((46 / 2) * Math.PI / 180);
+        const fov = aspect < 1 ? 46 : Math.max(30, 2 * Math.atan(halfWide / aspect) * 180 / Math.PI);
+        const value = `${fov.toFixed(1)}deg`;
+        ['field-of-view', 'min-field-of-view', 'max-field-of-view'].forEach(name => cabinViewer.setAttribute(name, value));
+    }
+
+    window.openCabinModal = function () {
+        window.clearTimeout(cabinHideTimer);
+        cabinLastFocus = document.activeElement;
+        cabinBodyOverflow = document.body.style.overflow;
+        cabinModal.hidden = false;
+        cabinModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        loadCabinViewer();
+        window.requestAnimationFrame(() => {
+            cabinModal.classList.add('is-open');
+            cabinDialog.focus();
+        });
+    };
+
+    window.closeCabinModal = function () {
+        if (cabinModal.hidden) return;
+        cabinModal.classList.remove('is-open');
+        cabinModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = cabinBodyOverflow;
+        cabinHideTimer = window.setTimeout(() => {
+            cabinModal.hidden = true;
+            if (cabinLastFocus && document.contains(cabinLastFocus)) cabinLastFocus.focus();
+        }, reduceMotion.matches ? 0 : 280);
+    };
+
+    cabinCard.addEventListener('click', event => {
+        if (editModeOn && event.target.closest('[data-edit-key]')) return;
+        window.openCabinModal();
+    });
+    cabinClose.addEventListener('click', window.closeCabinModal);
+    cabinModal.addEventListener('click', event => {
+        if (event.target === cabinModal) window.closeCabinModal();
+    });
+    cabinDialog.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', event => {
+            if (editModeOn && event.target.closest('[data-edit-key]')) event.preventDefault();
+        });
+    });
+    cabinModal.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            window.closeCabinModal();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(cabinDialog.querySelectorAll('button:not([hidden]), a[href], model-viewer'))
+            .filter(element => !element.hasAttribute('disabled'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === cabinDialog)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
     // ── Promise modal ────────────────────────────────────────────────────────
     const promiseModal        = document.getElementById('promise-modal');
     const promiseModalContent = document.getElementById('promise-modal-content');

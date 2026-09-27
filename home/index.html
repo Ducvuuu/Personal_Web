@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=Poppins:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../shared/shared.css">
-    <link rel="stylesheet" href="home.css?v=10">
+    <link rel="stylesheet" href="home.css?v=11">
     <link rel="preload" as="image" href="assets/hero-background.webp" type="image/webp" fetchpriority="high">
 
     <script>
@@ -600,6 +600,25 @@
                         <span class="random-project-open"><span data-edit-key="random.paths.card.open_label">Follow the path</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
                     </span>
                 </button>
+
+                <button type="button" id="cabin-project-card" class="random-project-card cabin-project-card group" aria-haspopup="dialog" aria-controls="cabin-modal">
+                    <span class="random-project-visual cabin-project-visual" aria-hidden="true">
+                        <img src="assets/star-cabin-poster.webp" alt="" loading="lazy" decoding="async">
+                        <span class="random-project-scrim cabin-project-scrim"></span>
+                        <span class="random-project-badge cabin-project-badge"><i class="fa-solid fa-vr-cardboard" aria-hidden="true"></i> <span data-edit-key="random.cabin.card.badge">VR home</span></span>
+                        <span class="random-project-play cabin-project-open-icon"><i class="fa-solid fa-cube" aria-hidden="true"></i></span>
+                    </span>
+
+                    <span class="random-project-copy">
+                        <span class="random-project-number" data-edit-key="random.cabin.card.number">No. 003 · Virtual reality</span>
+                        <span class="random-project-title" data-edit-key="random.cabin.card.title">Star Cabin</span>
+                        <span class="random-project-description" data-edit-key="random.cabin.card.description">A small house on a hill by the sea, built in Blender, that a Quest can walk straight into from its browser.</span>
+                        <span class="random-project-tags" aria-hidden="true">
+                            <span data-edit-key="random.cabin.card.tag1">WebXR</span><span data-edit-key="random.cabin.card.tag2">Blender</span><span data-edit-key="random.cabin.card.tag3">Quest 3</span>
+                        </span>
+                        <span class="random-project-open"><span data-edit-key="random.cabin.card.open_label">Spin it around</span> <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                    </span>
+                </button>
                 </div>
             </div>
         </section>
@@ -943,6 +962,50 @@
         </div>
     </div>
 
+    <!-- Star Cabin Project Modal -->
+    <div id="cabin-modal" class="random-project-modal cabin-project-modal" role="dialog" aria-modal="true" aria-labelledby="cabin-modal-title" aria-hidden="true" hidden>
+        <div id="cabin-modal-dialog" class="random-project-dialog" tabindex="-1">
+            <span class="random-modal-tape cabin-modal-tape" aria-hidden="true"></span>
+            <button type="button" id="cabin-modal-close" class="random-modal-close cabin-modal-close" aria-label="Close Star Cabin project details">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+
+            <div class="cosmo-gallery cabin-gallery">
+                <div id="cabin-stage" class="cosmo-stage cabin-stage">
+                    <img id="cabin-stage-poster" src="assets/star-cabin-poster.webp" alt="Star Cabin at golden hour, seen from above: a dark timber house with a glass roof on a grassy hill by the sea" loading="lazy" decoding="async">
+                    <p id="cabin-stage-status" class="cabin-stage-status" role="status" aria-live="polite"></p>
+                </div>
+                <p class="cabin-stage-hint"><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> <span data-edit-key="random.cabin.stage.hint">Drag to spin it around, scroll or pinch to zoom</span></p>
+            </div>
+
+            <article class="cosmo-story cabin-story">
+                <p class="cosmo-eyebrow" data-edit-key="random.cabin.modal.eyebrow">Random thing no. 003 · VR</p>
+                <h2 id="cabin-modal-title" data-edit-key="random.cabin.modal.title">Star Cabin</h2>
+                <p class="cosmo-dek cabin-dek" data-edit-key="random.cabin.modal.dek">A cozy home to wander around in VR.</p>
+
+                <div class="cosmo-story-copy">
+                    <p data-edit-key="random.cabin.modal.body1">Star Cabin is a little house I built in Blender and put on the web, so a Meta Quest can walk straight in from its browser, with nothing to install. A reading cabin under a glass roof, a living room lined with books, a deck with a hot tub and string lights, and a garage with a turntable.</p>
+                    <p data-edit-key="random.cabin.modal.body2">Night, golden hour and day each have their own baked light. The lamps and the weather live on a small panel on your wrist, and with hand tracking you can pinch a book off the shelf, throw it, and call it back.</p>
+                </div>
+
+                <div class="cosmo-notes cabin-notes" aria-label="Star Cabin highlights">
+                    <span><i class="fa-solid fa-sun" aria-hidden="true"></i> <span data-edit-key="random.cabin.modal.highlight1">Night, golden hour and day</span></span>
+                    <span><i class="fa-solid fa-hand" aria-hidden="true"></i> <span data-edit-key="random.cabin.modal.highlight2">Pull, throw and call things back by hand</span></span>
+                    <span><i class="fa-solid fa-book-open" aria-hidden="true"></i> <span data-edit-key="random.cabin.modal.highlight3">A lit nook of 32 favourite books</span></span>
+                </div>
+
+                <p class="cosmo-hand-note cabin-hand-note" data-edit-key="random.cabin.modal.note">Somewhere quiet to go at the end of the day.</p>
+
+                <div class="cosmo-actions">
+                    <a href="https://ducvuuu.github.io/star-cabin/" target="_blank" rel="noopener noreferrer" class="cosmo-primary-link cabin-primary-link">
+                        <span data-edit-key="random.cabin.modal.open_label">Walk inside</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <p class="cabin-device-note"><i class="fa-brands fa-meta" aria-hidden="true"></i> <span data-edit-key="random.cabin.modal.device_note">Best in a Meta Quest browser, works on a computer too</span></p>
+            </article>
+        </div>
+    </div>
+
     <!-- Gallery Story Modal -->
     <div id="story-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/90 backdrop-blur-md transition-opacity duration-300 px-4 opacity-0 pointer-events-none">
         <button onclick="closeStory()" aria-label="Close" class="absolute top-6 right-6 md:top-10 md:right-10 text-warm-300 hover:text-white transition-colors text-4xl p-2 z-50">
@@ -1075,6 +1138,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <script src="../shared/components.js"></script>
-    <script src="home.js?v=8"></script>
+    <script src="home.js?v=9"></script>
 </body>
 </html>
