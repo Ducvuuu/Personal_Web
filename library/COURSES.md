@@ -16,13 +16,15 @@ Open a session to see readings grouped by topic and lecturer. Select EN or VI wh
 
 An edition can also include an `https://` original PDF link in its JSON plan. The PDF button opens that source separately. The EPUB remains the readable, reflowable edition used by the current reader. This release does not convert PDFs automatically.
 
+Each assignment can carry a `focus`: one line saying what to read for that class, such as a page range, "intro and conclusion" or "skip". It shows under the reading in the session view, where **What to read** or the pencil button edits it in place. A focus belongs to the assignment rather than the reading, so the same chapter can be read closely on one day and only reviewed on another. When an assignment has both a focus and `minutes`, that narrowed estimate replaces the edition's full-length time, and the session header adds up the required time for the day. The bundled MPP-502 plan has a focus for every assignment, taken from the syllabus.
+
 Completing either language prepares a reading. Repeated assignments refer to one reading identity and share its progress. Optional readings do not increase required totals. The manual preparation check changes `preparationComplete` without changing the EPUB bookmark or percentage. Finishing the EPUB sets preparation complete automatically.
 
 ## Storage contract
 
 Existing books remain in `users/{uid}/library/{bookId}` with their existing fields. EPUB and cover uploads retain `library/{uid}/books/{bookId}.epub` and `library/{uid}/covers/{bookId}.{extension}`. All operations require the current authenticated owner. Existing deployed Firebase rules must allow the owner to read and write these paths; this change does not broaden access or modify rules.
 
-Course plans are documents in the same library collection with `kind: "course"`, `schemaVersion: 1`, `title`, `code`, `term`, `description`, `readings`, `sessions` and `uploadedAt`. Ordinary books have no `kind: "course"` field. `readings[].editions[].bookId` refers to the existing book document. Attaching an EPUB uses a Firestore transaction to verify both current records and updates only the reading reference and book attachment metadata: `courseId`, `readingId`, `language`, `originalPdfUrl`.
+Course plans are documents in the same library collection with `kind: "course"`, `schemaVersion: 1`, `title`, `code`, `term`, `description`, `readings`, `sessions` and `uploadedAt`. Ordinary books have no `kind: "course"` field. `readings[].editions[].bookId` refers to the existing book document. Saving a focus also runs in a transaction: it re-reads the course and rewrites only `sessions`, so attachments saved on another device are kept. Attaching an EPUB uses a Firestore transaction to verify both current records and updates only the reading reference and book attachment metadata: `courseId`, `readingId`, `language`, `originalPdfUrl`.
 
 Example plan:
 
@@ -61,7 +63,12 @@ Example plan:
           "title": "The policy process",
           "lecturer": "Lecturer name",
           "assignments": [
-            { "readingId": "reading-1", "required": true, "pages": "1-21" }
+            {
+              "readingId": "reading-1",
+              "required": true,
+              "minutes": 30,
+              "focus": "Pages 1 to 21 only"
+            }
           ]
         }
       ]

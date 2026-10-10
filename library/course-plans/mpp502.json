@@ -1042,20 +1042,23 @@
             {
               "readingId": "resource-001",
               "required": false,
-              "minutes": null,
-              "pages": null
+              "minutes": 5,
+              "pages": null,
+              "focus": "Pages 3 to 4: grading, quiz dates and the paper deadline."
             },
             {
               "readingId": "resource-002",
               "required": false,
               "minutes": null,
-              "pages": null
+              "pages": null,
+              "focus": "Lecture slides. Skim after the class."
             },
             {
               "readingId": "resource-003",
               "required": false,
               "minutes": null,
-              "pages": null
+              "pages": null,
+              "focus": "Lecture slides. Skim after the class."
             }
           ]
         },
@@ -1067,17 +1070,20 @@
             {
               "readingId": "reading-001",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole piece: how to prepare a case and take part in the discussion."
             },
             {
               "readingId": "reading-002",
               "required": true,
-              "minutes": 20
+              "minutes": null,
+              "focus": "Whole case. Note the facts behind the 3 discussion questions."
             },
             {
               "readingId": "reading-003",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Prepare short answers to all 3 questions."
             }
           ]
         }
@@ -1097,27 +1103,32 @@
             {
               "readingId": "reading-004",
               "required": true,
-              "minutes": 60
+              "minutes": null,
+              "focus": "Read carefully: the types of market failure (public goods, externalities, information, market power). Also assigned on 14 and 15 Oct."
             },
             {
               "readingId": "reading-005",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole article: the health and information problem around glyphosate."
             },
             {
               "readingId": "reading-006",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole article: what Mexico's ban changed."
             },
             {
               "readingId": "reading-007",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole article: why Google's dominance is a market failure."
             },
             {
               "readingId": "reading-008",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole article: the remedies on the table."
             }
           ]
         },
@@ -1129,12 +1140,14 @@
             {
               "readingId": "reading-009",
               "required": true,
-              "minutes": 65
+              "minutes": 25,
+              "focus": "Abstract, the definition of digital transformation, and the conclusion. Skim the interview quotes."
             },
             {
               "readingId": "reading-010",
               "required": true,
-              "minutes": 40
+              "minutes": 20,
+              "focus": "Introduction and conclusion. Skim the historical sections."
             }
           ]
         },
@@ -1146,17 +1159,20 @@
             {
               "readingId": "reading-011",
               "required": true,
-              "minutes": null
+              "minutes": null,
+              "focus": "Read carefully: the elements of the policy system and the stages model."
             },
             {
               "readingId": "reading-012",
               "required": true,
-              "minutes": 45
+              "minutes": null,
+              "focus": "Read carefully: problems, policies and politics streams, and policy windows."
             },
             {
               "readingId": "reading-013",
               "required": true,
-              "minutes": 35
+              "minutes": null,
+              "focus": "Whole case. Note the key facts and your own recommendation."
             }
           ]
         },
@@ -1168,12 +1184,14 @@
             {
               "readingId": "reading-014",
               "required": true,
-              "minutes": 55
+              "minutes": null,
+              "focus": "Read carefully: what public value is and how it is created."
             },
             {
               "readingId": "reading-015",
               "required": true,
-              "minutes": 125
+              "minutes": 60,
+              "focus": "Focus on the strategic triangle: public value, legitimacy and support, operational capacity. Skim the examples."
             }
           ]
         }
@@ -1193,22 +1211,26 @@
             {
               "readingId": "reading-016",
               "required": true,
-              "minutes": 50
+              "minutes": null,
+              "focus": "Read carefully: why and how the state acts in the economy."
             },
             {
               "readingId": "reading-004",
               "required": true,
-              "minutes": 60
+              "minutes": 10,
+              "focus": "Already read for Tue 13 Oct. Review your notes only."
             },
             {
               "readingId": "reading-017",
               "required": true,
-              "minutes": 40
+              "minutes": 25,
+              "focus": "Introduction, the main argument, and the conclusion."
             },
             {
               "readingId": "reading-018",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole piece."
             }
           ]
         },
@@ -1220,22 +1242,26 @@
             {
               "readingId": "reading-019",
               "required": true,
-              "minutes": 55
+              "minutes": 25,
+              "focus": "Abstract, introduction, main findings and conclusion. Skip the methods and appendix."
             },
             {
               "readingId": "reading-020",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole article."
             },
             {
               "readingId": "reading-021",
               "required": true,
-              "minutes": 45
+              "minutes": 25,
+              "focus": "Abstract, introduction, findings and discussion."
             },
             {
               "readingId": "reading-022",
               "required": true,
-              "minutes": 155
+              "minutes": 20,
+              "focus": "Skim only: the introduction, the 10 principles and the contents page."
             }
           ]
         },
@@ -1247,28 +1273,33 @@
             {
               "readingId": "reading-023",
               "required": true,
-              "minutes": null
+              "minutes": 60,
+              "focus": "Official actors: legislature, executive, bureaucracy and courts. Skim the US detail."
             },
             {
               "readingId": "reading-024",
               "required": true,
-              "minutes": null
+              "minutes": 60,
+              "focus": "Unofficial actors: interest groups, parties, media and think tanks. Skim the US detail."
             },
             {
               "readingId": "reading-025",
               "required": false,
-              "minutes": 55
+              "minutes": null,
+              "focus": "Optional. Skip this week."
             },
             {
               "readingId": "reading-026",
               "required": false,
-              "minutes": 55
+              "minutes": null,
+              "focus": "Optional. Skip this week."
             },
             {
               "readingId": "reading-059",
               "required": true,
-              "minutes": null,
-              "pages": null
+              "minutes": 35,
+              "pages": null,
+              "focus": "Whole case. Prepare your role for the simulation."
             }
           ]
         },
@@ -1280,17 +1311,20 @@
             {
               "readingId": "reading-027",
               "required": true,
-              "minutes": 55
+              "minutes": null,
+              "focus": "Read carefully: the forms of government failure in development."
             },
             {
               "readingId": "reading-028",
               "required": true,
-              "minutes": 50
+              "minutes": 30,
+              "focus": "The main argument and the conclusion."
             },
             {
               "readingId": "reading-029",
               "required": true,
-              "minutes": 30
+              "minutes": null,
+              "focus": "Whole case."
             }
           ]
         }
@@ -1310,27 +1344,32 @@
             {
               "readingId": "reading-004",
               "required": true,
-              "minutes": 60
+              "minutes": 10,
+              "focus": "Already read for Tue 13 Oct. Review your notes only."
             },
             {
               "readingId": "reading-030",
               "required": true,
-              "minutes": 250
+              "minutes": 60,
+              "focus": "Only pp. 117 to 148, the essay \"Further Thoughts on Equality and Efficiency\". The file is the whole book."
             },
             {
               "readingId": "reading-031",
-              "required": true,
-              "minutes": 85
+              "required": false,
+              "minutes": null,
+              "focus": "Not in the syllabus. Skip."
             },
             {
               "readingId": "reading-032",
               "required": false,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Optional. Skip this week."
             },
             {
               "readingId": "reading-033",
               "required": false,
-              "minutes": 300
+              "minutes": null,
+              "focus": "Optional. Skip this week."
             }
           ]
         },
@@ -1342,12 +1381,14 @@
             {
               "readingId": "reading-034",
               "required": true,
-              "minutes": 20
+              "minutes": 10,
+              "focus": "Skim the skills framework tables."
             },
             {
               "readingId": "reading-035",
               "required": true,
-              "minutes": 25
+              "minutes": null,
+              "focus": "Whole case."
             }
           ]
         },
@@ -1359,12 +1400,14 @@
             {
               "readingId": "reading-036",
               "required": true,
-              "minutes": 30
+              "minutes": null,
+              "focus": "Whole lecture note: what institutions are and why they matter."
             },
             {
               "readingId": "reading-037",
               "required": true,
-              "minutes": null
+              "minutes": 60,
+              "focus": "Read carefully: inclusive versus extractive institutions. The text is OCR, so open the PDF if a passage reads oddly."
             }
           ]
         },
@@ -1376,17 +1419,20 @@
             {
               "readingId": "reading-038",
               "required": true,
-              "minutes": 15
+              "minutes": null,
+              "focus": "Whole piece."
             },
             {
               "readingId": "reading-039",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole piece."
             },
             {
               "readingId": "reading-040",
               "required": true,
-              "minutes": 40
+              "minutes": 25,
+              "focus": "The main argument and the conclusion."
             }
           ]
         }
@@ -1406,17 +1452,20 @@
             {
               "readingId": "reading-041",
               "required": true,
-              "minutes": 60
+              "minutes": null,
+              "focus": "Read carefully: the conclusion on state or market."
             },
             {
               "readingId": "reading-042",
               "required": true,
-              "minutes": 20
+              "minutes": null,
+              "focus": "Whole chapter."
             },
             {
               "readingId": "reading-043",
               "required": false,
-              "minutes": 945
+              "minutes": null,
+              "focus": "Optional. Skip."
             }
           ]
         },
@@ -1428,7 +1477,8 @@
             {
               "readingId": "reading-044",
               "required": true,
-              "minutes": 80
+              "minutes": 30,
+              "focus": "A master's thesis used as a case. Read the summary, the findings and the conclusion, about 15 pages."
             }
           ]
         },
@@ -1440,12 +1490,14 @@
             {
               "readingId": "reading-045",
               "required": true,
-              "minutes": 15
+              "minutes": null,
+              "focus": "Whole piece."
             },
             {
               "readingId": "reading-046",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole piece."
             }
           ]
         },
@@ -1457,17 +1509,20 @@
             {
               "readingId": "reading-047",
               "required": true,
-              "minutes": 90
+              "minutes": 35,
+              "focus": "Introduction, the main argument and the policy recommendations."
             },
             {
               "readingId": "reading-048",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole piece."
             },
             {
               "readingId": "reading-049",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole piece."
             }
           ]
         }
@@ -1487,17 +1542,20 @@
             {
               "readingId": "reading-050",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Whole piece."
             },
             {
               "readingId": "reading-051",
               "required": true,
-              "minutes": 10
+              "minutes": null,
+              "focus": "Whole chapter."
             },
             {
               "readingId": "reading-052",
               "required": true,
-              "minutes": 20
+              "minutes": null,
+              "focus": "Whole chapter."
             }
           ]
         },
@@ -1509,22 +1567,26 @@
             {
               "readingId": "reading-053",
               "required": true,
-              "minutes": 75
+              "minutes": 30,
+              "focus": "Skim the framework's core assumptions and its diagram. Cairney Ch. 10 explains the same framework more simply."
             },
             {
               "readingId": "reading-054",
               "required": true,
-              "minutes": 40
+              "minutes": null,
+              "focus": "Read carefully: the clearest summary of the advocacy coalition framework."
             },
             {
               "readingId": "reading-055",
               "required": true,
-              "minutes": 35
+              "minutes": null,
+              "focus": "Whole case. Note the coalitions on each side."
             },
             {
               "readingId": "reading-056",
               "required": true,
-              "minutes": 5
+              "minutes": null,
+              "focus": "Prepare short answers to the questions."
             }
           ]
         },
@@ -1536,12 +1598,14 @@
             {
               "readingId": "reading-057",
               "required": true,
-              "minutes": 25
+              "minutes": null,
+              "focus": "Read carefully. You will use it for the policy paper."
             },
             {
               "readingId": "reading-058",
               "required": true,
-              "minutes": 25
+              "minutes": null,
+              "focus": "Read carefully: FUV's guide for the policy paper due 26 Oct."
             }
           ]
         }

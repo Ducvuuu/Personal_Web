@@ -1,4 +1,4 @@
-import { isCourse, validateCourse } from "./model";
+import { isCourse, validateCourse, withFocus } from "./model";
 
 export function createLibraryRepository(firebase, uid) {
   const { auth, db, storage, serverTimestamp } = firebase;
@@ -89,6 +89,20 @@ export function createLibraryRepository(firebase, uid) {
           readingId,
           language,
           originalPdfUrl: edition.pdfUrl || currentBook.originalPdfUrl || null,
+        });
+      });
+    },
+    async setFocus(courseId, sessionId, groupId, readingId, focus) {
+      requireOwner();
+      const courseRef = library.doc(courseId);
+      // Re-read the course so an attachment saved on another device is kept.
+      await db.runTransaction(async (transaction) => {
+        const snap = await transaction.get(courseRef);
+        requireOwner();
+        if (!snap.exists) throw new Error("This course no longer exists.");
+        const current = validateCourse(snap.data());
+        transaction.update(courseRef, {
+          sessions: withFocus(current, sessionId, groupId, readingId, focus),
         });
       });
     },
