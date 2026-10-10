@@ -123,6 +123,23 @@ describe("existing Firebase records", () => {
     ).rejects.toThrow(/already has/);
     expect(fixture.updates).toEqual([]);
   });
+  it("saves one assignment's focus without dropping attachments made on another device", async () => {
+    const fixture = services(),
+      repo = createLibraryRepository(fixture.sdk, "owner"),
+      current = { ...validateCourse(plan), id: "course" };
+    current.readings[0].editions[1].bookId = "other-device";
+    fixture.records.set("course", current);
+    await repo.setFocus("course", "day2", "topic", "chapter", "  pp. 1 to 9  ");
+    const saved = fixture.updates.find((u) => u.id === "course").data;
+    expect(Object.keys(saved)).toEqual(["sessions"]);
+    expect(saved.sessions[1].groups[0].assignments[0].focus).toBe("pp. 1 to 9");
+    expect(saved.sessions[0].groups[0].assignments[0].focus).toBeNull();
+    fixture.updates.length = 0;
+    await expect(
+      repo.setFocus("course", "day2", "topic", "extra", "x"),
+    ).rejects.toThrow(/no longer in this session/);
+    expect(fixture.updates).toEqual([]);
+  });
   it("cleans up uploads when the document write fails", async () => {
     const fixture = services(),
       repo = createLibraryRepository(fixture.sdk, "owner");

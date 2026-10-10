@@ -10,10 +10,18 @@ import {
   readerHref,
   safeUrl,
   validateCourse,
+  assignmentMinutes,
+  sessionMinutes,
+  FOCUS_MAX,
 } from "./model";
 
 const go = (path) => {
   window.location.hash = path;
+};
+const durationText = (minutes) => {
+  const h = Math.floor(minutes / 60),
+    m = minutes % 60;
+  return h ? `${h} h${m ? ` ${m} min` : ""}` : `${m} min`;
 };
 const dateText = (date) =>
   new Date(`${date}T12:00:00`).toLocaleDateString("en-GB", {
@@ -63,6 +71,7 @@ export function Courses({
   onUpload,
   onLink,
   onPrepare,
+  onFocus,
 }) {
   const [search, setSearch] = useState(""),
     [tab, setTab] = useState("sessions");
@@ -99,6 +108,7 @@ export function Courses({
         onUpload={onUpload}
         onLink={onLink}
         onPrepare={onPrepare}
+        onFocus={onFocus}
       />
     );
   if (course) {
@@ -322,10 +332,19 @@ export function Courses({
     </div>
   );
 }
-function Session({ course, session, books, onUpload, onLink, onPrepare }) {
+function Session({
+  course,
+  session,
+  books,
+  onUpload,
+  onLink,
+  onPrepare,
+  onFocus,
+}) {
   const [filter, setFilter] = useState("all"),
     [search, setSearch] = useState("");
-  const stats = sessionStats(course, session, books);
+  const stats = sessionStats(course, session, books),
+    minutes = sessionMinutes(course, session);
   const groups = session.groups
     .map((g) => ({
       ...g,
@@ -349,7 +368,16 @@ function Session({ course, session, books, onUpload, onLink, onPrepare }) {
         {course.title} · {session.format}
       </p>
       <h2 className="font-heavy text-3xl my-3">{dateText(session.date)}</h2>
-      <p className="text-sm text-warm-500 mb-6">{session.title}</p>
+      <p className="text-sm text-warm-500 mb-6">
+        {session.title}
+        {minutes > 0 && (
+          <>
+            {" · "}
+            <Icon name="clock" /> About {durationText(minutes)} of required
+            reading
+          </>
+        )}
+      </p>
       <Progress value={stats.percent} label="Session preparation progress" />
       <div className="course-toolbar mt-6">
         <div className="flex flex-wrap gap-3">
@@ -389,10 +417,12 @@ function Session({ course, session, books, onUpload, onLink, onPrepare }) {
                 assignment={a}
                 course={course}
                 session={session}
+                group={group}
                 books={books}
                 onUpload={onUpload}
                 onLink={onLink}
                 onPrepare={onPrepare}
+                onFocus={onFocus}
               />
             ))}
           </div>
@@ -413,10 +443,12 @@ function ReadingRow({
   assignment,
   course,
   session,
+  group,
   books,
   onUpload,
   onLink,
   onPrepare,
+  onFocus,
 }) {
   const [language, setLanguage] = useState(
       () =>
@@ -454,9 +486,10 @@ function ReadingRow({
         <p className="text-xs text-warm-500 mt-1">{reading.author}</p>
         <div className="course-reading-meta">
           <span>{reading.type}</span>
-          {(edition.minutes || assignment.minutes) && (
+          {assignmentMinutes(assignment, edition) && (
             <span>
-              <Icon name="clock" /> {edition.minutes || assignment.minutes} min
+              <Icon name="clock" /> {assignmentMinutes(assignment, edition)}{" "}
+              min
             </span>
           )}
           {edition.pages && <span>{edition.pages} pages</span>}
@@ -487,6 +520,15 @@ function ReadingRow({
             <span className="course-tag">Prepared in another edition</span>
           )}
         </div>
+        {session && group && onFocus && (
+          <Focus
+            reading={reading}
+            focus={assignment.focus}
+            onSave={(text) =>
+              onFocus(course.id, session.id, group.id, reading.id, text)
+            }
+          />
+        )}
         {error && (
           <p role="alert" className="text-xs text-red-600 mt-2">
             {error}
@@ -543,6 +585,101 @@ function ReadingRow({
         )}
       </div>
     </article>
+  );
+}
+function Focus({ reading, focus, onSave }) {
+  const [editing, setEditing] = useState(false),
+    [draft, setDraft] = useState(focus || ""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const fieldId = `focus-${reading.id}`,
+    field = React.useRef(null),
+    trigger = React.useRef(null),
+    opened = React.useRef(false);
+  React.useEffect(() => {
+    if (editing) {
+      opened.current = true;
+      const el = field.current;
+      el?.focus();
+      el?.setSelectionRange(el.value.length, el.value.length);
+    } else if (opened.current) trigger.current?.focus();
+  }, [editing]);
+  const close = () => {
+    setDraft(focus || "");
+    setEditing(false);
+  };
+  async function save(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (editing)
+    return (
+      <form className="course-focus-form" onSubmit={save}>
+        <label htmlFor={fieldId} className="sr-only">
+          What to read in {reading.title}
+        </label>
+        <textarea
+          id={fieldId}
+          className="library-input"
+          rows={2}
+          maxLength={FOCUS_MAX}
+          ref={field}
+          disabled={busy}
+          placeholder="For example: pp. 117 to 148 only, or intro and conclusion"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && close()}
+        />
+        <div className="flex gap-2 mt-2">
+          <button className="library-primary text-xs" disabled={busy}>
+            {busy ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="library-soft text-xs"
+            disabled={busy}
+            onClick={close}
+          >
+            Cancel
+          </button>
+        </div>
+        {error && (
+          <p role="alert" className="text-xs text-red-600 mt-2">
+            {error}
+          </p>
+        )}
+      </form>
+    );
+  return (
+    <div className="course-focus">
+      {focus && (
+        <p>
+          <Icon name="crosshairs" />
+          <span>{focus}</span>
+        </p>
+      )}
+      <button
+        ref={trigger}
+        className="course-focus-edit"
+        onClick={() => {
+          setDraft(focus || "");
+          setEditing(true);
+        }}
+        aria-label={`${focus ? "Edit" : "Add"} what to read in ${reading.title}`}
+      >
+        <Icon name={focus ? "pen" : "plus"} />
+        {!focus && <span>What to read</span>}
+      </button>
+    </div>
   );
 }
 export function CourseImport({ onClose, onImport }) {

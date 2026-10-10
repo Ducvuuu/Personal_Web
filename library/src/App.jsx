@@ -366,6 +366,7 @@ export function LibraryApp({ services }) {
                   onPrepare={(id, complete) =>
                     repository.current.markPrepared(id, complete)
                   }
+                  onFocus={(...args) => repository.current.setFocus(...args)}
                 />
               ) : (
                 <>

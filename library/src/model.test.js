@@ -5,6 +5,8 @@ import {
   courseStats,
   readerHref,
   safeUrl,
+  sessionMinutes,
+  assignmentMinutes,
 } from "./model";
 
 import { plan } from "./test-fixture";
@@ -21,7 +23,12 @@ describe("course preparation", () => {
         r.editions.every((e) => !e.bookId && !e.pdfUrl),
       ),
     ).toBe(true);
-    expect(courseStats(course, [])).toEqual({ done: 0, total: 54, percent: 0 });
+    expect(courseStats(course, [])).toEqual({ done: 0, total: 53, percent: 0 });
+    expect(
+      course.sessions.every((s) =>
+        s.groups.every((g) => g.assignments.every((a) => a.focus)),
+      ),
+    ).toBe(true);
   });
   it("counts either language once, shares completion across sessions, and excludes optional readings", () => {
     const course = validateCourse(plan),
@@ -106,5 +113,63 @@ describe("course preparation", () => {
       course: "course-1",
       session: "day1",
     });
+  });
+  it("cleans focus notes and lets a narrowed estimate replace the full-length one", () => {
+    const course = validateCourse({
+      ...plan,
+      readings: [
+        {
+          id: "chapter",
+          title: "Chapter",
+          editions: [
+            { language: "EN", minutes: 250 },
+            { language: "VI", minutes: 300 },
+          ],
+        },
+        plan.readings[1],
+      ],
+      sessions: [
+        {
+          ...plan.sessions[0],
+          groups: [
+            {
+              ...plan.sessions[0].groups[0],
+              assignments: [
+                {
+                  readingId: "chapter",
+                  minutes: 60,
+                  focus: "  pp. 117\n to 148 ",
+                },
+                { readingId: "extra", required: false, focus: "   " },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const [focused, blank] = course.sessions[0].groups[0].assignments;
+    expect(focused.focus).toBe("pp. 117 to 148");
+    expect(blank.focus).toBeNull();
+    expect(assignmentMinutes(focused, course.readings[0].editions[1])).toBe(60);
+    expect(
+      assignmentMinutes({ minutes: 60, focus: null }, { minutes: 300 }),
+    ).toBe(300);
+    expect(sessionMinutes(course, course.sessions[0])).toBe(60);
+    expect(
+      validateCourse({
+        ...plan,
+        sessions: [
+          {
+            ...plan.sessions[0],
+            groups: [
+              {
+                ...plan.sessions[0].groups[0],
+                assignments: [{ readingId: "chapter", focus: "x".repeat(900) }],
+              },
+            ],
+          },
+        ],
+      }).sessions[0].groups[0].assignments[0].focus,
+    ).toHaveLength(300);
   });
 });

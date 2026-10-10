@@ -78,6 +78,57 @@ export function nextSession(
     .sort((a, b) => a.date.localeCompare(b.date))
     .find((s) => s.date >= today);
 }
+export const FOCUS_MAX = 300;
+export function cleanFocus(value) {
+  if (typeof value !== "string") return null;
+  const text = value.replace(/\s+/g, " ").trim().slice(0, FOCUS_MAX);
+  return text || null;
+}
+// A focus narrows the assignment, so its own estimate wins over the edition's full-length one.
+export function assignmentMinutes(assignment, edition) {
+  if (assignment.focus && assignment.minutes) return assignment.minutes;
+  return edition?.minutes || assignment.minutes || null;
+}
+export function sessionMinutes(course, session) {
+  const seen = new Set();
+  let total = 0;
+  for (const group of session.groups)
+    for (const a of group.assignments) {
+      if (a.required === false || seen.has(a.readingId)) continue;
+      seen.add(a.readingId);
+      const reading = course.readings.find((r) => r.id === a.readingId);
+      total +=
+        assignmentMinutes(
+          a,
+          reading?.editions.find((e) => e.minutes),
+        ) || 0;
+    }
+  return total;
+}
+export function withFocus(course, sessionId, groupId, readingId, focus) {
+  let found = false;
+  const sessions = course.sessions.map((s) =>
+    s.id !== sessionId
+      ? s
+      : {
+          ...s,
+          groups: s.groups.map((g) =>
+            g.id !== groupId
+              ? g
+              : {
+                  ...g,
+                  assignments: g.assignments.map((a) => {
+                    if (a.readingId !== readingId) return a;
+                    found = true;
+                    return { ...a, focus: cleanFocus(focus) };
+                  }),
+                },
+          ),
+        },
+  );
+  if (!found) throw new Error("That reading is no longer in this session.");
+  return sessions;
+}
 export function readerHref(bookId, courseId, sessionId) {
   const query = new URLSearchParams({ id: bookId });
   if (courseId) query.set("course", courseId);
@@ -174,6 +225,7 @@ export function validateCourse(input) {
           required: a.required !== false,
           minutes: Number(a.minutes) > 0 ? Number(a.minutes) : null,
           pages: typeof a.pages === "string" ? a.pages.slice(0, 100) : null,
+          focus: cleanFocus(a.focus),
         };
       });
       unique(

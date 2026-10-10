@@ -393,6 +393,47 @@ select:focus-visible {
 .course-reading-body h4 {
   overflow-wrap: anywhere;
 }
+.course-focus {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+}
+.course-focus p {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #7a4d2f;
+}
+.course-focus p i {
+  color: #d56a31;
+  font-size: 11px;
+}
+.course-focus-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #b18a63;
+  padding: 2px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.course-focus-edit:hover,
+.course-focus-edit:focus-visible {
+  color: #8f4228;
+  background: #f2e6d8;
+}
+.course-focus-form {
+  margin-top: 10px;
+  max-width: 560px;
+}
+.course-focus-form textarea {
+  font-size: 13px;
+  resize: vertical;
+}
 @media (max-width: 900px) {
   .course-reading {
     grid-template-columns: 38px minmax(0, 1fr);
