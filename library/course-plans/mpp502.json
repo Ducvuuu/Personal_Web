@@ -1103,8 +1103,8 @@
             {
               "readingId": "reading-004",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: the types of market failure (public goods, externalities, information, market power). Also assigned on 14 and 15 Oct."
+              "minutes": 50,
+              "focus": "Read section 3, market failures (EN pp. 7 to 14, VI pp. 4 to 12), section 5, specific markets (EN pp. 18 to 29, VI pp. 13 to 22) and the Summary (EN p. 33, VI p. 26). Skim the rest. Skip the boxed readings."
             },
             {
               "readingId": "reading-005",
@@ -1140,14 +1140,14 @@
             {
               "readingId": "reading-009",
               "required": true,
-              "minutes": 25,
-              "focus": "Abstract, the definition of digital transformation, and the conclusion. Skim the interview quotes."
+              "minutes": 20,
+              "focus": "Read the Introduction (p. 1), Results: the definition (pp. 7 to 10) and Discussion and conclusion (pp. 10 to 12). Skip the Background (pp. 2 to 6) and the codebook."
             },
             {
               "readingId": "reading-010",
               "required": true,
-              "minutes": 20,
-              "focus": "Introduction and conclusion. Skim the historical sections."
+              "minutes": 25,
+              "focus": "Read Theoretical frameworks (pp. 2 to 4) and the six Propositions (pp. 8 to 13). Skim the historical waves (pp. 5 to 7)."
             }
           ]
         },
@@ -1159,20 +1159,20 @@
             {
               "readingId": "reading-011",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: the elements of the policy system and the stages model."
+              "minutes": 45,
+              "focus": "VI: read pp. 1 to 5 (the system model) and pp. 30 to 36 (inputs, outputs, summary). Skim the political environment (pp. 13 to 21). Skip the US social and economic data (pp. 5 to 12, 22 to 29). EN has the same sections."
             },
             {
               "readingId": "reading-012",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: problems, policies and politics streams, and policy windows."
+              "minutes": 30,
+              "focus": "Read Concepts and definitions (EN pp. 3 to 5, VI pp. 2 to 4) and Some explanations (EN pp. 16 to 19, VI pp. 18 to 20). Skim one of the health or transport cases (EN pp. 6 to 15)."
             },
             {
               "readingId": "reading-013",
               "required": true,
               "minutes": null,
-              "focus": "Whole case. Note the key facts and your own recommendation."
+              "focus": "Whole case, pp. 1 to 14 (skip the map appendix). Note the key facts and your own recommendation."
             }
           ]
         },
@@ -1185,13 +1185,13 @@
               "readingId": "reading-014",
               "required": true,
               "minutes": null,
-              "focus": "Read carefully: what public value is and how it is created."
+              "focus": "Whole chapter. The core is the standards for judging public value, pp. 4 to 10."
             },
             {
               "readingId": "reading-015",
               "required": true,
-              "minutes": 60,
-              "focus": "Focus on the strategic triangle: public value, legitimacy and support, operational capacity. Skim the examples."
+              "minutes": 50,
+              "focus": "Read Defining mission in the public sector (pp. 14 to 21, the strategic triangle) and Evaluating organizational strategy (pp. 40 to 49). Skim the two cases (pp. 1 to 6). Skip pp. 8 to 13 and 22 to 39."
             }
           ]
         }
@@ -1211,8 +1211,8 @@
             {
               "readingId": "reading-016",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: why and how the state acts in the economy."
+              "minutes": 35,
+              "focus": "Read sections 3 to 5, the state's functions, reasons and objectives (EN pp. 7 to 16, VI pp. 6 to 15), and the Summary (EN p. 27, VI p. 23). Skim section 6 on instruments. Skip the boxes."
             },
             {
               "readingId": "reading-004",
@@ -1223,8 +1223,8 @@
             {
               "readingId": "reading-017",
               "required": true,
-              "minutes": 25,
-              "focus": "Introduction, the main argument, and the conclusion."
+              "minutes": 20,
+              "focus": "Read the Introduction (p. 2), Market failures as ontological politics (p. 5) and the Conclusion (pp. 12 to 13). Skim the Stockholm case (pp. 6 to 11)."
             },
             {
               "readingId": "reading-018",
@@ -1243,7 +1243,7 @@
               "readingId": "reading-019",
               "required": true,
               "minutes": 25,
-              "focus": "Abstract, introduction, main findings and conclusion. Skip the methods and appendix."
+              "focus": "Read the Introduction (pp. 1 to 3), Results (pp. 11 to 18, figures first) and Discussion (pp. 19 to 20). Skip the design and data sections (pp. 6 to 10)."
             },
             {
               "readingId": "reading-020",
@@ -1254,14 +1254,14 @@
             {
               "readingId": "reading-021",
               "required": true,
-              "minutes": 25,
-              "focus": "Abstract, introduction, findings and discussion."
+              "minutes": 20,
+              "focus": "Read the Introduction (pp. 2 to 4), Results (p. 11) and Discussion and conclusion (pp. 12 to 15). Skip the theory and methods (pp. 4 to 11)."
             },
             {
               "readingId": "reading-022",
               "required": true,
-              "minutes": 20,
-              "focus": "Skim only: the introduction, the 10 principles and the contents page."
+              "minutes": 25,
+              "focus": "Read the 10 principles (pp. 9 to 14) and Applications and Limitations of AI (pp. 24 to 27). Then one appendix case, e.g. GOV.UK Chat (pp. 103 to 105). Skip the rest."
             }
           ]
         },
@@ -1273,14 +1273,14 @@
             {
               "readingId": "reading-023",
               "required": true,
-              "minutes": 60,
-              "focus": "Official actors: legislature, executive, bureaucracy and courts. Skim the US detail."
+              "minutes": 50,
+              "focus": "VI: read the Overview (pp. 1 to 2), Congress as decentralised (pp. 14 to 18), agencies and accountability (pp. 21 to 30) and the Conclusion (p. 33). Skim the courts (pp. 31 to 33). Skip pp. 3 to 13."
             },
             {
               "readingId": "reading-024",
               "required": true,
-              "minutes": 60,
-              "focus": "Unofficial actors: interest groups, parties, media and think tanks. Skim the US detail."
+              "minutes": 55,
+              "focus": "VI: read citizens and interest groups (pp. 2 to 10), think tanks and media (pp. 17 to 21), subgovernments and issue networks (pp. 30 to 35) and the Conclusion (p. 37). Skip the media data (pp. 22 to 29)."
             },
             {
               "readingId": "reading-025",
@@ -1299,7 +1299,7 @@
               "required": true,
               "minutes": 35,
               "pages": null,
-              "focus": "Whole case. Prepare your role for the simulation."
+              "focus": "Read the case text (EN pp. 1 to 8). Skim the exhibits (pp. 9 to 16) for numbers to use in your simulation role."
             }
           ]
         },
@@ -1311,20 +1311,20 @@
             {
               "readingId": "reading-027",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: the forms of government failure in development."
+              "minutes": 40,
+              "focus": "Read the four questions: what the government is, its comparative advantage, the dynamics of intervention, guidance for policy makers (EN pp. 5 to 13, VI pp. 5 to 14). Skim the opening pages."
             },
             {
               "readingId": "reading-028",
               "required": true,
-              "minutes": 30,
-              "focus": "The main argument and the conclusion."
+              "minutes": 35,
+              "focus": "Read A fragmented, commercialized state (pp. 5 to 9), The consequences (pp. 10 to 12) and Strengthening state effectiveness (pp. 13 to 18). Skip the notes."
             },
             {
               "readingId": "reading-029",
               "required": true,
-              "minutes": null,
-              "focus": "Whole case."
+              "minutes": 20,
+              "focus": "Read the case text, pp. 1 to 5. Skim the appendices (pp. 6 to 19) for prices and market shares."
             }
           ]
         }
@@ -1351,7 +1351,7 @@
               "readingId": "reading-030",
               "required": true,
               "minutes": 60,
-              "focus": "Only pp. 117 to 148, the essay \"Further Thoughts on Equality and Efficiency\". The file is the whole book."
+              "focus": "Only PDF pp. 130 to 161 (printed pp. 117 to 148): the last chapter, Further Thoughts on Equality and Efficiency. The file is the whole book."
             },
             {
               "readingId": "reading-031",
@@ -1388,7 +1388,7 @@
               "readingId": "reading-035",
               "required": true,
               "minutes": null,
-              "focus": "Whole case."
+              "focus": "Whole case. Focus on section 4, data quality (pp. 15 to 18), and the discussion points (pp. 18 to 19)."
             }
           ]
         },
@@ -1406,8 +1406,8 @@
             {
               "readingId": "reading-037",
               "required": true,
-              "minutes": 60,
-              "focus": "Read carefully: inclusive versus extractive institutions. The text is OCR, so open the PDF if a passage reads oddly."
+              "minutes": 45,
+              "focus": "Read pp. 6 to 22 (extractive vs inclusive institutions, why elites block prosperity) and pp. 28 to 33 (growth under extractive institutions). Skim the Korea opening (pp. 1 to 5). Skip the Congo story (pp. 23 to 27)."
             }
           ]
         },
@@ -1432,7 +1432,7 @@
               "readingId": "reading-040",
               "required": true,
               "minutes": 25,
-              "focus": "The main argument and the conclusion."
+              "focus": "Read Vietnam's fundamental political economic dilemma (p. 3) and pp. 12 to 18 (legal reform, clientelism, decentralization, conclusion). Skim the history and charts (pp. 4 to 11)."
             }
           ]
         }
@@ -1452,8 +1452,8 @@
             {
               "readingId": "reading-041",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: the conclusion on state or market."
+              "minutes": 30,
+              "focus": "Read section 4, So, state or market? (pp. 17 to 23) and the Summary (p. 33). Skim sections 2 and 3 (pp. 3 to 16) by their headings. Skip section 5 (pp. 24 to 32)."
             },
             {
               "readingId": "reading-042",
@@ -1478,7 +1478,7 @@
               "readingId": "reading-044",
               "required": true,
               "minutes": 30,
-              "focus": "A master's thesis used as a case. Read the summary, the findings and the conclusion, about 15 pages."
+              "focus": "About 12 pages: the summary (pp. 5 to 6), section 3.3, data analysis (pp. 26 to 30), the Ch. 3 conclusion (p. 41), section 4.3 (p. 48) and Ch. 5 (pp. 50 to 51). Skip the rest."
             }
           ]
         },
@@ -1509,8 +1509,8 @@
             {
               "readingId": "reading-047",
               "required": true,
-              "minutes": 35,
-              "focus": "Introduction, the main argument and the policy recommendations."
+              "minutes": 40,
+              "focus": "Read the Introduction (pp. 7 to 8), section II, the five technology types (pp. 10 to 15), section V, the market failure (pp. 22 to 23) and section VI, policies (pp. 24 to 27). Skim the examples in section IV."
             },
             {
               "readingId": "reading-048",
@@ -1567,20 +1567,20 @@
             {
               "readingId": "reading-053",
               "required": true,
-              "minutes": 30,
-              "focus": "Skim the framework's core assumptions and its diagram. Cairney Ch. 10 explains the same framework more simply."
+              "minutes": 25,
+              "focus": "Skim only: the overview of the framework (VI pp. 3 to 8) and the conclusion (VI pp. 29 to 32). EN has the same sections. Cairney Ch. 10 explains the same ideas more simply."
             },
             {
               "readingId": "reading-054",
               "required": true,
-              "minutes": null,
-              "focus": "Read carefully: the clearest summary of the advocacy coalition framework."
+              "minutes": 30,
+              "focus": "Read the Introduction and the ACF picture (pp. 2 to 8), policy-oriented learning (pp. 15 to 17) and the Conclusion (pp. 26 to 27). Skim pp. 8 to 15. Skip pp. 19 to 25."
             },
             {
               "readingId": "reading-055",
               "required": true,
-              "minutes": null,
-              "focus": "Whole case. Note the coalitions on each side."
+              "minutes": 25,
+              "focus": "Read the case text, pp. 1 to 9. Use the appendices (pp. 10 to 21) for pollution and vehicle data. Note the coalitions on each side."
             },
             {
               "readingId": "reading-056",
