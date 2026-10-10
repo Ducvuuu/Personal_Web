@@ -1,0 +1,1453 @@
+{
+  "schemaVersion": 1,
+  "title": "Introduction to Public Policy",
+  "code": "MPP-502",
+  "term": "October 2026",
+  "description": "MPP28 · Fulbright School of Public Policy and Management",
+  "readings": [
+    {
+      "id": "reading-001",
+      "title": "Learning by the Case Method-José A. Gomez-Ibañez & Joseph Kalt N15-86-1136",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 6,
+          "minutes": 10
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 5,
+          "minutes": 20
+        }
+      ]
+    },
+    {
+      "id": "reading-002",
+      "title": "NCTH Metro So 4 TPHCM",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 11,
+          "minutes": 20
+        }
+      ]
+    },
+    {
+      "id": "reading-003",
+      "title": "NCTH Metro So 4 TPHCM Questions Vie NXT",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 1,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-004",
+      "title": "Ch 2. Public Economics A Concise Introduction Reasons for State Ecocomic Activity",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 35,
+          "minutes": 60
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 28,
+          "minutes": 90
+        }
+      ]
+    },
+    {
+      "id": "reading-005",
+      "title": "Safe Or Scary The Shifting Reputation Of Glyphosate AKA Roundup",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 5,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-006",
+      "title": "Mexico’s planned glyphosate ban helped",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 5,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-007",
+      "title": "Can anyone stop Google’s illegal monopoly",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 6,
+          "minutes": 10
+        }
+      ]
+    },
+    {
+      "id": "reading-008",
+      "title": "How the Google Antitrust Ruling May Influence Tech Competition",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 5,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-009",
+      "title": "Defining digital transformation-Results from expert interviews",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 16,
+          "minutes": 65
+        }
+      ]
+    },
+    {
+      "id": "reading-010",
+      "title": "Technology and public management information systems",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 17,
+          "minutes": 40
+        }
+      ]
+    },
+    {
+      "id": "reading-011",
+      "title": "Birkland Chapter 2",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 39,
+          "minutes": null
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 42,
+          "minutes": 90
+        }
+      ]
+    },
+    {
+      "id": "reading-012",
+      "title": "Kingdon Chapter 1",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 21,
+          "minutes": 45
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 24,
+          "minutes": 70
+        }
+      ]
+    },
+    {
+      "id": "reading-013",
+      "title": "NXT NCTH-Duong bo cao toc Bac Nam",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": 35
+        }
+      ]
+    },
+    {
+      "id": "reading-014",
+      "title": "C.2 Xác định giá trị công Moore",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": 55
+        }
+      ]
+    },
+    {
+      "id": "reading-015",
+      "title": "Ch3. Moore (1995) Chiến lược của các tổ chức trong khu vực công formatted",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 49,
+          "minutes": 125
+        }
+      ]
+    },
+    {
+      "id": "reading-016",
+      "title": "Ch 1. Public Economics A Concise Introduction State Activity in the Economy",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 30,
+          "minutes": 50
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 26,
+          "minutes": 65
+        }
+      ]
+    },
+    {
+      "id": "reading-017",
+      "title": "Pausson 2024 The market that could be but is not...",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": 40
+        }
+      ]
+    },
+    {
+      "id": "reading-018",
+      "title": "What Isn’t for Sale-Michael J. Sandel",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 8,
+          "minutes": 10
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 8,
+          "minutes": 15
+        }
+      ]
+    },
+    {
+      "id": "reading-019",
+      "title": "The Politics of Using AI in Public Policy-Experimental Evidence",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 23,
+          "minutes": 55
+        }
+      ]
+    },
+    {
+      "id": "reading-020",
+      "title": "AI Brings Science to the Art of Policymaking",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 12,
+          "minutes": 10
+        }
+      ]
+    },
+    {
+      "id": "reading-021",
+      "title": "AI-driven public services and the privacy paradox-do citizens really care about their privacy",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 20,
+          "minutes": 45
+        }
+      ]
+    },
+    {
+      "id": "reading-022",
+      "title": "Artificial Intelligence Playbook for the UK Government",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 118,
+          "minutes": 155
+        }
+      ]
+    },
+    {
+      "id": "reading-023",
+      "title": "Birkland Chapter 4",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 46,
+          "minutes": null
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 39,
+          "minutes": 115
+        }
+      ]
+    },
+    {
+      "id": "reading-024",
+      "title": "Birkland Chapter 5",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 47,
+          "minutes": null
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 39,
+          "minutes": 120
+        }
+      ]
+    },
+    {
+      "id": "reading-025",
+      "title": "Kingdon Chapter 2",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 25,
+          "minutes": 55
+        }
+      ]
+    },
+    {
+      "id": "reading-026",
+      "title": "Kingdon Chapter 3",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 27,
+          "minutes": 55
+        }
+      ]
+    },
+    {
+      "id": "reading-027",
+      "title": "Anne Grueger Government Failures in Development",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 28,
+          "minutes": 55
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": 45
+        }
+      ]
+    },
+    {
+      "id": "reading-028",
+      "title": "Ch11. J.Pincus Contemporary VN State Effectiveness Under Conditions of Commercialization Routledge Handbook of Contemporary VN",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 21,
+          "minutes": 50
+        }
+      ]
+    },
+    {
+      "id": "reading-029",
+      "title": "Thi truong dien thoai di dong o Viet Nam-Vu Thanh Tu Anh, Do Hoang Phuong",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 19,
+          "minutes": 30
+        }
+      ]
+    },
+    {
+      "id": "reading-030",
+      "title": "Arthur Okun-Equality vs Efficiency The Big Tradeoff 2015 Full",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 171,
+          "minutes": 250
+        }
+      ]
+    },
+    {
+      "id": "reading-031",
+      "title": "Giulia et el The Employment and Distributional Impacts of Nationwide Minimum Wage Changes",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 41,
+          "minutes": 85
+        }
+      ]
+    },
+    {
+      "id": "reading-032",
+      "title": "Michael Sandel 2012 What is not for sale",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 8,
+          "minutes": 10
+        }
+      ]
+    },
+    {
+      "id": "reading-033",
+      "title": "Michael Sander What Money Cant Buy The Moral Limits of Markets",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 233,
+          "minutes": 300
+        }
+      ]
+    },
+    {
+      "id": "reading-034",
+      "title": "Digital Government Academy - Skills Framework",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 17,
+          "minutes": 20
+        }
+      ]
+    },
+    {
+      "id": "reading-035",
+      "title": "Quy hoạch mạng lưới chia sẻ xe đạp công cộng tại Thành phố Huế",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 19,
+          "minutes": 25
+        }
+      ]
+    },
+    {
+      "id": "reading-036",
+      "title": "Thể chế-Đinh Vũ Trang Ngân",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 10,
+          "minutes": 30
+        }
+      ]
+    },
+    {
+      "id": "reading-037",
+      "title": "Ch3. Tạo ra thịnh vượng và đói nghèo Tại sao các quốc gia thất bại",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 33,
+          "minutes": null
+        }
+      ]
+    },
+    {
+      "id": "reading-038",
+      "title": "Jeffry Frieden The Political Economy of Economic Policy",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 6,
+          "minutes": 15
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 9,
+          "minutes": 25
+        }
+      ]
+    },
+    {
+      "id": "reading-039",
+      "title": "VTTA Canh tranh xe rao hay cuoc dua xuong day",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 3,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-040",
+      "title": "VTTAnh The political economy of private sector Routledge Handbook of Contemporary Vietnam",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 20,
+          "minutes": 40
+        }
+      ]
+    },
+    {
+      "id": "reading-041",
+      "title": "Ch 5. Public Economics A Concise Introduction Conclusion State or market",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 35,
+          "minutes": 60
+        }
+      ]
+    },
+    {
+      "id": "reading-042",
+      "title": "State and Markets-Not Whether But How",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 11,
+          "minutes": 20
+        }
+      ]
+    },
+    {
+      "id": "reading-043",
+      "title": "Conceptualizing Capitalism Institutions, Evolution, Future",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 506,
+          "minutes": 945
+        }
+      ]
+    },
+    {
+      "id": "reading-044",
+      "title": "Bui Thi Ngoc Men--Final 3",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 57,
+          "minutes": 80
+        }
+      ]
+    },
+    {
+      "id": "reading-045",
+      "title": "Intro Chapter Behind the Curve-Robert Lawrence",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 10,
+          "minutes": 15
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 8,
+          "minutes": 25
+        }
+      ]
+    },
+    {
+      "id": "reading-046",
+      "title": "2.E The pathway to prosperity is getting harder for developing countries",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 5,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-047",
+      "title": "Building Pro-Worker AI",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 34,
+          "minutes": 90
+        }
+      ]
+    },
+    {
+      "id": "reading-048",
+      "title": "How the Battle for Control Could Crush AI’s Promise",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 4,
+          "minutes": 10
+        }
+      ]
+    },
+    {
+      "id": "reading-049",
+      "title": "The Right Way to Do Industrial Policy",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 6,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-050",
+      "title": "The data life cycle",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 6,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-051",
+      "title": "Ch2 Becoming a data head-How to think, speak, and understand...",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 8,
+          "minutes": 10
+        }
+      ]
+    },
+    {
+      "id": "reading-052",
+      "title": "Ch3 Becoming a data head-How to think, speak, and understand...",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 14,
+          "minutes": 20
+        }
+      ]
+    },
+    {
+      "id": "reading-053",
+      "title": "An advocacy coalition framework of policy change and the role of policy-oriented learning therein",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 41,
+          "minutes": 75
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 32,
+          "minutes": 100
+        }
+      ]
+    },
+    {
+      "id": "reading-054",
+      "title": "Ch10 Understanding public policy Theories and issues",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 29,
+          "minutes": 40
+        }
+      ]
+    },
+    {
+      "id": "reading-055",
+      "title": "NCTH Ha Noi LEZ-Case-V",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 21,
+          "minutes": 35
+        }
+      ]
+    },
+    {
+      "id": "reading-056",
+      "title": "NCTH Ha Noi LEZ-Questions V",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 1,
+          "minutes": 5
+        }
+      ]
+    },
+    {
+      "id": "reading-057",
+      "title": "Behn-Craft-of-Memo-Writing",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 12,
+          "minutes": 25
+        }
+      ]
+    },
+    {
+      "id": "reading-058",
+      "title": "Huong dan viet bai phan tich chinh sach-Vu Thanh Tu Anh",
+      "author": "",
+      "type": "Reading",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 9,
+          "minutes": 25
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "oct06",
+      "date": "2026-10-06",
+      "title": "Learning by the case method",
+      "format": "Online",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "Learning by the case method",
+          "lecturer": "",
+          "assignments": [
+            {
+              "readingId": "reading-001",
+              "required": true,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-002",
+              "required": true,
+              "minutes": 20
+            },
+            {
+              "readingId": "reading-003",
+              "required": true,
+              "minutes": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oct13",
+      "date": "2026-10-13",
+      "title": "Why public policy?",
+      "format": "On campus",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "Market failure, part I",
+          "lecturer": "Đỗ Thiên Anh Tuấn",
+          "assignments": [
+            {
+              "readingId": "reading-004",
+              "required": true,
+              "minutes": 60
+            },
+            {
+              "readingId": "reading-005",
+              "required": true,
+              "minutes": 5
+            },
+            {
+              "readingId": "reading-006",
+              "required": true,
+              "minutes": 5
+            },
+            {
+              "readingId": "reading-007",
+              "required": true,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-008",
+              "required": true,
+              "minutes": 5
+            }
+          ]
+        },
+        {
+          "id": "topic-2",
+          "title": "Public management in the digital age",
+          "lecturer": "Huỳnh Nhật Nam",
+          "assignments": [
+            {
+              "readingId": "reading-009",
+              "required": true,
+              "minutes": 65
+            },
+            {
+              "readingId": "reading-010",
+              "required": true,
+              "minutes": 40
+            }
+          ]
+        },
+        {
+          "id": "topic-3",
+          "title": "Public policy and the policy process",
+          "lecturer": "Nguyễn Xuân Thành",
+          "assignments": [
+            {
+              "readingId": "reading-011",
+              "required": true,
+              "minutes": null
+            },
+            {
+              "readingId": "reading-012",
+              "required": true,
+              "minutes": 45
+            },
+            {
+              "readingId": "reading-013",
+              "required": true,
+              "minutes": 35
+            }
+          ]
+        },
+        {
+          "id": "topic-4",
+          "title": "Equity, public value and public policy",
+          "lecturer": "Vũ Thành Tự Anh",
+          "assignments": [
+            {
+              "readingId": "reading-014",
+              "required": true,
+              "minutes": 55
+            },
+            {
+              "readingId": "reading-015",
+              "required": true,
+              "minutes": 125
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oct14",
+      "date": "2026-10-14",
+      "title": "The state, markets and technology",
+      "format": "On campus",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "Market failure, part II",
+          "lecturer": "Đỗ Thiên Anh Tuấn",
+          "assignments": [
+            {
+              "readingId": "reading-016",
+              "required": true,
+              "minutes": 50
+            },
+            {
+              "readingId": "reading-004",
+              "required": true,
+              "minutes": 60
+            },
+            {
+              "readingId": "reading-017",
+              "required": true,
+              "minutes": 40
+            },
+            {
+              "readingId": "reading-018",
+              "required": true,
+              "minutes": 10
+            }
+          ]
+        },
+        {
+          "id": "topic-2",
+          "title": "Data and AI in public policy",
+          "lecturer": "Huỳnh Nhật Nam",
+          "assignments": [
+            {
+              "readingId": "reading-019",
+              "required": true,
+              "minutes": 55
+            },
+            {
+              "readingId": "reading-020",
+              "required": true,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-021",
+              "required": true,
+              "minutes": 45
+            },
+            {
+              "readingId": "reading-022",
+              "required": true,
+              "minutes": 155
+            }
+          ]
+        },
+        {
+          "id": "topic-3",
+          "title": "Policy actors and stakeholders",
+          "lecturer": "Nguyễn Xuân Thành",
+          "assignments": [
+            {
+              "readingId": "reading-023",
+              "required": true,
+              "minutes": null
+            },
+            {
+              "readingId": "reading-024",
+              "required": true,
+              "minutes": null
+            },
+            {
+              "readingId": "reading-025",
+              "required": false,
+              "minutes": 55
+            },
+            {
+              "readingId": "reading-026",
+              "required": false,
+              "minutes": 55
+            }
+          ]
+        },
+        {
+          "id": "topic-4",
+          "title": "Government failure",
+          "lecturer": "Vũ Thành Tự Anh",
+          "assignments": [
+            {
+              "readingId": "reading-027",
+              "required": true,
+              "minutes": 55
+            },
+            {
+              "readingId": "reading-028",
+              "required": true,
+              "minutes": 50
+            },
+            {
+              "readingId": "reading-029",
+              "required": true,
+              "minutes": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oct15",
+      "date": "2026-10-15",
+      "title": "Efficiency, equity and institutions",
+      "format": "On campus",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "Efficiency and equity",
+          "lecturer": "Đỗ Thiên Anh Tuấn",
+          "assignments": [
+            {
+              "readingId": "reading-004",
+              "required": true,
+              "minutes": 60
+            },
+            {
+              "readingId": "reading-030",
+              "required": true,
+              "minutes": 250
+            },
+            {
+              "readingId": "reading-031",
+              "required": true,
+              "minutes": 85
+            },
+            {
+              "readingId": "reading-032",
+              "required": false,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-033",
+              "required": false,
+              "minutes": 300
+            }
+          ]
+        },
+        {
+          "id": "topic-2",
+          "title": "Public services in a digital environment",
+          "lecturer": "Huỳnh Nhật Nam",
+          "assignments": [
+            {
+              "readingId": "reading-034",
+              "required": true,
+              "minutes": 20
+            },
+            {
+              "readingId": "reading-035",
+              "required": true,
+              "minutes": 25
+            }
+          ]
+        },
+        {
+          "id": "topic-3",
+          "title": "Institutions and development",
+          "lecturer": "Nguyễn Xuân Thành",
+          "assignments": [
+            {
+              "readingId": "reading-036",
+              "required": true,
+              "minutes": 30
+            },
+            {
+              "readingId": "reading-037",
+              "required": true,
+              "minutes": null
+            }
+          ]
+        },
+        {
+          "id": "topic-4",
+          "title": "The political economy of public policy",
+          "lecturer": "Vũ Thành Tự Anh",
+          "assignments": [
+            {
+              "readingId": "reading-038",
+              "required": true,
+              "minutes": 15
+            },
+            {
+              "readingId": "reading-039",
+              "required": true,
+              "minutes": 5
+            },
+            {
+              "readingId": "reading-040",
+              "required": true,
+              "minutes": 40
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oct16",
+      "date": "2026-10-16",
+      "title": "States, markets and development",
+      "format": "On campus",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "State and market relations",
+          "lecturer": "Đỗ Thiên Anh Tuấn",
+          "assignments": [
+            {
+              "readingId": "reading-041",
+              "required": true,
+              "minutes": 60
+            },
+            {
+              "readingId": "reading-042",
+              "required": true,
+              "minutes": 20
+            },
+            {
+              "readingId": "reading-043",
+              "required": false,
+              "minutes": 945
+            }
+          ]
+        },
+        {
+          "id": "topic-2",
+          "title": "Using data for policymaking",
+          "lecturer": "Huỳnh Nhật Nam",
+          "assignments": [
+            {
+              "readingId": "reading-044",
+              "required": true,
+              "minutes": 80
+            }
+          ]
+        },
+        {
+          "id": "topic-3",
+          "title": "International trade and investment",
+          "lecturer": "Nguyễn Xuân Thành",
+          "assignments": [
+            {
+              "readingId": "reading-045",
+              "required": true,
+              "minutes": 15
+            },
+            {
+              "readingId": "reading-046",
+              "required": true,
+              "minutes": 5
+            }
+          ]
+        },
+        {
+          "id": "topic-4",
+          "title": "Public policy in an age of technological change",
+          "lecturer": "Vũ Thành Tự Anh",
+          "assignments": [
+            {
+              "readingId": "reading-047",
+              "required": true,
+              "minutes": 90
+            },
+            {
+              "readingId": "reading-048",
+              "required": true,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-049",
+              "required": true,
+              "minutes": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oct17",
+      "date": "2026-10-17",
+      "title": "From analysis to a policy memo",
+      "format": "On campus",
+      "groups": [
+        {
+          "id": "topic-1",
+          "title": "Quantitative methods in policy analysis",
+          "lecturer": "Huỳnh Nhật Nam",
+          "assignments": [
+            {
+              "readingId": "reading-050",
+              "required": true,
+              "minutes": 5
+            },
+            {
+              "readingId": "reading-051",
+              "required": true,
+              "minutes": 10
+            },
+            {
+              "readingId": "reading-052",
+              "required": true,
+              "minutes": 20
+            }
+          ]
+        },
+        {
+          "id": "topic-2",
+          "title": "Policy advocacy",
+          "lecturer": "Nguyễn Xuân Thành & Đỗ Thiên Anh Tuấn",
+          "assignments": [
+            {
+              "readingId": "reading-053",
+              "required": true,
+              "minutes": 75
+            },
+            {
+              "readingId": "reading-054",
+              "required": true,
+              "minutes": 40
+            },
+            {
+              "readingId": "reading-055",
+              "required": true,
+              "minutes": 35
+            },
+            {
+              "readingId": "reading-056",
+              "required": true,
+              "minutes": 5
+            }
+          ]
+        },
+        {
+          "id": "topic-3",
+          "title": "Writing for public policy",
+          "lecturer": "Vũ Thành Tự Anh",
+          "assignments": [
+            {
+              "readingId": "reading-057",
+              "required": true,
+              "minutes": 25
+            },
+            {
+              "readingId": "reading-058",
+              "required": true,
+              "minutes": 25
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

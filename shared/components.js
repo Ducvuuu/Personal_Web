@@ -99,16 +99,16 @@
         </section>`;
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const navEl = document.getElementById('site-nav');
-        if (navEl) navEl.outerHTML = navHTML();
+    function mountSiteComponents(scope = document, keepHosts = false) {
+        const navEl = scope.querySelector('#site-nav');
+        if (navEl) navEl[keepHosts ? 'innerHTML' : 'outerHTML'] = navHTML();
 
-        const footerEl = document.getElementById('site-footer');
-        if (footerEl) footerEl.outerHTML = footerHTML();
+        const footerEl = scope.querySelector('#site-footer');
+        if (footerEl) footerEl[keepHosts ? 'innerHTML' : 'outerHTML'] = footerHTML();
 
         // Mobile menu toggle
-        const mobileBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileBtn = scope.querySelector('#mobile-menu-btn');
+        const mobileMenu = scope.querySelector('#mobile-menu');
         if (mobileBtn && mobileMenu) {
             mobileBtn.addEventListener('click', () => {
                 const isOpen = !mobileMenu.classList.contains('hidden');
@@ -125,5 +125,7 @@
                 });
             });
         }
-    });
+    }
+    window.PersonalSite = { mount: mountSiteComponents };
+    document.addEventListener('DOMContentLoaded', () => mountSiteComponents());
 })();

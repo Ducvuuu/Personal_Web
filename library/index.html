@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#eaddd7">
-    <link rel="manifest" href="../manifest.json">
-    <title>The Library — Vu Trong Duc Anh</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@300;400;500;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../shared/shared.css">
 
-    <script>
+<html class="scroll-smooth" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="#eaddd7" name="theme-color"/>
+<link href="../manifest.json" rel="manifest"/>
+<title>The Library — Vu Trong Duc Anh</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Outfit:wght@300;400;500;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="../shared/shared.css" rel="stylesheet"/>
+<script>
         tailwind.config = {
             theme: {
                 extend: {
@@ -32,8 +32,7 @@
             }
         }
     </script>
-
-    <style>
+<style>
         body {
             font-family: 'Outfit', sans-serif;
         }
@@ -65,141 +64,7 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         #drag-overlay { transition: opacity 0.2s; }
     </style>
-    <link rel="icon" href="../shared/assets/favicon.png" type="image/png">
-</head>
-<body class="min-h-screen py-6 px-4 sm:px-8 flex justify-center items-start text-warm-900">
-
-    <!-- ── AUTH GATE ── -->
-    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-warm-900/70 backdrop-blur-md">
-        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl shadow-warm-900/20 p-10 w-full max-w-sm relative">
-            <div class="absolute top-0 left-1/2 w-24 h-7 bg-white/50 backdrop-blur-sm border border-white/20 rounded" style="transform: translateX(-50%) rotate(-1.5deg);"></div>
-            <div class="text-center mb-8">
-                <div class="w-14 h-14 bg-warm-100 border border-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <i class="fa-solid fa-book-open text-warm-400 text-xl" aria-hidden="true"></i>
-                </div>
-                <h1 class="font-heavy text-2xl text-warm-900 mb-1">The Library</h1>
-                <p class="font-mono text-xs text-warm-400 uppercase tracking-widest">Private collection — authorised only</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label for="login-email" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Email</label>
-                    <input type="email" id="login-email" placeholder="your@email.com"
-                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner">
-                </div>
-                <div>
-                    <label for="login-password" class="font-mono text-[10px] text-warm-500 uppercase tracking-widest block mb-1.5">Password</label>
-                    <input type="password" id="login-password" placeholder="••••••••"
-                        class="w-full px-4 py-2.5 rounded-xl bg-white border border-warm-200 text-sm font-mono text-warm-800 placeholder-warm-300 focus:outline-none focus:border-warm-400 focus:ring-1 focus:ring-warm-400 shadow-inner"
-                        onkeydown="if(event.key==='Enter') login()">
-                </div>
-                <p id="login-error" class="font-mono text-xs text-red-500 hidden">
-                    <i class="fa-solid fa-triangle-exclamation mr-1" aria-hidden="true"></i> <span id="login-error-msg"></span>
-                </p>
-                <button id="login-btn" onclick="login()"
-                    class="w-full bg-warm-900 text-warm-50 font-mono font-bold text-sm py-3 rounded-xl hover:bg-warm-800 transition-colors shadow-sm flex items-center justify-center gap-2 mt-2">
-                    <i class="fa-solid fa-lock text-xs text-warm-400" aria-hidden="true"></i> Open the library
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── LOGOUT BUTTON ── -->
-    <button id="logout-btn" onclick="logout()" aria-label="Lock library"
-        class="hidden fixed bottom-6 right-6 z-40 bg-warm-900/80 backdrop-blur text-warm-400 hover:text-warm-50 w-10 h-10 rounded-full shadow-lg items-center justify-center transition-colors">
-        <i class="fa-solid fa-lock text-sm" aria-hidden="true"></i>
-    </button>
-
-    <!-- ── UPLOAD PROGRESS MODAL ── -->
-    <div id="upload-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-warm-900/60 backdrop-blur-sm">
-        <div class="bg-warm-50 rounded-[2rem] border border-warm-200 shadow-2xl p-10 w-full max-w-sm text-center">
-            <div class="w-14 h-14 bg-warm-100 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-warm-200">
-                <i id="upload-icon" class="fa-solid fa-circle-notch spin-slow text-warm-400 text-xl" aria-hidden="true"></i>
-            </div>
-            <h3 class="font-heavy text-xl text-warm-900 mb-2" id="upload-status-title">Adding to library…</h3>
-            <p class="font-mono text-xs text-warm-400 mb-6" id="upload-status-text">Reading book metadata</p>
-            <div class="progress-bar-container h-2 mb-2"
-                role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Upload progress">
-                <div class="progress-bar-fill" id="upload-progress-bar" style="width:0%"></div>
-            </div>
-            <p class="font-mono text-[10px] text-warm-400" id="upload-progress-label">0%</p>
-        </div>
-    </div>
-
-    <!-- ── MAIN CONTENT ── -->
-    <main id="main-library" class="hidden w-full max-w-7xl bg-warm-50 rounded-[2rem] shadow-2xl shadow-warm-900/10 overflow-hidden relative border border-warm-200">
-
-        <div id="site-nav"></div>
-
-        <!-- Full Bleed Cover Video -->
-        <div class="relative w-full overflow-hidden">
-            <video autoplay loop muted playsinline class="w-full h-auto block"
-                   onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #fbe8d4 0%, #f5d3b3 100%)';">
-                <source src="assets/cover.mp4" type="video/mp4">
-            </video>
-            <div class="absolute inset-x-0 bottom-0 h-40" style="background: linear-gradient(to bottom, transparent, #fffbf7);"></div>
-        </div>
-
-        <!-- Full-page drag overlay -->
-        <div id="drag-overlay" class="hidden pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-warm-50/95 backdrop-blur-sm">
-            <div class="w-24 h-24 rounded-[2rem] bg-warm-100 border-2 border-dashed border-warm-400 flex items-center justify-center mb-4">
-                <i class="fa-solid fa-file-arrow-up text-4xl text-warm-400" aria-hidden="true"></i>
-            </div>
-            <p class="font-heavy text-2xl text-warm-700">Drop your .epub here</p>
-            <p class="font-mono text-xs text-warm-400 mt-2">Release to add to the library</p>
-        </div>
-
-        <div class="px-6 py-12 md:px-16 lg:px-20 relative z-10 min-h-[600px]">
-
-            <!-- Header -->
-            <header class="mb-12">
-                <h1 class="font-heavy text-4xl md:text-6xl text-warm-900 mb-2">The Library</h1>
-                <span class="font-handwriting text-2xl md:text-3xl text-warm-500 inline-block -rotate-2">Everything in one place, perfectly synced.</span>
-            </header>
-
-            <!-- Currently Reading Hero -->
-            <section id="currently-reading-section" class="mb-16 hidden"></section>
-
-            <!-- Bookshelf -->
-            <div>
-                <div class="flex flex-wrap justify-between items-end mb-6 border-b border-warm-200 pb-4 gap-3">
-                    <h3 class="font-heavy text-2xl text-warm-900">The Bookshelf</h3>
-                    <div class="flex flex-wrap gap-2" id="filter-tabs" role="group" aria-label="Filter books by category">
-                        <button onclick="setFilter('all')" data-filter="all" aria-pressed="true" class="filter-tab px-3 py-1 bg-warm-200 text-warm-900 rounded-lg text-xs font-bold font-mono">All</button>
-                        <button onclick="setFilter('fiction')" data-filter="fiction" aria-pressed="false" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Fiction</button>
-                        <button onclick="setFilter('non-fiction')" data-filter="non-fiction" aria-pressed="false" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Non-Fiction</button>
-                        <button onclick="setFilter('essays')" data-filter="essays" aria-pressed="false" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Essays</button>
-                        <button onclick="setFilter('manuscripts')" data-filter="manuscripts" aria-pressed="false" class="filter-tab px-3 py-1 hover:bg-warm-100 text-warm-600 rounded-lg text-xs font-bold font-mono transition-colors">Manuscripts</button>
-                    </div>
-                </div>
-
-                <div id="empty-state" class="hidden text-center py-20">
-                    <p class="font-mono text-sm text-warm-400 mb-2">Your shelves are empty.</p>
-                    <p class="font-mono text-xs text-warm-300">Drop an .epub anywhere on this page to begin.</p>
-                </div>
-
-                <div id="book-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10 pb-12"></div>
-            </div>
-        </div>
-
-        <div id="site-footer"></div>
-    </main>
-
-    <!-- Hidden file input -->
-    <input type="file" id="file-input" accept=".epub" class="hidden">
-
-    <!-- Firebase compat SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-
-    <!-- JSZip (required by epub.js to unzip EPUB files) -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-
-    <!-- epub.js for metadata + cover extraction during upload -->
-    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
-
-    <script src="../shared/components.js"></script>
-    <script src="index.js"></script>
-</body>
+<link href="../shared/assets/favicon.png" rel="icon" type="image/png"/>
+<style>#library-root { display:flex; justify-content:center; align-items:flex-start; }</style></head>
+<body class="min-h-screen py-6 px-4 sm:px-8 text-warm-900"><div id="library-root"></div><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script><script src="../shared/components.js"></script><script src="./src/main.jsx" type="module"></script></body>
 </html>

@@ -10,8 +10,10 @@ A personal, single-user web library. Two main pages:
 - `library/index.html` — book grid, upload, currently-reading hero
 - `library/reader.html` — epub reader with RSVP speed-reading mode
 
-No build step. No npm. No bundler. Everything is plain HTML/JS served from a static host.
-Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that way.
+The Library uses React and Vite following the requested migration. Run `npm ci`,
+`npm run dev`, `npm test`, and `npm run build`; publish the complete `dist/` site.
+Other sections remain static HTML/JS. Tailwind and Firebase compat stay on their existing CDNs.
+See `library/COURSES.md` for course data, uploads and deployment contracts.
 
 ---
 
@@ -21,8 +23,12 @@ Tailwind is loaded via CDN. Firebase compat SDK is loaded via CDN. Keep it that 
 - **Firestore** stores book metadata, reading progress, highlights, and RSVP scores.
 - **Firebase Storage** holds epub files and cover images.
 - **epub.js** renders the book in an iframe inside `#viewer`.
-- **RSVP engine** lives entirely in the `<!-- ── RSVP INTEGRATION ── -->` script block at the bottom of `reader.html`. Do not split it out unless the user explicitly asks to refactor files.
+- **RSVP engine** lives in `library/rsvp.js`. React mounts the reader controls first, then
+  `library/src/reader-engine.js` loads `reader.js` and `rsvp.js` in that order as classic scripts.
+  Preserve their shared lexical state and stable DOM targets. The engine owns the EPUB iframe.
 - `shared/components.js` injects the site nav and footer. Do not duplicate nav/footer HTML.
+  React calls `PersonalSite.mount(scope, true)` to retain its host nodes; static pages retain
+  the original DOMContentLoaded placeholder replacement.
 - The home page has an owner-only edit toggle backed by the `siteContent/home` Firestore document.
   Every piece of user-facing home-page copy added in `home/index.html` or rendered by `home/home.js`
   must have a unique, stable `data-edit-key`, including copy inside cards and modals. The shared home
@@ -330,7 +336,8 @@ The five RSVP pacing buttons are a group of mutually exclusive choices. Use `ari
 - **Don't add a build step, npm, or a bundler** unless the user explicitly asks.
 - **Don't split HTML files into separate JS/CSS files** unless the user explicitly asks to
   refactor the file structure.
-- **Don't touch the Firebase config block** — it is intentionally in the HTML.
+- **Keep the public Firebase configuration consistent** in `library/src/firebase.js` and
+  `library/reader.js`. Access protection belongs in Firebase rules.
 - **Don't add comments explaining what code does** — only add comments for non-obvious WHY.
 - **Don't modify `shared/components.js`** without checking both pages still render correctly.
 - **Don't add new global state variables** without noting them in the State section comment

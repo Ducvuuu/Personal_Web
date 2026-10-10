@@ -4,6 +4,13 @@
 > `registerThemes()` in `library/reader.js`. `rsvp.js` depends on globals
 > (`db`, `bookId`, `bookDoc`, `rendition`, `epubBook`) set by `reader.js`.
 
+
+The reader controls now mount through React in `src/ReaderShell.jsx`. The bridge in
+`src/reader-engine.js` then loads the two engines as classic scripts in their existing
+order. Auth waits for `window.readerReactReady`. React does not rerender the EPUB or
+RSVP playback state. Course-aware reader URLs retain the existing book ID and optionally
+add `course` and `session` parameters for the return link. The RSVP engine itself is unchanged.
+
 ---
 
 ## Table of Contents
