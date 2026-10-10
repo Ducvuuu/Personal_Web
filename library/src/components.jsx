@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { signInErrorMessage } from "./auth-errors";
 
 export const Icon = ({ name, ...props }) => (
   <i className={`fa-solid fa-${name}`} aria-hidden="true" {...props} />
@@ -101,11 +102,7 @@ export function AuthGate({ onLogin }) {
         String(form.get("password")),
       );
     } catch (err) {
-      setError(
-        err.code === "auth/network-request-failed"
-          ? "Connection failed. Please try again."
-          : "Unable to sign in. Check your email and password.",
-      );
+      setError(signInErrorMessage(err));
     } finally {
       setBusy(false);
     }
