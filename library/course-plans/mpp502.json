@@ -958,6 +958,73 @@
           "minutes": 25
         }
       ]
+    },
+    {
+      "id": "resource-001",
+      "title": "MPP-502 Syllabus",
+      "author": "",
+      "type": "Syllabus",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 13,
+          "minutes": null
+        }
+      ]
+    },
+    {
+      "id": "resource-002",
+      "title": "Case Study Guidelines",
+      "author": "",
+      "type": "Lecture",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": null
+        }
+      ]
+    },
+    {
+      "id": "resource-003",
+      "title": "Public Problems and Public Policy",
+      "author": "",
+      "type": "Lecture",
+      "editions": [
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 26,
+          "minutes": null
+        }
+      ]
+    },
+    {
+      "id": "reading-059",
+      "title": "Nike versus New Balance",
+      "author": "Simon Brodeur and Ari Van Assche",
+      "type": "Simulation",
+      "editions": [
+        {
+          "language": "EN",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 16,
+          "minutes": null
+        },
+        {
+          "language": "VI",
+          "bookId": null,
+          "pdfUrl": null,
+          "pages": 15,
+          "minutes": null
+        }
+      ]
     }
   ],
   "sessions": [
@@ -967,6 +1034,31 @@
       "title": "Learning by the case method",
       "format": "Online",
       "groups": [
+        {
+          "id": "course-documents",
+          "title": "Syllabus and lecture documents",
+          "lecturer": "",
+          "assignments": [
+            {
+              "readingId": "resource-001",
+              "required": false,
+              "minutes": null,
+              "pages": null
+            },
+            {
+              "readingId": "resource-002",
+              "required": false,
+              "minutes": null,
+              "pages": null
+            },
+            {
+              "readingId": "resource-003",
+              "required": false,
+              "minutes": null,
+              "pages": null
+            }
+          ]
+        },
         {
           "id": "topic-1",
           "title": "Learning by the case method",
@@ -1171,6 +1263,12 @@
               "readingId": "reading-026",
               "required": false,
               "minutes": 55
+            },
+            {
+              "readingId": "reading-059",
+              "required": true,
+              "minutes": null,
+              "pages": null
             }
           ]
         },

@@ -651,6 +651,13 @@ function registerThemes() {
         const doc = contents.document;
         if (!doc?.head) return;
 
+        // Opening an EPUB disclosure can add columns without changing the
+        // document element's size, so epub.js's ResizeObserver misses it.
+        doc.addEventListener('toggle', event => {
+            if (event.target?.tagName !== 'DETAILS') return;
+            requestAnimationFrame(() => contents.expand?.());
+        }, true);
+
         const link = doc.createElement('link');
         link.rel  = 'stylesheet';
         link.href = 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;900&display=swap';

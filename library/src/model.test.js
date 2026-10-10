@@ -14,14 +14,14 @@ describe("course preparation", () => {
   it("loads the real MPP-502 plan without content files or invented book progress", () => {
     const course = validateCourse(mppPlan);
     expect(course.sessions).toHaveLength(6);
-    expect(course.readings).toHaveLength(58);
-    expect(course.readings.flatMap((r) => r.editions)).toHaveLength(70);
+    expect(course.readings).toHaveLength(62);
+    expect(course.readings.flatMap((r) => r.editions)).toHaveLength(75);
     expect(
       course.readings.every((r) =>
         r.editions.every((e) => !e.bookId && !e.pdfUrl),
       ),
     ).toBe(true);
-    expect(courseStats(course, [])).toEqual({ done: 0, total: 53, percent: 0 });
+    expect(courseStats(course, [])).toEqual({ done: 0, total: 54, percent: 0 });
   });
   it("counts either language once, shares completion across sessions, and excludes optional readings", () => {
     const course = validateCourse(plan),

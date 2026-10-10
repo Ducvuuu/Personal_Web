@@ -10,7 +10,7 @@ The Pages workflow checks pull requests without deploying them. Before merging t
 
 ## Adding a course
 
-Sign in, open **Courses**, select **Add course**, and choose the MPP-502 reading plan or import your own JSON plan. Review its title and counts before adding it. The bundled plan describes six sessions and 58 distinct readings with 70 language editions. It includes reading metadata only. Course PDFs and converted EPUBs are not published in the repository.
+Sign in, open **Courses**, select **Add course**, and choose the MPP-502 reading plan or import your own JSON plan. Review its title and counts before adding it. The bundled plan describes six sessions, 59 distinct readings with 72 language editions, and three additional course documents (the syllabus and two lecture documents). It includes reading metadata only. Course PDFs and converted EPUBs are not published in the repository.
 
 Open a session to see readings grouped by topic and lecturer. Select EN or VI where both are available. **Attach EPUB** connects an existing library book to that edition; **Upload** uploads a converted EPUB with its title, author and optional cover. Attached editions appear in Courses instead of the general Books shelf. Existing bookmarks and highlights remain in the original book document.
 
