@@ -48,7 +48,9 @@
 │
 └── library/
     ├── index.html        # Library home — book grid, upload, currently-reading hero
-    ├── index.js          # All JS for index.html (auth, book loading, rendering, upload, filters)
+    ├── src/              # React Library, Courses, reader shell, Firebase repository and tests
+    ├── course-plans/     # Importable reading metadata without PDFs or EPUBs
+    ├── COURSES.md        # Development, deployment, course schema and reader integration
     ├── reader.html       # Epub reader — markup only, no inline scripts
     ├── reader.js         # All JS for reader.html (auth, epub init, progress, highlights, TOC, settings)
     ├── rsvp.js           # RSVP speed-reading engine (Gemini scoring, playback, epub sync)
@@ -267,27 +269,26 @@ auth, its own Firebase project, and does not share styles with `home/` or `about
 
 | File | Role |
 |---|---|
-| `index.html` | Markup for the library home. Book grid, upload modal, currently-reading hero, auth gate, drag-and-drop overlay. No inline scripts. |
-| `index.js` | All logic for `index.html`. Firebase init + auth, loading and rendering books, filter tabs, epub upload pipeline (metadata extraction, Storage upload, cover upload, Firestore write), book details modal (title, author, category, manual cover upload — shown before any Firebase write to prevent orphaned files), `escHtml()` XSS helper. |
-| `reader.html` | Markup for the epub reader. Top nav, TOC panel, settings panel, RSVP player panel (floating + draggable on desktop, full-width slide-in on mobile), RSVP prep modal, epub viewer area, bottom progress bar. No inline scripts. |
-| `reader.js` | All reader logic. Firebase init + auth, epub.js initialisation, theme/font/font-size settings, page navigation, reading progress tracking + Firestore save, highlights, TOC generation. Exposes globals (`rendition`, `epubBook`, `bookDoc`, `bookId`, `db`) that `rsvp.js` reads. |
-| `rsvp.js` | Self-contained RSVP engine. Depends on `db`, `bookId`, `bookDoc`, `rendition`, `epubBook` from `reader.js`. Handles text extraction, Gemini scoring (`gemini-2.5-flash-lite`), Firestore score cache, flat word-array construction, playback loop, epub iframe sync via `postMessage`. See `RSVP.md` for the full technical reference. |
-| `RSVP.md` | Technical reference: architecture, Gemini prompt format, Firestore cache schema, word-array shape, playback timing, epub postMessage protocol, ORP algorithm, cost model. Update this when changing the RSVP architecture. |
+| `index.html` | Existing Library head, styling and CDN dependencies with the React entry point. |
+| `src/App.jsx`, `components.jsx`, `Courses.jsx` | Bookshelf, auth, uploads, course shelf, sessions, editions and dialogs. |
+| `src/model.js`, `repository.js`, `firebase.js` | Validated course schema, derived progress and owner-scoped existing Firebase paths. |
+| `reader.html`, `src/ReaderShell.jsx` | Existing reader styles and React controls with stable engine DOM targets. |
+| `src/reader-engine.js` | Loads `reader.js` followed by `rsvp.js` after React mounts. |
+| `reader.js`, `rsvp.js` | Original EPUB and RSVP engines with shared lexical state. |
+| `course-plans/mpp502.json` | Six-session MPP-502 reading plan, containing metadata only. |
+| `COURSES.md`, `RSVP.md` | Course storage and deployment contract; detailed reader engine reference. |
 
-### Load order in `reader.html`
+### Build and reader load order
 
-```html
-<!-- CDN libraries first -->
-<script src="firebase-app-compat.js"></script>
-<script src="firebase-auth-compat.js"></script>
-<script src="firebase-firestore-compat.js"></script>
-<script src="jszip.min.js"></script>
-<script src="epub.min.js"></script>
+Run `npm ci`, `npm run dev`, `npm test` and `npm run build` from the repository root.
+Vite builds the two Library entries. `scripts/build-site.mjs` copies the existing static
+sections and reader engines into the complete `dist/` site. The GitHub Pages workflow
+checks pull requests and publishes built assets only on main.
 
-<!-- Page scripts — order matters: reader.js sets globals that rsvp.js uses -->
-<script src="reader.js"></script>
-<script src="rsvp.js"></script>
-```
+Firebase compat, JSZip and epub.js load first. React mounts the reader controls, then
+the bridge loads `reader.js` and `rsvp.js` sequentially as classic scripts. Auth waits for
+`window.readerReactReady` before starting the EPUB. Keep iframe and playback DOM state
+under the original engines, rather than rerendering it with React.
 
 ### External services
 
@@ -295,10 +296,10 @@ auth, its own Firebase project, and does not share styles with `home/` or `about
 |---|---|
 | Firebase Auth | Email/password gate on both pages |
 | Firestore | Book metadata, reading progress, highlights, RSVP score cache |
-| Firebase Storage | Epub files (`library/books/`) and cover images (`library/covers/`) |
+| Firebase Storage | EPUBs (`library/{uid}/books/`) and covers (`library/{uid}/covers/`) |
 | Gemini API (`gemini-2.5-flash-lite`) | Sentence complexity scoring for RSVP pacing |
 
-The Firebase config (API key etc.) is hardcoded in `index.js` and `reader.js`. This is
+The Firebase config (API key etc.) is in `src/firebase.js` and `reader.js`. This is
 intentional — web API keys are public by design; security lives in Firestore rules.
 The Gemini API key is stored in Firestore at `_config/App.geminiApiKey` and fetched at
 runtime, never hardcoded.
@@ -423,6 +424,6 @@ Validate anything from `templateData` that reaches a `style` or `data-*` attribu
 
 - **HTML5** — one `index.html` per page folder
 - **Tailwind CSS** — loaded via CDN, configured inline in each `<head>`
-- **Vanilla JS** — no frameworks, no build step
+- **React and Vite** for Library and Courses; vanilla JavaScript for other sections
 - **Font Awesome 6.4.0** — icons via CDN
 - **Google Fonts** — Caveat, Outfit, Poppins, JetBrains Mono

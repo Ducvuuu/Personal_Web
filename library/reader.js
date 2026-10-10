@@ -37,7 +37,11 @@ let lastViewH        = 0;
 
 
 // ── AUTH ──
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
+    if (window.readerReactReady) {
+        try { await window.readerReactReady; } catch { return; }
+    }
+    if (auth.currentUser?.uid !== user?.uid) return;
     if (user) {
         currentUid = user.uid;
         document.getElementById('auth-gate').classList.add('hidden');
@@ -84,6 +88,16 @@ async function initBook() {
         document.getElementById('nav-title').textContent  = bookDoc.title;
         document.getElementById('nav-author').textContent = bookDoc.author || '';
         document.title = `Reading: ${bookDoc.title}`;
+        const originalPdf = document.getElementById('original-pdf-link');
+        if (originalPdf && bookDoc.originalPdfUrl) {
+            try {
+                const url = new URL(bookDoc.originalPdfUrl);
+                if (['https:', 'http:'].includes(url.protocol)) {
+                    originalPdf.href = url.href;
+                    originalPdf.classList.remove('hidden');
+                }
+            } catch {}
+        }
 
         // Seed progress bar immediately to prevent blanking or "0%" / "…" blinking
         if (typeof bookDoc.percentage === 'number') {
@@ -446,6 +460,7 @@ async function saveProgress(location) {
         percentage:     pct,
         currentChapter: chapter,
         status:         pct >= 99 ? 'finished' : 'reading',
+        ...(pct >= 99 ? { preparationComplete: true } : {}),
         lastRead:       firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -1063,7 +1078,7 @@ document.addEventListener('click', e => {
     const panel = document.getElementById('settings-panel');
     if (!panel.classList.contains('hidden') &&
         !panel.contains(e.target) &&
-        !e.target.closest('[onclick="toggleSettings()"]')) {
+        !e.target.closest('#settings-toggle')) {
         panel.classList.add('hidden');
     }
 });
