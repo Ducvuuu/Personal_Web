@@ -382,3 +382,7 @@ warm-900 #4a2517
 
 Background: `#eaddd7` (index), `#fdfcf6` (reader sepia default).
 Accent: `orange-500` / `orange-600` for progress, active states, and the RSVP pivot letter.
+
+## Writing
+
+- No wh-questions or wh-clauses, in headings or in sentences: not "How X has changed", "What the aspiration would guide", "Where ASEAN stands", "turned to what cooling is for" or "depends on whether homes can be kept cool". Use a noun phrase: "The changing understanding of cooling", "the purpose of cooling", "the ability of people to ...". Relative clauses ("students who ...", "a region where ...") are fine.
